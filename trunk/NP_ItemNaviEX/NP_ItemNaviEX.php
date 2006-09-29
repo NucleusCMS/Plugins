@@ -184,6 +184,7 @@ class NP_ItemNaviEX extends NucleusPlugin
 		$subNaviUnit = array();
 		$this->linkparams = array();
 //store Home =====================================
+// comment out this block when HOME is sub-blog top
 		if($showHome > 0){
 			$naviUnit[] = array(
 				0 => 'Home',
@@ -196,9 +197,9 @@ class NP_ItemNaviEX extends NucleusPlugin
 //		if ($showHome > 0) {
 			$naviUnit[] = array(
 				0 => htmlspecialchars(getBlogNameFromID($blogid)),
-//				0 => 'Home',
+//				0 => 'Home',		// when HOME is sub-blog top
 				1 => createBlogidLink($blogid),
-//				1 => $CONF['BlogURL'] . '/',
+//				1 => $CONF['BlogURL'] . '/',		// when HOME is sub-blog top
 				2 => createArchiveListLink($blogid)
 			);
 		}
@@ -353,7 +354,7 @@ class NP_ItemNaviEX extends NucleusPlugin
 //				$a2buf .= ' | ( <a href="'.$today_link.'">Today</a> )';
 			}
 		}
-//============================= // end of archive
+//============================= // end of archive(s)
 
 // Print subNavi
 // todo Henceforth to template
@@ -396,7 +397,7 @@ class NP_ItemNaviEX extends NucleusPlugin
 								. htmlspecialchars($tag) . '</a>';
 				}
 				echo ' <small style="font-family:Tahoma;">';
-	//			echo ' (Tag for "'.$tagPlugin->_rawdecode(requestVar('tag')).'")';
+//				echo ' (Tag for "'.$tagPlugin->_rawdecode(requestVar('tag')).'")';
 				echo ' (Tag for "' . @join(' / ', $taglist) . '")';
 				echo '</small>';
 			}
