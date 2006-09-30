@@ -1,0 +1,12 @@
+<h1>Warning; possible hijacked computer</h1>
+We are sorry to inform you that the comment you tried to post on this weblog has not been accepted. This is done because your computer has been used before to post 'spam comments' on this weblog. Of course, we could be wrong in this assumption. We apollogize if this is the case.
+We do however strongly reccomend that you run both a full virus scan on your computer with an up to date viruslist and when no virusus have been fund on your computer that you run a spyware cleaner on your pc. Some spyware leaves 'backdoors' on your pc open which allow others to use your pc for certain tasks without you knowing they do this. One of these tasks could be the dumping of comments on weblogs to increase traffic to their own websites.
+As a countermeseaure, on this weblog 'Blacklist software' has been enabled. Once a spam-comment has been posted to this weblog, the machine that posted the message is automaticly banned from this weblog to post comments.
+Instead we show you this message until you requested the ban to be lifted.
+You can contact us at <emailaddres site owner>.
+Include this ip-number in the message
+___message
+IP_ADDRESS
+Please remove my ip ban,
+I've done a complete virus-check and removed all found spyware from my pc.
+___message
