@@ -71,6 +71,8 @@
 /* 0.98 Solved naar.be bug
 */
 
+include_once(dirname(__FILE__)."/blacklist/blacklist_lib.php");
+
 class NP_Blacklist extends NucleusPlugin {
 	function getName() 		  { return 'Blacklist'; }
 	function getAuthor()  	  { return 'xiffy + cles'; }
@@ -237,7 +239,6 @@ class NP_Blacklist extends NucleusPlugin {
 			return $this->resultCache . '[Cached]';
 		
 	    if ($this->getOption('enabled') == 'yes') {
-            include_once($DIR_PLUGINS."blacklist/blacklist_lib.php");
             // update the blacklist first file
             //pbl_updateblacklist($this->getOption('update'),false);
             if ($ipblock) {
