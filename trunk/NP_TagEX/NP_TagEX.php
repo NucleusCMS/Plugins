@@ -1075,7 +1075,29 @@ tagIndexSeparator
 			}
 		}
 
-		$ready = preg_replace('|[^a-z0-9-~+_.?#=&;,/:@%]|i', '', $ready);	// <mod by shizuki />
+// <mod by shizuki>
+		if (isset($ready)) {
+			$ready = preg_replace('|[^a-z0-9-~+_.?#=&;,/:@%]|i', '', $ready);
+			$reqReadyPlus = explode('+', $ready);
+			foreach ($reqReadyPlus as $ANDkey => $ANDval) {
+				if (strpos(':', $ANDval)) {
+					$reqReadyOr = explode(':', $ANDval);
+					foreach ($reqReadyOr as $ORkey => $ORval) {
+						if (!$this->_isValidTag($ORval)) {
+							$trush = array_splice($reqReadyOr);
+						}
+					}
+					$ANDval = implode(':', $reqReadyOr); 
+				} else {
+					if (!$this->_isValidTag($ANDval)) {
+						$trush = array_splice($reqReadyAND);
+					}
+				}
+			}
+			$ready = implode('+', $reqReadyPlus);
+		}
+// </mod by shizuki>
+		
 		if (!$ready) $sep = '';
 		if ($CONF['URLMode'] == 'pathinfo')
 			$link = $CONF['BlogURL'] . '/tag/' . $ready . $sep . $this->_rawencode($tag);
@@ -1095,6 +1117,30 @@ tagIndexSeparator
 // </mod by shizuki>*/
 
 		return addLinkParams($link, $linkparams);
+	}
+
+/**
+ * function Tag valid
+ * add by shizuki
+ */
+	function _isValidTag($encodedTag)
+	{
+		$encodedTag = rawurldecode($str);
+		if (_CHERSET != 'UTF-8') {
+			$str = mb_convert_encoding($encodedTag, _CHARSET, "UTF-8");
+		}
+		if (version_compare(phpversion(),"4.3.0")=="-1") {
+			$str = '"' . mysql_escape_string($str) . '"';
+		} else {
+			$str = '"' . mysql_real_escape_string($str) . '"';
+		}
+		$q = 'SELECT listid as result FROM %s WHERE tag = %s';
+		$Vali = quickQuery(sprintf($q, sql_table('plug_tagex_klist'), $str));
+		if (mysql_nums_row($Vali)) {
+			return TRUE;
+		} else {
+			return FALSE;
+		}
 	}
 
 }
