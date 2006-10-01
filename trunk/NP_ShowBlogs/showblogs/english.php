@@ -1,4 +1,7 @@
 <?php
+	define('_SHOWB_DESC',		'This plugin displays items of ALL or EACH blogs, and the link to other pages. <br />' .
+			'"MultipleCategories" supported! (NP_MultipleCategories v0.15 is required.)<br />' .
+			'Usage: &lt;%ShowBlogs(default/index, 15, all, 2, DESC, 6/15/56/186, default/stick)%&gt;');
 	define('_CAT_FORMAT',		'category name disp format');
 	define('_CATNAME_SHOW',	'[allblog mode only] category name to show (0:catname on blogname, 1:catname only, 2:blogname only)');
 	define('_STICKMODE',		'[currentblog mode only] 0:show all stickyID, 1:show current blog stickyID only');

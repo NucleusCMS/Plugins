@@ -4,6 +4,12 @@
  * SHOWING BLOGS PLUG-IN FOR NucleusCMS
  * PHP versions 4 and 5
  *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * (see nucleus/documentation/index.html#license for more info)
+ *
  * @author		Original Author nakahara21
  * @copyright	2005-2006 nakahara21
  * @license		http://www.gnu.org/licenses/gpl.txt  GNU GENERAL PUBLIC LICENSE Version 2, June 1991
@@ -14,35 +20,42 @@
  * 2.61 security fix
  * 2.6 security fix
  *
- */
-
-/**
+ ****************************************************************************
  *
  * THESE PLUG-INS ARE DEDICATED TO ALL THOSE NucleusCMS USERS
  * WHO FIGHT CORRUPTION AND IRRATIONAL IN EVERY DAY OF THEIR LIVES.
  *
- */
+ ****************************************************************************/
 
 class NP_ShowBlogs extends NucleusPlugin
 {
 	function getName()
 	{
 		return 'Show Blogs'; } 
+
+	function getMinNucleusVersion()
+	{
+		return '322';
+	}
+
 	function getAuthor()
 	{
 		return 'Taka + nakahara21 + kimitake + shizuki';
 	}
+
 	function getURL()
 	{
 		return 'http://nakahara21.com/';
 	}
+
 	function getVersion()
 	{
-		return '2.62';
+		return '2.63';
 	}
+
 	function getDescription()
 	{
-		return 'This plugin displays items of ALL or EACH blogs, and the link to other pages. <br />"MultipleCategories" supported! (NP_MultipleCategories v0.15 is required.)<br />Usage: &lt;%ShowBlogs(default/index, 15, all, 2, DESC, 6/15/56/186, default/stick)%&gt;'; 
+		return _SHOWB_DESC; 
 	} 
 
 	function supportsFeature($what)
@@ -55,7 +68,7 @@ class NP_ShowBlogs extends NucleusPlugin
 		}
 	}
 
-/*	function init()
+	function init()
 	{
 		$language = ereg_replace( '[\\|/]', '', getLanguageName());
 		if (file_exists($this->getDirectory()  . $language . '.php')) {
@@ -63,20 +76,38 @@ class NP_ShowBlogs extends NucleusPlugin
 		}else {
 			include_once($this->getDirectory() . 'english.php');
 		}
-	}*/
+	}
 
 	function install()
 	{
-		$this->createOption('catformat',	'category name disp format', 'text', '<%category%> on <%blogname%>');
 //		$this->createOption('catnametoshow', '[allblog mode only] category name to show (0:catname on blogname, 1:catname only, 2:blogname only)','text','0');
-		$this->createOption('stickmode',	'[currentblog mode only] 0:show all stickyID, 1:show current blog stickyID only', 'text', '1');
-		$this->createOption('ads',			'[Ads code_1] code displayed under first and second item of the page', 'textarea', '' . "\n");
-//		$this->createOption('ads2',			'[Ads code_2] code displayed under second and third item of the page', 'textarea', '' . "\n");
-//		$this->createOption('catformat',		_CAT_FORMAT,	'text',		'<%category%> on <%blogname%>');	// <mod by shizuki>
+//		$this->createOption('stickmode',	'[currentblog mode only] 0:show all stickyID, 1:show current blog stickyID only', 'text', '1');
+//		$this->createOption('ads', '[Ads code] code displayed under first and second item of the page', 'textarea', '' . "\n");
+// <mod by shizuki>
+		$this->createOption('catformat',		_CAT_FORMAT,	'text',		'<%category%> on <%blogname%>');
 //		$this->createOption('catnametoshow',	_CATNAME_SHOW,	'text',		'0');
-//		$this->createOption('stickmode',		_STICKMODE,		'text',		'1');
-//		$this->createOption('ads',				_ADCODE_1,		'textarea',	'' . "\n");
-//		$this->createOption('ads2',				_ADCODE_2,		'textarea',	'' . "\n");	// <mod by shizuki>
+		$this->createOption('stickmode',		_STICKMODE,		'text',		'1');
+		$this->createOption('ads',				_ADCODE_1,		'textarea',	'' . "\n");
+//		$this->createOption('ads2',				_ADCODE_2,		'textarea',	'' . "\n");
+/* todo can't install ? only warning ?
+ * douyatte 'desc' ni keikoku wo daseba iinoka wakaranai desu
+		$ver_min = (getNucleusVersion() < $this->getMinNucleusVersion());
+		$pat_min = ((getNucleusVersion() == $this->getMinNucleusVersion()) &&
+				(getNucleusPatchLevel() < $this->getMinNucleusPatchLevel()));
+		if ($ver_min) {	// || $pat_min) {
+			global $DIR_LIBS;
+			// uninstall plugin again...
+			include_once($DIR_LIBS . 'ADMIN.php');
+			$admin = new ADMIN();
+			$admin->deleteOnePlugin($this->getID());
+		
+			// ...and show error
+			$admin->error(_ERROR_NUCLEUSVERSIONREQ .
+			$this->getMinNucleusVersion() . ' patch ' .
+			$this->getMinNucleusPatchLevel());
+		}
+*/
+// </mod by shizuki>
 	}
 
 	function doSkinVar($skinType, $template = 'default/index', $amount = 10, $bmode = '', $type = 1, $sort = 'DESC', $sticky = '', $sticktemplate = '')
@@ -105,7 +136,7 @@ $pagelimit = 0;
 $monthlimit = 0;
 		$catformat = $this->getOption('catformat');
 
-/**************************************/
+/**************************************************************************************/
 
 		$type = (float) $type;
 		$typeExp = intval(($type - floor($type))*10); //0 or 1 or 9
@@ -167,12 +198,11 @@ $monthlimit = 0;
 
 		if ($skinType == 'item' || $skinType == 'index' || $skinType == 'archive') {
 			$catformat = '"' . addslashes($catformat) . '"';
-			$catformat = preg_replace(array('/<%category%>/','/<%blogname%>/', '/<%catdesc%>/'), array('",c.cname,"', '",b.bname,"', '",c.cdesc,"'), $catformat);
+			$catformat = preg_replace(array('/<%category%>/', '/<%blogname%>/', '/<%catdesc%>/'), array('",c.cname,"', '",b.bname,"', '",c.cdesc,"'), $catformat);
 			$mtable = "";
 			if ($manager->pluginInstalled('NP_TagEX')) {
 				$t_where = $this->_getTagsInum($where, $skinType, $bmode, $amount);
 				$where .= $t_where['where'];
-				$inumsres = $t_where['inumsres'];
 			}
 
 			if ($skinType == 'item') {
@@ -187,8 +217,9 @@ $monthlimit = 0;
 				}
 
 				$hidden = '';
+				$temp = $y = $m = $d = '';
 				if ($archive) {
-//					$hidden .= '<input type="hidden" name="archive" value="'.htmlspecialchars($archive).'" />'."\n";
+//					$hidden .= '<input type="hidden" name="archive" value="' . htmlspecialchars($archive) . '" />' . "\n";
 					sscanf($archive, '%d-%d-%d', $y, $m, $d);
 					if ($d) {
 						$timestamp_start = mktime(0, 0, 0, $m, $d, $y);
@@ -199,7 +230,8 @@ $monthlimit = 0;
 						$timestamp_end = mktime(0, 0, 0, $m+1, 1, $y);
 						$date_str = 'SUBSTRING(i.itime,1,7)';
 					}
-					$where .= ' AND i.itime >= ' . mysqldate($timestamp_start) . ' AND i.itime < ' . mysqldate($timestamp_end);
+					$where .= ' AND i.itime >= ' . mysqldate($timestamp_start) .
+							' AND i.itime < ' . mysqldate($timestamp_end);
 				} elseif (!empty($monthlimit)) {
 					$timestamp_end = mysqldate($b->getCorrectTime());
 					sscanf($timestamp_end, '"%d-%d-%d %s"', $y, $m, $d, $temp);
@@ -215,7 +247,8 @@ $monthlimit = 0;
 						$where .= ' AND ((i.inumber = p.item_id AND (p.categories REGEXP "(^|,)'
 								. intval($catid) . '(,|$)" OR i.icat = ' . intval($catid) . ')) OR (i.icat = '
 								. intval($catid) . ' AND p.item_id IS NULL))';
-						$mtable = ' LEFT JOIN ' . sql_table('plug_multiple_categories') . ' as p ON  i.inumber = p.item_id';
+						$mtable = ' LEFT JOIN ' . sql_table('plug_multiple_categories') .
+								' as p ON  i.inumber = p.item_id';
 						$mplugin =& $manager->getPlugin('NP_MultipleCategories');
 						if (method_exists($mplugin, 'getRequestName')) {
 							$mplugin->event_PreSkinParse(array());
@@ -251,13 +284,15 @@ $monthlimit = 0;
 //				}
 
 				if ($type >= 1) {
-					$page_switch = $this->PageSwitch($type, $pageamount, $offset, $where, $sort, $mtable, $b, $hidden);
+					$page_switch = $this->PageSwitch($type, $pageamount, $offset, $where, $sort, $mtable);
 					if ($typeExp != 9 && $skinType != 'item') {
 						echo $page_switch['buf'];
 					}
 				}
 
-				$sh_query = 'SELECT i.inumber as itemid, i.ititle as title, i.ibody as body, m.mname as author, m.mrealname as authorname, UNIX_TIMESTAMP(i.itime) as timestamp, i.itime, i.imore as more, m.mnumber as authorid,';
+				$sh_query = 'SELECT i.inumber as itemid, i.ititle as title, i.ibody as body, m.mname as author,' .
+						' m.mrealname as authorname, UNIX_TIMESTAMP(i.itime) as timestamp, i.itime,' .
+						' i.imore as more, m.mnumber as authorid,';
 				if (!$catblogname) {
 					$sh_query .= ' c.cname as category,';
 				} else {
@@ -277,12 +312,12 @@ $monthlimit = 0;
 					foreach ($stickys as $stickynumber) {
 						$tempblogid = getBlogIDFromItemID($stickynumber);
 						if ($bmode != 'all') {
-							$sh_query .= ' AND i.iblog = ' . intval($b->getID());
+							$sh_query .= ' AND i.iblog = ' . $nowbid;
 						}
 						$sh_query .= ' AND i.inumber = ' . intval($stickynumber);
 						$sh_query .= ' AND i.itime <= ' . mysqldate($b->getCorrectTime());
 						$sh_query .= ' AND i.idraft = 0';
-						if ($this->getOption('stickmode') == 1 && intval($b->getID()) == $tempblogid) {
+						if ($this->getOption('stickmode') == 1 && intval($nowbid) == $tempblogid) {
 							$b->showUsingQuery($sticktemplate, $sh_query, 0, 1, 0); 
 						} elseif (!$this->getOption('stickmode')) {
 							$b->showUsingQuery($sticktemplate, $sh_query, 0, 1, 0); 
@@ -300,13 +335,13 @@ $monthlimit = 0;
 			$sh_query .= ' AND i.idraft = 0' . $where;
 
 			if ($skinType == 'item') {
-				$sh_query .= ' ORDER BY FIND_IN_SET(i.inumber,\'' . @join(',', $inumsres) . '\')';
+				$sh_query .= ' ORDER BY FIND_IN_SET(i.inumber,\'' . @join(',', $t_where['inumsres']) . '\')';
 			} else {
 				$sh_query .= ' ORDER BY i.itime ' . $sort;
 			}
 
 			if ($skinType != 'item') {
-				$this->_showUsingQuery($template, $sh_query, 0, $page_switch['startpos'], $pageamount, $b, $catid, $sticky);
+				$this->_showUsingQuery($template, $sh_query, 0, $page_switch['startpos'], $pageamount, $b);
 				if ($type >= 1 && $typeExp != 1) echo $page_switch['buf'];
 			} elseif ($skinType == 'item') {
 				$sh_query .= ' LIMIT 0, ' . $pageamount;
@@ -315,7 +350,9 @@ $monthlimit = 0;
 		}
 	}
 
-	function _showUsingQuery($template, $showQuery, $q_startpos, $q_amount, $b, $catid, $sticky) {
+	function _showUsingQuery($template, $showQuery, $q_startpos, $q_amount, $b, $sticky = '')
+	{
+		global $catid;
 		$ads = 0;
 		$stickys = count(explode('/', $sticky));
 		$onlyone_query = $showQuery . ' LIMIT ' . intval($q_startpos) .', 1';
@@ -343,7 +380,7 @@ $monthlimit = 0;
 		$b->showUsingQuery($template, $second_query, 0, 1, 1);
 	}
 
-	function PageSwitch($type, $pageamount, $offset, $where, $sort, $mtable = '', $b, $hidden = '')
+	function PageSwitch($type, $pageamount, $offset, $where, $sort, $mtable = '')	//, $b)	//, $hidden = '')
 	{
 		global $CONF, $manager, $archive;
 		$startpos = 0;
@@ -378,10 +415,10 @@ $monthlimit = 0;
 		} else {
 			$currentpage = 1;
 			$uri = parse_url($pagelink);
-			if ($pagelink == $CONF['IndexURL'] && $CONF['URLMode'] != 'pathinfo') { // add
-				$pagelink = $b->getURL();
+			if ($pagelink == $CONF['BlogURL'] && $CONF['URLMode'] != 'pathinfo') { // add
+//				$pagelink = $b->getURL();
 				if ($uri['query']) {
-					$pagelink .= '?'.$uri['query'];
+					$pagelink .= '?' . $uri['query'];
 					$uri['query'] = true;
 				}
 			}
@@ -390,7 +427,7 @@ $monthlimit = 0;
 				$pagelink .= '&amp;';
 //				$pagelink = str_replace('&&', '&', $pagelink);
 				$pagelink = str_replace('&amp;&amp;','&amp;',$pagelink);
-			} elseif (strpos('?', $uri) && $CONF['URLMode'] != 'pathinfo') {
+			} elseif (strpos('?', $pagelink) && $CONF['URLMode'] != 'pathinfo') {
 				$pagelink .= '?';
 			}
 		}
