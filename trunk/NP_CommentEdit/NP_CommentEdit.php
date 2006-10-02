@@ -1,36 +1,36 @@
 <?
-// plugin needs to work on Nucleus versions <=2.0 as well
-if (!function_exists('sql_table')){
-	function sql_table($name) {
-		return 'nucleus_' . $name;
-	}
-}
 
-class NP_CommentEdit extends NucleusPlugin {
+class NP_CommentEdit extends NucleusPlugin
+{
 
-	function getName() {	// name of plugin
-		return 'Comment Editable'; 
+	function getName()
+	{
+		return 'Comment Editable';
 	}
 	
-	function getAuthor()  {	// author of plugin 
-		return 'nakahara21'; 
+	function getAuthor()
+	{ 
+		return 'nakahara21';
 	}
 	
-	function getURL() 	{	// an URL to the plugin website
-		return 'http://xx.nakahara21.net/'; 
+	function getURL()
+	{
+		return 'http://nakahara21.com'; 
 	}
 	
-	function getVersion() {	// version of the plugin
-		return '0.3'; 
+	function getVersion()
+	{
+		return '0.3';
 	}
 	
-	// a description to be shown on the installed plugins listing
-	function getDescription() { 
+	function getDescription()
+	{
 		return 'Comment Editable';
 	}
 
-	function supportsFeature($what) {
-		switch($what){
+	function supportsFeature($what)
+	{
+		switch ($what) {
 			case 'SqlTablePrefix':
 				return 1;
 			default:
@@ -76,24 +76,24 @@ class NP_CommentEdit extends NucleusPlugin {
 //__________________________________________
 
 	function doTemplateCommentsVar(&$item, &$comment, $type, $param1 = 'QQQQQ') { 
-	global $CONF, $member;
+		global $CONF, $member;
 /*
-	global $manager, $blog;
-	global $catid, $itemid;
+		global $manager, $blog;
+		global $catid, $itemid;
 */	
 
-	if($member->isLoggedIn()){
-	if($member->canAlterComment($comment['commentid'])){
-	echo '<small>';
-	echo '<a href="';
-	echo  $CONF['AdminURL'].'index.php?action=commentedit&commentid='.$comment['commentid'];
-	echo '" target="_blank">[edit]</a>';
-	echo ' <a href="';
-	echo  $CONF['AdminURL'].'index.php?action=commentdelete&commentid='.$comment['commentid'];
-	echo '" target="_blank">[del]</a>';
-	echo '</small>';
-	}
-	}
+		if ($member->isLoggedIn()) {
+			if ($member->canAlterComment($comment['commentid'])) {
+			echo '<small class="commedit">';
+			echo '<a href="';
+			echo  $CONF['AdminURL'] . 'index.php?action=commentedit&commentid=' . $comment['commentid'];
+			echo '" target="_blank">[edit]</a>';
+			echo ' <a href="';
+			echo  $CONF['AdminURL'] . 'index.php?action=commentdelete&commentid=' . $comment['commentid'];
+			echo '" target="_blank">[del]</a>';
+			echo '</small>';
+			}
+		}
 
 	}
 	//__________________________________________
