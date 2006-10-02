@@ -1,0 +1,13 @@
+<div style="float:left;">
+<form method="post" action="<%actionurl%>">
+<input type="hidden" name="action" value="plugin" />
+<input type="hidden" name="name" value="Board" />
+<input type="hidden" name="type" value="search" />
+<input type="hidden" name="redirectTo" value="<%redirectTo%>" />
+<input type="hidden" name="pagelink" value="<%pagelink%>" />
+<input type="hidden" name="bbs_number" value="<%bbs_number%>" />
+<%extrainput%>
+<input class="" type="text" size="6" name="bbsq" value="<%bbsq%>"/>
+<input class="" type="submit" value="search" />
+</form>
+</div>

@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pholiotdata>
+	<customize defaultmode="slideshow" galleries="true" thumbnail="true" playallgalleries="true" returntobrowse="false" 
+	randomgallery = "false" randomimage = "false"
+	fitimagetoview="true" fitviewtoimage="true" 
+	pan="false" zoom="true" zoomrandomxy="true" zoomdepth="2" zoomrandomdepth="false" 
+	panzoomtime="5000" crossfadetime="3000" slidedelaytime="6000" motionmode="liner" 
+	xmargin="10" ymargin="10" showlink="false" />
+	
+	<gallery name="Europe" description="母が撮った写真です"> 
+		<image> 
+			<imageurl>http://reverb.jp/vivian/download/pholiot/misa/01.jpg</imageurl> 
+			<linkurl name="open 01.jpg">javascript:pholiotImageOpen("http://reverb.jp/vivian/download/pholiot/misa/01.jpg",500,333,1)</linkurl> 
+		</image>
+		<image> 
+			<imageurl>http://reverb.jp/vivian/download/pholiot/misa/02.jpg</imageurl> 
+			<linkurl name="open 02.jpg">javascript:pholiotImageOpen("http://reverb.jp/vivian/download/pholiot/misa/02.jpg",500,333,1)</linkurl> 
+		</image>
+		<image> 
+			<imageurl>http://reverb.jp/vivian/download/pholiot/misa/03.jpg</imageurl> 
+			<linkurl name="open 03.jpg">javascript:pholiotImageOpen("http://reverb.jp/vivian/download/pholiot/misa/03.jpg",500,341,1)</linkurl> 
+		</image>
+		<image> 
+			<imageurl>http://reverb.jp/vivian/download/pholiot/misa/04.jpg</imageurl> 
+			<linkurl name="open 04.jpg">javascript:pholiotImageOpen("http://reverb.jp/vivian/download/pholiot/misa/04.jpg",500,375,1)</linkurl> 
+		</image>
+		<image> 
+			<imageurl>http://reverb.jp/vivian/download/pholiot/misa/05.jpg</imageurl> 
+			<linkurl name="open 05.jpg">javascript:pholiotImageOpen("http://reverb.jp/vivian/download/pholiot/misa/05.jpg",500,375,1)</linkurl> 
+		</image>
+		<image> 
+			<imageurl>http://reverb.jp/vivian/download/pholiot/misa/06.jpg</imageurl> 
+			<linkurl name="open 06.jpg">javascript:pholiotImageOpen("http://reverb.jp/vivian/download/pholiot/misa/06.jpg",500,333,1)</linkurl> 
+		</image>
+		<image> 
+			<imageurl>http://reverb.jp/vivian/download/pholiot/misa/07.jpg</imageurl> 
+			<linkurl name="open 07.jpg">javascript:pholiotImageOpen("http://reverb.jp/vivian/download/pholiot/misa/07.jpg",500,375,1)</linkurl> 
+		</image>
+		<image> 
+			<imageurl>http://reverb.jp/vivian/download/pholiot/misa/08.jpg</imageurl> 
+			<linkurl name="open 08.jpg">javascript:pholiotImageOpen("http://reverb.jp/vivian/download/pholiot/misa/08.jpg",500,333,1)</linkurl> 
+		</image>
+	</gallery>
+
+	<gallery name="Light" description="ある夜のお散歩中に"> 
+		<customize fitimagetoview="true" fitviewtoimage="true" pan="true" zoom="false" panzoomtime="3000" crossfadetime="2000" slidedelaytime="6000" motionmode="liner"  xmargin="0" ymargin="0" />
+		<linkurl name="Reverb.JP">http://reverb.jp</linkurl> 
+		<image> 
+			<imageurl>http://reverb.jp/vivian/download/pholiot/02/01.jpg</imageurl> 
+		</image>
+		<image> 
+			<imageurl>http://reverb.jp/vivian/download/pholiot/02/02.jpg</imageurl> 
+		</image>
+		<image> 
+			<imageurl>http://reverb.jp/vivian/download/pholiot/02/03.jpg</imageurl> 
+		</image>
+		<image> 
+			<imageurl>http://reverb.jp/vivian/download/pholiot/02/04.jpg</imageurl> 
+		</image>
+		<image> 
+			<imageurl>http://reverb.jp/vivian/download/pholiot/02/05.jpg</imageurl> 
+		</image>
+		<image> 
+			<imageurl>http://reverb.jp/vivian/download/pholiot/02/06.jpg</imageurl> 
+		</image>
+		<image> 
+			<imageurl>http://reverb.jp/vivian/download/pholiot/02/07.jpg</imageurl> 
+		</image>
+	</gallery>
+	
+	<gallery name="横浜遊歩" description="昔住んでた横浜の伯母の家へ(携帯で撮りました)"> 
+	<customize fitimagetoview="false" fitviewtoimage="true" zoom="false" xmargin="10" ymargin="10" />
+		<image> 
+			<imageurl>http://reverb.jp/vivian/download/pholiot/yokohama/kaidan.jpg</imageurl>
+			<caption>目指すは丘の上の公園</caption> 
+		</image>
+		<image> 
+			<imageurl>http://reverb.jp/vivian/download/pholiot/yokohama/nya2_s.jpg</imageurl> 
+			<caption>ねこたんお見送り</caption> 
+		</image>
+		<image> 
+			<imageurl>http://reverb.jp/vivian/download/pholiot/yokohama/kouen3.jpg</imageurl> 
+			<caption>なつかしの場所到着</caption> 
+		</image>
+		<image> 
+			<imageurl>http://reverb.jp/vivian/download/pholiot/yokohama/kouen1.jpg</imageurl> 
+			<caption>ここがお気に入り</caption> 
+		</image>
+		<image> 
+			<imageurl>http://reverb.jp/vivian/download/pholiot/yokohama/kouen2_s.jpg</imageurl> 
+			<caption>ハモニカ吹くひと</caption> 
+		</image>
+		<image> 
+			<imageurl>http://reverb.jp/vivian/download/pholiot/yokohama/cosmos1.jpg</imageurl> 
+			<caption>コスモスがキレイでした</caption> 
+		</image>
+		<image> 
+			<imageurl>http://reverb.jp/vivian/download/pholiot/yokohama/cosmos2.jpg</imageurl> 
+			<caption>もういっちょ</caption> 
+		</image>
+		<image> 
+			<imageurl>http://reverb.jp/vivian/download/pholiot/yokohama/dondon_s.jpg</imageurl> 
+			<caption>その名もドンドン商店街</caption> 
+		</image>
+		<image> 
+			<imageurl>http://reverb.jp/vivian/download/pholiot/yokohama/nya1.jpg</imageurl> 
+		</image>
+	</gallery>
+
+</pholiotdata>

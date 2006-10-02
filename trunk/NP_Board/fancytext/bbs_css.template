@@ -1,0 +1,48 @@
+
+<style type="text/css">
+<!--
+	table.bbs_form td {
+		font: normal 9px verdana, arial, sans-serif;
+		margin:0 0 0 0;
+		padding:0 0 0 0;
+	}
+	table.bbs_form input{
+		font: normal 10.5px verdana, arial, sans-serif;
+	}
+	.bbs_pass{
+		font: normal 9px verdana, arial, sans-serif;
+		margin:0 0 0 0;
+		padding:0 0 0 0;
+		float:right;
+	}
+	.bbs_title{
+		clear:all;
+		font: normal 9px verdana, arial, sans-serif;
+		padding:2px 2px 2px 2px ;
+		background-color:gray;
+		color:white;
+	}
+	.bbs_title a:link , .bbs_title a:visited {
+		color:white;
+	}
+	.bbs_mes{
+		clear:all;
+		margin-left:5%;
+		padding:3px 3px 7px 3px ;
+		font: normal 11.5px verdana, arial, sans-serif;
+	}
+	.bbs_res{
+		margin:0 0 0 0;
+		padding:2px 2px 2px 2px;
+		float:right;
+		border:1px solid gray;
+		color:white;
+		background-color:red;
+		text-decoration:none;
+	}
+	.bbs_search{
+		background-color:yellow;
+	}
+-->
+</style>
+

@@ -1,0 +1,27 @@
+blockquote{
+	color: red;
+	border:1px solid red;
+	padding:0.5em;
+}
+sup{
+	font-weight:bold;
+	color:blue;
+}
+td.sep{
+	border:none;
+	padding:5px;
+}
+td.tl, td.tld{
+	font-family: Tahoma, verdana, lucida, arial, helvetica, sans-serif;
+	font-size: 80%;
+}
+td.tld{
+	color: silver;
+}
+textarea, input,select.f, select.f option{
+	font-family: Tahoma, verdana, arial, " Trebuchet MS", lucida, helvetica, sans-serif;
+	font-size: 90%;
+}
+textarea{
+	padding:2px;
+}

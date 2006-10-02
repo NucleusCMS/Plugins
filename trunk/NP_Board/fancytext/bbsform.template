@@ -1,0 +1,46 @@
+<form method="post" action="<%actionurl%>" name="postMsg">
+<input type="hidden" name="action" value="plugin" />
+<input type="hidden" name="name" value="Board" />
+<input type="hidden" name="type" value="<%type%>" />
+<input type="hidden" name="redirectTo" value="<%redirectTo%>" />
+<input type="hidden" name="bbs_number" value="<%bbs_number%>" />
+<%extrainput%>
+	<table class="bbs_form" border="0">
+
+	<tr>
+	  <td align="right" valign="top">name ::</td>
+	  <td><input type="text" name="bbs_name" value="<%bbs_name%>" /> <%check%> 
+	
+	</td>
+	</tr>
+	<tr>
+	  <td align="right" valign="top">E-mail or URL ::</td>
+	  <td><input type="text" size="60" name="bbs_userinfo" value="<%bbs_userinfo%>" /></td>
+	</tr>
+	<tr>
+	  <td align="right" valign="top">password ::</td>
+	  <td><input type="text" size="10" name="bbs_pass" value="<%bbs_pass%>" />
+	    * required for edit and delete
+	  </td>
+	</tr>
+	<tr>
+	  <td align="right" valign="top">messege ::
+	<br/ > <br/ > 	<%smilies%>
+	</td>
+	  <td>
+	  <textarea rows="6" cols="40" name="bbs_mes" /><%bbs_mes%></textarea>
+	  </td>
+	</tr>
+	<tr>
+	  <td> </td>
+	  <td>
+		<table><tr><td>
+		  <input type="submit" value="<%submit%>" />
+		</td>
+</form>
+		<td>
+		  <%DELETE%>
+		</td></tr></table>
+	  </td>
+	</tr>
+  </table>

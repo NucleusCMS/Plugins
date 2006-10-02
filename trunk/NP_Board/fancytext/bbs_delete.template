@@ -1,0 +1,7 @@
+<form method="post" action="<%actionurl%>">
+<input type="hidden" name="action" value="plugin" />
+<input type="hidden" name="name" value="Board" />
+<input type="hidden" name="type" value="delete" />
+<input type="hidden" name="redirectTo" value="<%redirectTo%>" />
+<input type="hidden" name="bbsid" value="<%bbsid%>" />
+<input type="submit" value="Delete" />

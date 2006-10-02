@@ -1,0 +1,14 @@
+<form method="post" action="<%editurl%>">
+	<div class="bbs_title">
+		<input class="bbs_pass" type="submit" value="edit/del" />
+		<input class="bbs_pass" type="text" size="6" name="bbs_pass" />
+		<a href="<%permalinkurl%>"><b><%current_bbsid%></b></a>
+		<%bbs_name%> <%bbs_userinfo%> (<%bbs_date%>)
+		<!-- <%bbs_host%> -->
+		<!-- <%bbs_ip%> -->
+	</div>
+	<div class="bbs_mes">
+		<a class="bbs_res" href="<%resurl%>">res</a>
+		<%bbs_mes%>
+	</div>
+</form>
