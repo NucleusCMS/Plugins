@@ -4,6 +4,13 @@
  * TAGGING PLUG-IN FOR NucleusCMS
  * PHP versions 4 and 5
  *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * (see nucleus/documentation/index.html#license for more info)
+ * 
+ * 
  * @author     Original Author nakahara21
  * @copyright  2005-2006 nakahara21
  * @license    http://www.gnu.org/licenses/gpl.txt  GNU GENERAL PUBLIC LICENSE Version 2, June 1991
@@ -16,21 +23,12 @@
  * 0.2  supports and/or query
  *
  */
-
 /**
- *
+ * 
  * THESE PLUG-INS ARE DEDICATED TO ALL THOSE NucleusCMS USERS
  * WHO FIGHT CORRUPTION AND IRRATIONAL IN EVERY DAY OF THEIR LIVES.
  *
  */
-
-// plugin needs to work on Nucleus versions <=2.0 as well
-if (!function_exists('sql_table')) {
-    function sql_table($name)
-    {
-		return 'nucleus_' . $name;
-	}
-}
 
 if (!defined('_TAGEX_TABLE_DEFINED')) {
 	define('_TAGEX_TABLE_DEFINED',	1);
@@ -47,7 +45,7 @@ class NP_TagEX extends NucleusPlugin
 	}
 	function getAuthor()
 	{
-		return 'nakahara21';
+		return 'nakahara21 + shizuki';
 	}
 	function getURL()
 	{
@@ -55,7 +53,7 @@ class NP_TagEX extends NucleusPlugin
 	}
 	function getVersion()
 	{
-		return '0.41';
+		return '0.42';
 	}
 	function getDescription()
 	{
@@ -75,16 +73,18 @@ class NP_TagEX extends NucleusPlugin
 	function install()
 	{
 		$this->createOption('flg_erase',			'Erase data on uninstall.',				'yesno',	'no');
-/* <editable template mod by shizuki>
+// <editable template mod by shizuki>
 		$this->createOption('and',					'template for \'and\'',					'textarea',	'<span style="font-family:tahoma;font-size:smaller;"> <a href="<%andurl%>" title="narrow">&amp;</a>.');
 		$this->createOption('or',					'template for \'or\'',					'textarea',	'<a href="<%orurl%>" title="expand">or</a> </span>');
-		$this->createOption('tagIndex',				'template for \'tagIndex\'',			'textarea',	'<%and%><%or%><span style="font-size:<%fontlevel%>em" title="<%tagamount%> post(s)! <%tagitems%>"><a href="<%taglinkurl%>"><%tag%></a></span>');
+		$this->createOption('tagIndex',			'template for \'tagIndex\'',				'textarea',	'<%and%><%or%><span style="font-size:<%fontlevel%>em" title="<%tagamount%> post(s)! <%tagitems%>"><a href="<%taglinkurl%>"><%tag%></a></span>');
 		$this->createOption('tagItemHeader',		'template for \'tagItemHeader\'',		'textarea',	'');
 		$this->createOption('tagItem',				'template for \'tagItem\'',				'textarea',	'<%itemid%>:<%itemtitle%>');
-		$this->createOption('tagItemSeparator',		'template for \'tagItemSeparator\'',	'textarea',	' , ');
+		$this->createOption('tagItemSeparator',	'template for \'tagItemSeparator\'',	'textarea',	' , ');
 		$this->createOption('tagItemFooter',		'template for \'tagItemFooter\'',		'textarea',	'');
-		$this->createOption('tagIndexSeparator',	'template for \'tagIndexSeparator\'',	'text',		' | ');
-//		$this->createOption('highlight',			'template for \'highlight\'',			'text',		'<span class="highlight">\0</span>');
+		$this->createOption('tagIndexSeparator',	'template for \'tagIndexSeparator\'',	'text',			' | ');
+		$this->createOption('tagsonlycurrent',	'show tags only current items have',	'yesno',		'no');
+		$this->createOption('colorfulhighlight',	'colorful highlight mode ?',				'yesno',		'no');
+		$this->createOption('highlight',			'template for normal highlightmode',	'text',		'<span class="highlight">\0</span>');
 //</mod by shizuki>*/
 		$table_q = 'CREATE TABLE IF NOT EXISTS ' . _TAGEX_TABLE . ' ('
 				 . ' `inum` INT(9) NOT NULL default "0" PRIMARY KEY, '
@@ -178,9 +178,11 @@ class NP_TagEX extends NucleusPlugin
 				$highlightKeys = array_keys($tags);
 			}
 		} elseif (eregi('<highlightTags>', $currentTemplateDesc)) {
-//			if (!requestVar('tag')) {	<for FancyURL mod by shizuki>
+// <mod for Fancy mode by shizuki>
+//			if (!requestVar('tag')) {
 //				return;
 //			} else {
+// </mod by shizuki>
 //			$highlightKeys = explode(' ',requestVar('tag'));
 //			$highlightKeys = array_map(array(&$this, "_rawdecode"), $highlightKeys);
 			$requestT = $this->getNoDecodeQuery('tag');
@@ -198,40 +200,43 @@ class NP_TagEX extends NucleusPlugin
 			} else {
 				$highlightKeys = $reqAND;
 			}
-//			}
+//			}	<mod for Fancy mode by shizuki />
 		} else {
 			return;
 		}
-		$template['highlight'] = '<span class="highlight">\0</span>';	// original code
-//		$template['highlight'] = $this->getOption('highlight');		// <editable template mod by shizuki />
+//		$template['highlight'] = '<span class="highlight">\0</span>';	// original code
+		$template['highlight'] = $this->getOption('highlight');		// <editable template mod by shizuki />
 		$curItem =  &$data["item"];
-//		$curItem->title = highlight($curItem->title, $highlightKeys, $template['highlight']);
-		$curItem->body = highlight($curItem->body, $highlightKeys, $template['highlight']);		// original mode
-		$curItem->more = highlight($curItem->more, $highlightKeys, $template['highlight']);		// original mode
+		if ($this->getOption('colorfulhighlight') == 'no') {
+//			$curItem->title = highlight($curItem->title, $highlightKeys, $template['highlight']);
+			$curItem->body = highlight($curItem->body, $highlightKeys, $template['highlight']);		// original mode
+			$curItem->more = highlight($curItem->more, $highlightKeys, $template['highlight']);		// original mode
+		} else {
 /**
  *
- * IF use other color for each tags
+ * use other color for each tags
  * mod by shizuki
  *
  */
-/*
-		$i = 0;
-		foreach($highlightKeys as $qValue) {
-			$pattern = '<span class=\'highlight_'.$i.'\'>\0</span>';
-			$curItem->body = highlight($curItem->body, $qValue, $pattern);
-			$i++;
-			if ($i == 10) $i = 0;
-		}
-		if ($curItem->more) {
+//
 			$i = 0;
 			foreach($highlightKeys as $qValue) {
 				$pattern = '<span class=\'highlight_'.$i.'\'>\0</span>';
-				$curItem->more = highlight($curItem->more, $qValue, $pattern);
+				$curItem->body = highlight($curItem->body, $qValue, $pattern);
 				$i++;
 				if ($i == 10) $i = 0;
 			}
+			if ($curItem->more) {
+				$i = 0;
+				foreach($highlightKeys as $qValue) {
+					$pattern = '<span class=\'highlight_'.$i.'\'>\0</span>';
+					$curItem->more = highlight($curItem->more, $qValue, $pattern);
+					$i++;
+					if ($i == 10) $i = 0;
+				}
+			}
 		}
-//*/
+// </mod by shizuki>*/
 	}
 
 /**
@@ -251,6 +256,7 @@ class NP_TagEX extends NucleusPlugin
  */
 	function _ItemFormExtras($oldforj = '', $itags = '', $blogid = 0)
 	{
+	$blogid = intval($blogid);	
 // Exstra form for add or update Item
 		?>
 		<h3>TagEX</h3>
@@ -273,8 +279,12 @@ function resetOlder(old){
 </script>
 <?php		
 		echo '<div style="height: 200px;overflow: auto;">' . "\n";
-		if($existTags = $this->scanExistTags(0,99999999,1)){				// original code
-//		if ($existTags = $this->scanExistTags(1, 99999999, 1, $blogid)) {	// <current blog onry mod by shizuki />
+		if ($this->getOption('tagsonlycurrent') == no) {
+			$existTags = $this->scanExistTags(0,99999999,1);
+		} else {
+			$existTags = $this->scanExistTags(1,99999999,1, $blogid);
+		}
+		if($existTags){
 			$existTags = array_keys($existTags);
 		}
 		for ($i=0;$i<count($existTags);$i++) {
@@ -286,7 +296,7 @@ function resetOlder(old){
 
 	function event_AddItemFormExtras($data)
 	{
-/* <current blog onry mod by shizuki />
+// <current blog onry mod by shizuki>
 		global $CONF, $blogid;
 		if (is_numeric($blogid)) {
 			$blogid = intval($blogid);
@@ -298,26 +308,25 @@ function resetOlder(old){
 		}
 // </mod by shizuki>*/
 // Call exstra form
-//		$this->_ItemFormExtras($oldforj, $itags, $blogid);	// <current blog onry mod by shizuki />
-		$this->_ItemFormExtras($oldforj, $itags);	// original mode
+		$oldforj = $itags = '';
+		$this->_ItemFormExtras($oldforj, $itags, $blogid);	// <current blog only />
 	}
 
 	function event_EditItemFormExtras($data)
 	{
 // Initialize tags when it have
-		$id = intval($data['variables']['itemid']);
-		$result = sql_query(sprintf('SELECT itags FROM %s WHERE inum = %d', _TAGEX_TABLE, $id));
+		$item_id = intval($data['variables']['itemid']);
+		$result = sql_query(sprintf('SELECT itags FROM %s WHERE inum = %d', _TAGEX_TABLE, $item_id));
 		if (mysql_num_rows($result) > 0) {
 			$itags  = mysql_result($result,0,0);
 		}
 		$oldforj = str_replace("\n",'\n',htmlspecialchars($itags));
-/* <current blog onry mod by shizuki />
-		$blogid = getBlogIDFromItemID($id);
+// <current blog onry mod by shizuki>
+		$blogid = getBlogIDFromItemID($item_id);
 		$blogid = intval($blogid);
 // </mod by shizuki>*/
 // Call exstra form
-//		$this->_ItemFormExtras($oldforj, $itags, $blogid);	// <current blog onry mod by shizuki />
-		$this->_ItemFormExtras($oldforj, $itags);	// original mode
+		$this->_ItemFormExtras($oldforj, $itags, $blogid);	// <current blog onry mod by shizuki />
 	}
 
 	function event_PostAddItem($data)
@@ -552,7 +561,7 @@ function resetOlder(old){
 			case 2:
 				asort($tagCount);
 				break;
-/* <for sortmode = 3 or 4 mod by shizuki>
+// <for sortmode = 3 or 4 mod by shizuki>
 			case 3:
 				$idx = 0;
 				foreach ($tagCount as $tag => $cnt) {
@@ -625,7 +634,7 @@ function resetOlder(old){
 			case 2:
 				$sortq = ' ORDER by inums_count ASC';
 				break;
-/* <for sortmode = 3 or 4 mod by shizuki>
+//* <for sortmode = 3 or 4 mod by shizuki>
 			default:
 				$sortq = '';
 				break;
@@ -731,7 +740,7 @@ function resetOlder(old){
 		if (eregi('list', $type[0])) {
 			$amount = eregi_replace("list", "", $type[0]);
 			$type[0] = 'list';
-/* < meta keywords="TAG" mod by shizuki>
+// < meta keywords="TAG" mod by shizuki>
 		} elseif (eregi('meta', $type[0])) {
 			$amount = eregi_replace("meta", "", $type[0]);
 			$type[0] = 'meta';
@@ -767,7 +776,7 @@ function resetOlder(old){
 				break;
 
 // < meta keywords="TAG" mod by shizuki>
-/* and AWS keywords
+// and AWS keywords
 			case 'meta':
 				global $manager, $itemid;
 				$itemid = intval($itemid);
@@ -836,7 +845,7 @@ tagIndexSeparator
 		$template['tagItem'] = '<li><%itemid%></li>';
 		$template['tagItemSeparator'] = '';
 		$template['tagItemFooter'] = '</ul>';
-*/
+*//*
 		$template['and'] = '<span style="font-family:tahoma;font-size:smaller;"> <a href="<%andurl%>" title="narrow">&amp;</a>.';
 		$template['or'] = '<a href="<%orurl%>" title="expand">or</a> </span>';
 		$template['tagIndex'] = '<%and%><%or%><span style="font-size:<%fontlevel%>em" title="<%tagamount%> post(s)! <%tagitems%>"><a href="<%taglinkurl%>"><%tag%></a></span>';
@@ -845,7 +854,7 @@ tagIndexSeparator
 		$template['tagItemSeparator'] = ' , ';
 		$template['tagItemFooter'] = '';
 		$template['tagIndexSeparator'] = ' | ';
-/*
+*//*
 		$template['tagIndex'] = '<span style="font-size:<%fontlevel%>em" title="<%tagamount%> post(s)!"><a href="<%taglinkurl%>"><%tag%>(<%tagamount%>)</a></span>';
 		$template['tagItemHeader'] = '';
 		$template['tagItem'] = "\n<%itemid%>:<%itemtitle%>";
@@ -854,18 +863,18 @@ tagIndexSeparator
 		$template['tagIndexSeparator'] = ' | ';
 */
 //		print_r($tags);
-/* <editable template mod by shizuki>
-				$template['and']				= $this->getOption('and');
-				$template['or']					= $this->getOption('or');
-				$template['tagIndex']			= $this->getOption('tagIndex');
+// <editable template mod by shizuki>
+				$template['and']					= $this->getOption('and');
+				$template['or']						= $this->getOption('or');
+				$template['tagIndex']				= $this->getOption('tagIndex');
 				$template['tagItemHeader']		= $this->getOption('tagItemHeader');
-				$template['tagItem']			= $this->getOption('tagItem');
-				$template['tagItemSeparator']	= $this->getOption('tagItemSeparator');
+				$template['tagItem']				= $this->getOption('tagItem');
+				$template['tagItemSeparator']		= $this->getOption('tagItemSeparator');
 				$template['tagItemFooter']		= $this->getOption('tagItemFooter');
 				$template['tagIndexSeparator']	= $this->getOption('tagIndexSeparator');
 // </mod by shizuki>*/
-				if($tags = $this->scanExistTags($type[1], $amount, $type[2])){		// original mode
-//				if ($tags = $this->scanExistTags($type[1])) {						// <nodisplay selected TAGs mod by shizuki />
+//				if($tags = $this->scanExistTags($type[1], $amount, $type[2])){		// original mode
+				if ($tags = $this->scanExistTags($type[1])) {						// <nodisplay selected TAGs mod by shizuki />
 					if ($type[3] != $type[4]) {
 						$minFontSize = min($type[3], $type[4]) - 0.5;
 						$maxFontSize = max($type[3], $type[4]);
@@ -873,7 +882,7 @@ tagIndexSeparator
 						list($maxCount, $minCount) = $this->scanCount($tags);
 						$eachCount = ceil(($maxCount - $minCount) / $levelsum);
 					}
-/* <nodisplay selected TAGs mod by shizuki>
+// <nodisplay selected TAGs mod by shizuki>
 					$select = array();
 					if($reqAND){
 						$req = ($reqOR) ? array_merge($reqAND, $reqOR) : $reqAND;
@@ -972,7 +981,7 @@ tagIndexSeparator
 				}
 				break;
 
-/* <show selected TAGs mod by shizuki>
+// <show selected TAGs for <title></title> mod by shizuki>
 			case 'title':
 				if ($reqAND) {
 					$req = ($reqOR) ? array_merge($reqAND, $reqOR) : $reqAND;
@@ -988,7 +997,7 @@ tagIndexSeparator
 
 	function doTemplateVar(&$item, $type = '')
 	{
-/* <highlight selected TAGs mod by shizuki>
+// <highlight selected TAGs mod by shizuki>
 		$requestT = $this->getNoDecodeQuery('tag');
 		if (!empty($requestT)) {
 			$requestTarray = $this->splitRequestTags($requestT);
@@ -1009,7 +1018,7 @@ tagIndexSeparator
 			for ($i=0;$i<count($temp_tags_array);$i++) {
 				$tag = trim($temp_tags_array[$i]);
 				$taglink = $this->creatTagLink($tag, 0);
-/* <highlight selected TAGs mod by shizuki>
+// <highlight selected TAGs mod by shizuki>
 				$key = array_search($tag, $words);
 				if ($key >= 10) $key = $key - 10;
 				if (in_array($tag, $words)) {
@@ -1018,7 +1027,7 @@ tagIndexSeparator
 				} else {
 // </mod by shizuki>*/
 					$taglist[$i] = '<a href="' . $this->creatTagLink($tag, 0) . '" rel="tag">' . htmlspecialchars($tag) . '</a>';
-//				}	// <highlight selected TAGs mod by shizuki />
+				}	// <highlight selected TAGs mod by shizuki />
 			}
 		}
 		if ($taglist) {
