@@ -6,6 +6,7 @@ NP_FootNote
 もとのデータ自体は変更せず、パースする際に変換しています。 
 
 変更履歴 
+0.3:SecurityFix and XHTML Valid.
 0.3:注釈がない記事にも無駄なコードを追加していたバグ修正。
 0.2:拡張領域に入力がない場合無駄なコードを追加していたバグ修正。
 0.1+:本文と拡張文とで注解を分ける指定をオプションに追加。
@@ -16,26 +17,42 @@ NP_FootNote
 0.03：とりあえず版リリース。 
 
 */ 
-class NP_FootNote extends NucleusPlugin { 
+class NP_FootNote extends NucleusPlugin
+{
 
-    function getName() { 
-        return 'Foot Note Plugin.';  
-    } 
-    function getAuthor()  {  
-        return 'charlie + nakahara21';  
-    } 
-    function getURL()  
-    { 
-        return 'http://xx.nakahara21.net/';  
-    } 
-    function getVersion() { 
-        return '0.3';  
-    } 
-    function getDescription() {  
-        return 'はてな、Wikiで使用される脚注を生成するプラグインです。本文中に((と))で囲まれたフレーズがあると、脚注として表示します。'; 
-    } 
-	function supportsFeature($what) {
-		switch($what){
+	var $bsname;
+	var $item_id;
+	var $note_id;
+	var $notelist;
+
+    function getName()
+    {
+        return 'Foot Note Plugin.';
+    }
+
+    function getAuthor()
+    {
+        return 'charlie + nakahara21 + shizuki';
+    }
+
+    function getURL()
+    {
+        return 'http://xx.nakahara21.net/';
+    }
+
+    function getVersion()
+    {
+        return '0.31';
+    }
+
+    function getDescription()
+    {
+        return 'はてな、Wikiで使用される脚注を生成するプラグインです。本文中に((と))で囲まれたフレーズがあると、脚注として表示します。';
+    }
+
+	function supportsFeature($what)
+	{
+		switch ($what) {
 			case 'SqlTablePrefix':
 				return 1;
 			default:
@@ -44,54 +61,69 @@ class NP_FootNote extends NucleusPlugin {
 	}
 
 
-	function install() { 
-		$this->createOption('CreateTitle','本文注のリンクにTitle属性を付加しますか？','yesno','yes'); 
-		$this->createOption('Split','本文と拡張文で注解を分けますか？(アイテムページは常にまとめて最下部になります)','yesno','no'); 
-	} 
-
-	function getEventList() { 
-		return array('PreItem','PreSkinParse'); 
-	} 
-
-	function event_PreSkinParse($data) { 
-		$this->type = $data['type'];
+	function install()
+	{
+		$this->createOption('CreateTitle', '本文注のリンクにTitle属性を付加しますか？', 'yesno', 'yes');
+		$this->createOption('Split', '本文と拡張文で注解を分けますか？(アイテムページは常にまとめて最下部になります)', 'yesno', 'no');
 	}
 
-	function event_PreItem($data) { 
-		global $i, $id, $notelist;
-		$this->currentItem = &$data["item"]; 
-		$i =0;
-		$notelist = array();
-		$id = $this->currentItem->itemid;
-		$this->currentItem->body = preg_replace_callback("/\(\((.*)\)\)/Us", array(&$this, 'footnote'), $this->currentItem->body); 
-		if($this->getOption('Split') == 'yes' && $this->type != 'item'){
-			if($footnote = @join('',$notelist))
+	function getEventList()
+	{
+		return array(
+			'PreItem',
+			'PreSkinParse'
+		);
+	}
+
+	function event_PreSkinParse($data)
+	{
+		$this->skinType = $data['type'];
+	}
+
+	function event_PreItem($data)
+	{
+//		global $i, $id, $notelist;
+		global $blogid, $manager;
+//		$this->currentItem =& $data['item'];
+		$this->node_id = 0;
+		$b =& $manager->getBlog($blogid);
+		$this->bsname = $b->getShortName();
+		$this->notelist = array();
+		$this->item_id = intval($this->currentItem->itemid);
+		$this->currentItem->body = preg_replace_callback("/\(\((.*)\)\)/Us", array(&$this, 'footnote'), $data['item']->body);
+		if ($this->getOption('Split') == 'yes' && $this->skinType != 'item') {
+			if ($footnote = @join('', $this->notelist)) {
 				$this->currentItem->body .= '<ul class="footnote">' . $footnote . '</ul>';
-			$notelist = array();
+			}
+			$this->notelist = array();
 		}
-		if($this->currentItem->more){
-			$this->currentItem->more = preg_replace_callback("/\(\((.*)\)\)/Us", array(&$this, 'footnote'), $this->currentItem->more); 
-			if($footnote = @join('',$notelist))
+		if ($this->currentItem->more) {
+			$this->currentItem->more = preg_replace_callback("/\(\((.*)\)\)/Us", array(&$this, 'footnote'), $data['item']->more);
+			if ($footnote = @join('', $this->notelist)) {
 				$this->currentItem->more .= '<ul class="footnote">' . $footnote . '</ul>';
-		}elseif($footnote = @join('',$notelist)){
+			}
+		} elseif ($footnote = @join('', $this->notelist)) {
 			$this->currentItem->body .= '<ul class="footnote">' . $footnote . '</ul>';
 		}
-	} 
+	}
 
 	function footnote($matches){
-		global $i, $id, $notelist;
-		$i++;
-		if($this->getOption('CreateTitle') == 'yes'){
+//		global $i, $id, $notelist;
+		$this->node_id++;
+		if ($this->getOption('CreateTitle') == 'yes') {
 			$fnote2 = htmlspecialchars(strip_tags($matches[1]));
-			$fnote2 = preg_replace('/\r\n/s','',$fnote2);
-			$fnote2 = ' title="'.$fnote2.'"';
+			$fnote2 = preg_replace('/\r\n/s', '', $fnote2);
+			$fnote2 = ' title="' . $fnote2 . '"';
 		}else{
 			$fnote2 = '';
 		}
-		$note = '<span class="footnote"><a href="#'.$id.'-'.$i.'"'.$fnote2.'>*'.$i.'</a><a name="'.$id.'-'.$i.'f"></a></span>';
-		$notelist[] = '<a name="'.$id.'-'.$i.'"></a>'.'<li><a href="#'.$id.'-'.$i.'f">注'.$i.'</a>'.$matches[1].'</li>';
+		$note = '<span class="footnote"><a href="#' .
+				$this->bsname . $this->item_id . '-' . $this->node_id . '"' . $fnote2 . '>*' . $this->node_id .
+				'</a><a name="' . $this->bsname . $this->item_id . '-' . $this->node_id . 'f"></a></span>';
+		$$this->notelist[] = '<a name="' . $this->bsname . $this->item_id . '-' . $this->node_id . '"></a><li><a href="#' .
+							$this->bsname . $this->item_id . '-' . $this->node_id . 'f">注' . $this->node_id . '</a>' . $matches[1] . '</li>';
 		return $note;
-	
 	}
-} 
+}
+
 ?>
