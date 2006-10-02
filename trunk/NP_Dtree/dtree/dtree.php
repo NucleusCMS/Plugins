@@ -25,7 +25,7 @@ function Node(id, pid, name, url, title, target, icon, iconOpen, open) {
 
 // Tree object
 function dTree(objName) {
-	this.config = {		target					: null,		folderLinks			: true,		useSelection		: false,		useCookies			: false,		useLines				: true,		useIcons				: true,		useStatusText		: false,		closeSameLevel	: false,		inOrder					: false	}
+	this.config = {		target			: null,		folderLinks		: true,		useSelection	: false,		useCookies		: false,		useLines		: true,		useIcons		: true,		useStatusText	: false,		closeSameLevel	: false,		inOrder			: false	}
 	this.icon = {
 		root			: imgpath + 'img/base.gif',		folder			: imgpath + 'img/folder.gif',		folderOpen		: imgpath + 'img/folderopen.gif',//		node			: imgpath + 'img/page.gif',		node			: imgpath + 'img/folder.gif',		empty			: imgpath + 'img/empty.gif',		line			: imgpath + 'img/line.gif',		join			: imgpath + 'img/join.gif',		joinBottom		: imgpath + 'img/joinbottom.gif',		plus			: imgpath + 'img/plus.gif',		plusBottom		: imgpath + 'img/plusbottom.gif',		minus			: imgpath + 'img/minus.gif',		minusBottom		: imgpath + 'img/minusbottom.gif',		nlPlus			: imgpath + 'img/nolines_plus.gif',		nlMinus			: imgpath + 'img/nolines_minus.gif'
 	};
