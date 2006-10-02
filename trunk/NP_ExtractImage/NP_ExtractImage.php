@@ -8,31 +8,40 @@
 //	0.5:	use createGlobalItemLink
 //			sql_table support :-P
 	
-
-
-// plugin needs to work on Nucleus versions <=2.0 as well
-if (!function_exists('sql_table')){
-	function sql_table($name) {
-		return 'nucleus_' . $name;
+class NP_ExtractImage extends NucleusPlugin
+{
+	function getName ()
+	{
+		return 'ExtractImage';
 	}
-}
 
+	function getAuthor ()
+	{
+		return 'nakahara21';
+	}
 
+	function getURL ()
+	{
+		return 'http://nakahara21.com';
+	}
 
-class NP_ExtractImage extends NucleusPlugin {
-	function getName () {return 'ExtractImage'; }
-	function getAuthor () {return 'nakahara21'; }
-	function getURL () {return 'http://xx.nakahara21.net/';}
-	function getVersion () {return '0.5';}
-	function supportsFeature($what) {
-		switch($what){
+	function getVersion ()
+	{
+		return '0.5';
+	}
+
+	function supportsFeature($what)
+	{
+		switch ($what) {
 			case 'SqlTablePrefix':
 				return 1;
 			default:
 				return 0;
 		}
 	}
-	function getDescription () {
+
+	function getDescription ()
+	{
 		return 'Extract image in items, and embed these images.';
 	}
 
@@ -41,45 +50,62 @@ class NP_ExtractImage extends NucleusPlugin {
 		$this->createOption('default_catname','Default Category Name.','text','');
 */	
 	}
-
 	function init() {
-		$this->fileex = array('.jpg','.png');
+		$this->fileex = array('.jpg', '.png');
 		$this->random = 1;
 	}
 	
-	function doSkinVar($skinType, $amount=10, $align = 'yoko', $hsize='60', $random=0, $exmode=0) {
-		global $CONF, $blog;
-		($blog)?
-			$b =& $blog :
+	function doSkinVar($skinType, $amount=10, $align = 'yoko', $hsize='60', $random=0, $exmode=0)
+	{
+		global $CONF, $manager, $blog;
+
+		if ($blog) {
+			$b =& $blog;
+		} else {
 			$b =& $manager->getBlog($CONF['DefaultBlog']);
+		}
 		
-		if($amount=='') $amount = 10;
-		if($align=='') $align = 'yoko';
-		if($hsize=='') $hsize = 60;
-		if($align == 'tate') $wsize = $hsize;
-		if($exmode != 'all') $exmode = 0;
+		if ($amount=='') {
+			$amount = 10;
+		}
+		if ($align=='') {
+			$align = 'yoko';
+		}
+		if ($hsize=='') {
+			$hsize = 60;
+		}
+		if ($align == 'tate'){ 
+			$wsize = $hsize;
+		}
+		if ($exmode != 'all') {
+			$exmode = 0;
+		}
+
 		$this->exquery = '';
 
-		switch($skinType){
+		switch ($skinType) {
 			case 'archive': 
 				global $archive;
-				sscanf($archive,'%4c-%2c-%2c',$year,$month,$day);
-				if ($day == 0) {
-					$timestamp_start = mktime(0,0,0,$month,1,$year);
-					$timestamp_end = mktime(0,0,0,$month+1,1,$year);  // also works when $month==12
+				$y = $m = $d = '';
+				sscanf($archive, '%4d-%2d-%2d', $y,$m,$d);
+				if (empty($d)) {
+					$timestamp_start = mktime(0, 0, 0, $m, 1, $y);
+					$timestamp_end = mktime(0, 0, 0, $m + 1, 1, $y);  // also works when $month==12
 				} else {
-					$timestamp_start = mktime(0,0,0,$month,$day,$year);
-					$timestamp_end = mktime(0,0,0,$month,$day+1,$year);  
+					$timestamp_start = mktime(0, 0, 0, $m, $d,$y);
+					$timestamp_end = mktime(0, 0, 0, $m,$d + 1,$y);  
 				}
-				$this->exquery .= ' and itime>=' . mysqldate($timestamp_start)
-				                . ' and itime<' . mysqldate($timestamp_end);
+				$this->exquery .= ' and itime >= ' . mysqldate($timestamp_start)
+				                . ' and itime < ' . mysqldate($timestamp_end);
 
 //			break;
 			default:
-				if(!$exmode){
-					$this->exquery .= ' and iblog =' . $b->getID();
+				if (empty($exmode)) {
+					$this->exquery .= ' and iblog = ' . $b->getID();
 					global $catid;
-					if($catid)	$this->exquery .= ' and icat =' . $catid;
+					if ($catid) {	
+						$this->exquery .= ' and icat = ' . intval($catid);
+					}
 				}
 		}
 
@@ -89,36 +115,38 @@ class NP_ExtractImage extends NucleusPlugin {
 		$filelist = array();
 		$this->imglists = array();
 		$this->imgfilename = array();
-		if(!($filelist = $this->listup())){
+		if (!($filelist = $this->listup())) {
 			echo 'No images here.';
 			return;
 		}
 //		print_r($filelist);
-		$amount = min($amount,count($filelist));
-		if($random){
+		$amount = min($amount, count($filelist));
+		if ($random) {
 			srand((float)microtime()*1000000);
 			shuffle($filelist);
 		}
 
-		switch($align){
+		switch ($align) {
 			case 'head':
 				break;
 			case 'tate':
-				for($i=0;$i<$amount;$i++){
-					$itemlink = $this->createGlobalItemLink($filelist[$i][1], '');
+				for ($i=0;$i<$amount;$i++) {
+//					$itemlink = $this->createGlobalItemLink($filelist[$i][1], '');
+					$itemlink = createItemLink($filelist[$i][1]);
 					echo '<div>';
-					echo '<a href="'.$itemlink.'">';
-					echo '<img src="'.$CONF['ActionURL'].'?action=plugin&name=ExtractImage&type=draw&p='.$filelist[$i][0][0].'&wsize='.$wsize.'" vspace="1"/>';
+					echo '<a href="' . $itemlink . '">';
+					echo '<img src="' . $CONF['ActionURL'] . '?action=plugin&name=ExtractImage&type=draw&p=' . $filelist[$i][0][0] . '&wsize=' . $wsize . '" vspace="1" />';
 					echo "</a></div>\n";
 				}
 				break;
 			case 'yoko':
 			default:
 				echo '<div>';
-				for($i=0;$i<$amount;$i++){
-					$itemlink =$this->createGlobalItemLink($filelist[$i][1], '');
+				for ($i=0;$i<$amount;$i++) {
+//					$itemlink =$this->createGlobalItemLink($filelist[$i][1], '');
+					$itemlink =$this->createItemLink($filelist[$i][1]);
 					echo '<a href="'.$itemlink.'">';
-					echo '<img src="'.$CONF['ActionURL'].'?action=plugin&name=ExtractImage&type=draw&p='.$filelist[$i][0][0].'&hsize='.$hsize.'" />';
+					echo '<img src="' . $CONF['ActionURL'] . '?action=plugin&name=ExtractImage&type=draw&p=' . $filelist[$i][0][0] . '&hsize=' . $hsize . '" />';
 					echo "</a>\n";
 				}
 					echo "</div>\n";
@@ -128,47 +156,58 @@ class NP_ExtractImage extends NucleusPlugin {
 	}
 
 	function listup(){
-		global $blog;
-		($blog)?
-			$b =& $blog :
+		global $CONF, $manager, $blog;
+
+		if ($blog) {
+			$b =& $blog;
+		} else {
 			$b =& $manager->getBlog($CONF['DefaultBlog']);
+		}
 
 		$query = 'SELECT inumber as itemid, ititle as title, ibody as body, iauthor, itime, imore as more,' ;
 		$query .= ' icat as catid, iclosed as closed' ;
-		$query .= ' FROM '.sql_table('item');
-		$query .= ' WHERE idraft=0';
-		$query .= ' and itime <=' . mysqldate($b->getCorrectTime());	// don't show future items!
+		$query .= ' FROM ' . sql_table('item');
+		$query .= ' WHERE idraft = 0';
+		$query .= ' and itime <= ' . mysqldate($b->getCorrectTime());	// don't show future items!
 		$query .= $this->exquery;
 		$query .= ' ORDER BY itime DESC'; 
 //		echo $query;
 	
 		$res = sql_query($query);
 		
-		if(!mysql_num_rows($res)) return FALSE;
+		if (!mysql_num_rows($res)) {
+			return FALSE;
+		}
 		
-		while ($it = mysql_fetch_object($res)){
-			$txt = $it->body.$it->more;
-			preg_match_all("/\<\%image\((.*)\)\%\>/Us",$txt,$imgpnt,PREG_PATTERN_ORDER);
-			@array_walk($imgpnt[1], array(&$this, "exarray"), array($it->itemid,$it->iauthor));
+		while ($it = mysql_fetch_object($res)) {
+			$txt = $it->body . $it->more;
+			preg_match_all("/\<\%image\((.*)\)\%\>/Us", $txt, $imgpnt, PREG_PATTERN_ORDER);
+			@array_walk($imgpnt[1], array(&$this, "exarray"), array($it->itemid, $it->iauthor));
 		}
 //		$list = array('http://blog.nakahara21.net/media/1/bbb.jpg','http://yukarin.s43.xrea.com/blog/media/1/20040616-146.jpg');
 		return $this->imglists;
 	}
 
-	function exarray($imginfo,$key,$iaid){
-		$imginfo = explode("|",$imginfo);
+	function exarray($imginfo, $key, $iaid)
+	{
+		$imginfo = explode("|", $imginfo);
 //		if(strrchr($imginfo[0], "." ) != '.jpg') return;
-		if(!in_array(strtolower(strrchr($imginfo[0], "." )),$this->fileex)) return;
-		if(in_array($imginfo[0],$this->imgfilename)) return;
+		if (!in_array(strtolower(strrchr($imginfo[0], "." )), $this->fileex)) {
+			return;
+		}
+		if (in_array($imginfo[0], $this->imgfilename)) {
+			return;
+		}
 		$this->imgfilename[] = $imginfo[0];
-		if (!strstr($imginfo[0],'/')) {
+		if (!strstr($imginfo[0], '/')) {
 			$imginfo[0] = $iaid[1] . '/' . $imginfo[0];
 		}
 //		$this->imglists[] = $imginfo;
-		$this->imglists[] = array($imginfo,$iaid[0]);
+		$this->imglists[] = array($imginfo, $iaid[0]);
 	}
 
-	function baseimageCreate($p,$im_info){
+	function baseimageCreate($p, $im_info)
+	{
 		switch($im_info[2]){
 			case 2:
 			return ImageCreateFromJpeg($p);
@@ -179,33 +218,39 @@ class NP_ExtractImage extends NucleusPlugin {
 		}
 	}
 
-	function doAction($type) {
+	function doAction($type)
+	{
 		global $CONF;
 		global $DIR_MEDIA;
 		$return = serverVar('HTTP_REFERER');
-		switch($type) {
+		$return = preg_replace('|[^a-z0-9-~+_.?#=&;,/:@%]|i', '', $return);
+		switch ($type) {
 			case draw:
 				if(!requestVar('p')) return;
 				$p = $DIR_MEDIA.requestVar('p');	//Œ³‰æ‘œ‚Ö‚ÌƒpƒX
-//				$id= requestVar('id');
+//				$id = requestVar('id');
 		
 				//Œ³‰æ‘œ‚Ìî•ñ‚ð“¾‚é
 				$this->im_info = GetImageSize($p);
 		
 				$tsize['h'] = requestVar('hsize');
-				if(!$tsize['h'] && requestVar('wsize')){
+				if (!$tsize['h'] && requestVar('wsize')){
 					$tsize['w'] = requestVar('wsize');
 					$tsize['h'] = intval($this->im_info[1] * $tsize['w'] / $this->im_info[0]);
 				}
-				if(!$tsize['h']) $tsize['h'] = 50;
+				if (!$tsize['h']) {
+					$tsize['h'] = 50;
+				}
 				
-				if(!$tsize['w']) $tsize['w'] = intval($this->im_info[0] * $tsize['h'] / $this->im_info[1]);
+				if (!$tsize['w']) {
+					$tsize['w'] = intval($this->im_info[0] * $tsize['h'] / $this->im_info[1]);
+				}
 
 				$im_r = $this->baseimageCreate($p,$this->im_info);
-				$im = ImageCreateTrueColor($tsize['w'],$tsize['h']);
+				$im = ImageCreateTrueColor($tsize['w'], $tsize['h']);
 				ImageCopyResampled( $im, $im_r, 0, 0, 0, 0, $tsize['w'], $tsize['h'], $this->im_info[0], $this->im_info[1] );
 
-				switch($this->im_info[2]){
+				switch ($this->im_info[2]) {
 					case 2:
 					header ("Content-type: image/jpeg");
 					ImageJpeg($im);
@@ -228,14 +273,18 @@ class NP_ExtractImage extends NucleusPlugin {
 		}
 	}
 
-	function canEdit() {
+	function canEdit()
+	{
 		global $member, $manager;
-		if (!$member->isLoggedIn()) return 0;
+		if (!$member->isLoggedIn()) {
+			return 0;
+		}
 		return $member->isAdmin();
 	}
 
 
-	function createGlobalItemLink($itemid, $extra = '') {
+	function createGlobalItemLink($itemid, $extra = '')
+	{
 		global $CONF, $manager;
 
 		if ($CONF['URLMode'] == 'pathinfo'){
