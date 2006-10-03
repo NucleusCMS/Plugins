@@ -299,7 +299,10 @@ $monthlimit = 0;
 					$sh_query .= ' concat(' . $catformat . ') as category,';
 				}
 				$sh_query .= ' i.icat as catid, i.iclosed as closed';
-				$sh_query .= ' FROM ' . sql_table('member') . ' as m, ' . sql_table('category') . ' as c, ' . sql_table('item') . ' as i';
+				$sh_query .= ' FROM '
+							. sql_table('member') . ' as m, '
+							. sql_table('category') . ' as c, '
+							. sql_table('item') . ' as i';
 				if ($bmode == 'all') {
 					$sh_query .= ', ' . sql_table('blog') . ' as b ';
 				}
