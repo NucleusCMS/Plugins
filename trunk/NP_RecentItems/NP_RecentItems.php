@@ -60,8 +60,8 @@ class NP_RecentItems extends NucleusPlugin
 				' c.cname as category, i.icat as catid, i.iclosed as closed';
 		
 		$query .= ' FROM '			// <mod by shizuki />
-				. sql_table('category') . ' as c,'
 				. sql_table('member') . ' as m, '
+				. sql_table('category') . ' as c,'
 				. sql_table('item') . ' as i'
 		        . ' WHERE i.iblog = ' . intval($blogObj->getID())
 		        . ' AND i.iauthor = m.mnumber'
