@@ -104,8 +104,9 @@ class NP_BlogList extends NucleusPlugin {
 			}
 
 //			$temp = TEMPLATE::fill($list, $data);
-			echo TEMPLATE::fill($list, $listdata);
-//			echo strftime($temp, $current->itime);
+			$temp = TEMPLATE::fill($list, $listdata);
+//			echo TEMPLATE::fill($list, $listdata);
+			echo strftime($temp, $current->itime);
 
 		}
 		
