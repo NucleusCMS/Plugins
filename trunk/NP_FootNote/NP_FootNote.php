@@ -89,21 +89,21 @@ class NP_FootNote extends NucleusPlugin
 		$b =& $manager->getBlog($blogid);
 		$this->bsname = $b->getShortName();
 		$this->notelist = array();
-		$this->item_id = intval($this->currentItem->itemid);
-		$this->currentItem->body = preg_replace_callback("/\(\((.*)\)\)/Us", array(&$this, 'footnote'), $data['item']->body);
+		$this->item_id = intval($data['item']->itemid);
+		$data['item']->body = preg_replace_callback("/\(\((.*)\)\)/Us", array(&$this, 'footnote'), $data['item']->body);
 		if ($this->getOption('Split') == 'yes' && $this->skinType != 'item') {
 			if ($footnote = @join('', $this->notelist)) {
-				$this->currentItem->body .= '<ul class="footnote">' . $footnote . '</ul>';
+				$data['item']->body .= '<ul class="footnote">' . $footnote . '</ul>';
 			}
 			$this->notelist = array();
 		}
-		if ($this->currentItem->more) {
-			$this->currentItem->more = preg_replace_callback("/\(\((.*)\)\)/Us", array(&$this, 'footnote'), $data['item']->more);
+		if ($data['item']->more) {
+			$data['item']->more = preg_replace_callback("/\(\((.*)\)\)/Us", array(&$this, 'footnote'), $data['item']->more);
 			if ($footnote = @join('', $this->notelist)) {
-				$this->currentItem->more .= '<ul class="footnote">' . $footnote . '</ul>';
+				$data['item']->more .= '<ul class="footnote">' . $footnote . '</ul>';
 			}
 		} elseif ($footnote = @join('', $this->notelist)) {
-			$this->currentItem->body .= '<ul class="footnote">' . $footnote . '</ul>';
+			$data['item']->body .= '<ul class="footnote">' . $footnote . '</ul>';
 		}
 	}
 
@@ -120,7 +120,7 @@ class NP_FootNote extends NucleusPlugin
 		$note = '<span class="footnote"><a href="#' .
 				$this->bsname . $this->item_id . '-' . $this->node_id . '"' . $fnote2 . '>*' . $this->node_id .
 				'</a><a name="' . $this->bsname . $this->item_id . '-' . $this->node_id . 'f"></a></span>';
-		$$this->notelist[] = '<a name="' . $this->bsname . $this->item_id . '-' . $this->node_id . '"></a><li><a href="#' .
+		$this->notelist[] = '<a name="' . $this->bsname . $this->item_id . '-' . $this->node_id . '"></a><li><a href="#' .
 							$this->bsname . $this->item_id . '-' . $this->node_id . 'f">注' . $this->node_id . '</a>' . $matches[1] . '</li>';
 		return $note;
 	}
