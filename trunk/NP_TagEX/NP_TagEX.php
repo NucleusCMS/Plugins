@@ -89,7 +89,7 @@ class NP_TagEX extends NucleusPlugin
 		$table_q = 'CREATE TABLE IF NOT EXISTS ' . _TAGEX_TABLE . ' ('
 				 . ' `inum` INT(9) NOT NULL default "0" PRIMARY KEY, '
 				 . ' `itags` TEXT NOT NULL, '
-				 . ' `itagreg` TIMESTAMP(14) NOT NULL, '
+				 . ' `itagreg` TIMESTAMP(14) NOT NULL'
 				 . ' )';
 		sql_query($table_q);
 		$table_q = 'CREATE TABLE IF NOT EXISTS ' . _TAGEX_KLIST_TABLE . ' ('
@@ -97,7 +97,7 @@ class NP_TagEX extends NucleusPlugin
 				 . ' `tag` VARCHAR(255) default NULL, '
 				 . ' `inums` TEXT NOT NULL, '
 				 . ' `inums_count` INT(11) NOT NULL default "0", '
-				 . ' `ireg` TIMESTAMP(14) NOT NULL, '
+				 . ' `ireg` TIMESTAMP(14) NOT NULL'
 				 . ' )';
 		sql_query($table_q);
 	}
@@ -703,7 +703,7 @@ function resetOlder(old){
 			for ($i=0;$i<count($urlq);$i++) {
 				$tempq = explode('=', $urlq[$i]);
 				if ($tempq[0] == $q) {
-					$str = preg_replace('|[^a-z0-9-~+_.#;,:@%]|i', '', $tempq[1]);
+					$str = preg_replace('|[^a-z0-9-~+_.#;,:@%]|i', '', rawurlencode($tempq[1]));
 					return $str;
 				}
 			}
@@ -1090,7 +1090,7 @@ tagIndexSeparator
 		}
 
 // <mod by shizuki>
-		if (isset($ready)) {
+		if (!empty($ready)) {
 			$ready = preg_replace('|[^a-z0-9-~+_.?#=&;,/:@%]|i', '', $ready);
 			$reqReadyAND = explode('+', $ready);
 			foreach ($reqReadyAND as $ANDkey => $ANDval) {
@@ -1098,20 +1098,20 @@ tagIndexSeparator
 					$reqReadyOR = explode(':', $ANDval);
 					foreach ($reqReadyOR as $ORkey => $ORval) {
 						if (!$this->_isValidTag($ORval)) {
-							$trush = array_splice($reqReadyOR);
+							$trush = array_splice($reqReadyOR, $ORkey, 1);
 						}
 					}
 					$ANDval = implode(':', $reqReadyOR); 
 				} else {
 					if (!$this->_isValidTag($ANDval)) {
-						$trush = array_splice($reqReadyAND);
+						$trush = array_splice($reqReadyAND, $ANDkey, 1);
 					}
 				}
 			}
 			$ready = implode('+', $reqReadyAND);
 		}
 // </mod by shizuki>
-		
+
 		if (!$ready) $sep = '';
 		if ($CONF['URLMode'] == 'pathinfo')
 			$link = $CONF['BlogURL'] . '/tag/' . $ready . $sep . $this->_rawencode($tag);
@@ -1143,10 +1143,10 @@ tagIndexSeparator
 		if (_CHERSET != 'UTF-8') {
 			$str = mb_convert_encoding($encodedTag, _CHARSET, "UTF-8");
 		}
-		$str = quote_smart($str);
+		$str = $this->quote_smart($str);
 		$q = 'SELECT listid as result FROM %s WHERE tag = %s';
 		$Vali = quickQuery(sprintf($q, sql_table('plug_tagex_klist'), $str));
-		if (mysql_nums_row($Vali)) {
+		if (!empty($Vali)) {
 			return TRUE;
 		} else {
 			return FALSE;

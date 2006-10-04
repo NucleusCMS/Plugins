@@ -29,6 +29,9 @@
 
 class NP_ShowBlogs extends NucleusPlugin
 {
+
+	var $nowbid;
+
 	function getName()
 	{
 		return 'Show Blogs';
@@ -67,6 +70,13 @@ class NP_ShowBlogs extends NucleusPlugin
 			default:
 				return 0;
 		}
+	}
+
+	function getEventList()
+	{
+		return array(
+			'InitSkinParse'
+		);
 	}
 
 	function init()
@@ -169,6 +179,7 @@ $monthlimit = 0;
 			$b =& $manager->getBlog($CONF['DefaultBlog']);
 		}
 		$nowbid = intval($b->getID());
+		$this->nowbid = $nowbid;
 
 		$where = '';
 		$catblogname = 0;
@@ -214,7 +225,6 @@ $monthlimit = 0;
 					}
 				}
 
-				$hidden = '';
 				$temp = $y = $m = $d = '';
 				if ($archive) {
 					sscanf($archive, '%d-%d-%d', $y, $m, $d);
@@ -225,7 +235,7 @@ $monthlimit = 0;
 					} else {
 						$timestamp_start = mktime(0, 0, 0, $m, 1, $y);
 						$timestamp_end = mktime(0, 0, 0, $m+1, 1, $y);
-						$date_str = 'SUBSTRING(i.itime,1,7)';
+						$date_str = 'SUBSTRING(i.itime, 1, 7)';
 					}
 					$where .= ' AND i.itime >= ' . mysqldate($timestamp_start) .
 							' AND i.itime < ' . mysqldate($timestamp_end);
@@ -270,7 +280,8 @@ $monthlimit = 0;
 			$sh_query .= ' FROM '
 						. sql_table('member') . ' as m, '
 						. sql_table('category') . ' as c, '
-						. sql_table('item') . ' as i';
+						. sql_table('item') . ' as i'
+						. $mtable;
 			if ($bmode == 'all') {
 				$sh_query .= ', ' . sql_table('blog') . ' as b ';
 			}
@@ -312,7 +323,7 @@ $monthlimit = 0;
 			}
 
 			if ($skinType != 'item') {
-				$this->_showUsingQuery($template, $sh_query, 0, $page_switch['startpos'], $pageamount, $b);
+				$this->_showUsingQuery($template, $sh_query, $page_switch['startpos'], $pageamount, $b, $sticky);
 				if ($type >= 1 && $typeExp != 1) echo $page_switch['buf'];
 			} elseif ($skinType == 'item') {
 				$sh_query .= ' LIMIT 0, ' . $pageamount;
@@ -351,7 +362,7 @@ $monthlimit = 0;
 		$b->showUsingQuery($template, $second_query, 0, 1, 1);
 	}
 
-	function event_parseURL($data)
+	function InitSkinParse($data)
 	{
 		global $CONF;
 		$usePathInfo = ($CONF['URLMode'] == 'pathinfo');
@@ -361,10 +372,10 @@ $monthlimit = 0;
 		} else { 
 			$uri = serverVar('REQUEST_URI');
 		}
-		$this->page_str = ($usePathInfo) ? 'page/' : 'page=';
-		list($org_uri, $currentpage) = explode($this->page_str, $uri, 2);
-		$this->currentpage = intval($currentpage);
-		$_REQUEST['page'] = $this->currentpage;
+		$page_str = ($usePathInfo) ? 'page/' : 'page=';
+		list($org_uri, $currentpage) = explode($page_str, $uri, 2);
+		$_REQUEST['page'] = intval($currentpage);
+		echo intval($currentpage);
 	}
 
 	function PageSwitch($type, $pageamount, $offset, $where, $sort, $mtable = '')
@@ -388,9 +399,6 @@ $monthlimit = 0;
 			}
 		}
 
-		$page_str = $this->page_str;
-		$currentpage = $this->currentpage; 
-
 // createBaseURL
 		if (!empty($catid)) {
 			$catrequest = ($usePathInfo) ? $CONF['CategoryKey'] : 'catid';
@@ -411,7 +419,7 @@ $monthlimit = 0;
 			}
 		} else {
 			if (!empty($archive)) {
-				$pagelink = createArchiveLink($archive);
+				$pagelink = createArchiveLink($this->nowbid, $archive);
 			} else {
 				$pagelink = $CONF['BlogURL'];
 			}
@@ -436,12 +444,22 @@ $monthlimit = 0;
 			if (strstr ($pagelink, '//')) $link = preg_replace("/([^:])\/\//", "$1/", $pagelink);
 		}
 
-		if ($currentpage>0) {
-			$startpos = ($currentpage-1) * $pageamount;
+		if (serverVar('REQUEST_URI') == '') {
+			$uri = (serverVar('QUERY_STRING')) ?
+				serverVar('SCRIPT_NAME') . serverVar('QUERY_STRING') : serverVar('SCRIPT_NAME');
+		} else { 
+			$uri = serverVar('REQUEST_URI');
+		}
+		$page_str = ($usePathInfo) ? 'page/' : 'page=';
+		list($org_uri, $currentpage) = explode($page_str, $uri, 2);
+		$_REQUEST['page'] = intval($currentpage);
+
+		if ($currentpage > 0) {
+			$startpos = ($currentpage - 1) * $pageamount;
 		} else {
 			$currentpage = 1;
 		}
-			
+
 //		$pagelink = htmlspecialchars($pagelink);
 
 		$totalamount = 0;

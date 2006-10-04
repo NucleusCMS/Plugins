@@ -35,12 +35,12 @@ class NP_ItemNaviEX extends NucleusPlugin
 
 	function getAuthor()
 	{ 
-		return 'nakahara21'; 
+		return 'nakahara21 + shizuki'; 
 	}
 
 	function getURL()
 	{
-		return 'http://nakahara21.com/'; 
+		return 'http://nakahara21.com'; 
 	}
 
 	function getVersion()
