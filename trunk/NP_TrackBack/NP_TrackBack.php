@@ -31,7 +31,7 @@
 
 //modify start+++++++++
 		function _createItemLink($itemid, $b){
-			global $CONF, $manager;
+			global $CONF, $manager, $blog;
 			$blogurl = $b->getURL();
 		
 			if (!$blogurl) {
@@ -1221,7 +1221,8 @@
 				
 		function getRequiredURL($itemid){
 			global $manager;
-			$blog = & $manager->getBlog(getBlogIDFromItemID($item['itemid']));
+//			$blog = & $manager->getBlog(getBlogIDFromItemID($item['itemid']));
+			$blog = & $manager->getBlog(getBlogIDFromItemID($itemid));
 			if( $this->isEnableLinkCheck($itemid) )
 				return $this->_createItemLink($itemid, $blog);
 			return null;
