@@ -140,25 +140,29 @@ class NP_TagEX extends NucleusPlugin
 // Escape SQL query strings
 		if (is_array($value)) {
 			if (get_magic_quotes_gpc()) {
-				$value = array_map("stripslashes",$value);
+				$value = array_map("stripslashes", $value);
 			}
 			if (!array_map("is_numeric",$value)) {
-				if (version_compare(phpversion(),"4.3.0") == "-1") {
+				if (version_compare(phpversion(),"4.0.3") == "-1") {
 					$value = array_map("mysql_escape_string",$value);
 				} else {
 					$value = array_map("mysql_real_escape_string",$value);
 				}
+			} else {
+				$value = intval($value);
 			}
 		} else {
 			if (get_magic_quotes_gpc()) {
 				$value = stripslashes($value);
 			}
 			if (!is_numeric($value)) {
-				if (version_compare(phpversion(),"4.3.0") == "-1") {
+				if (version_compare(phpversion(),"4.0.3") == "-1") {
 					$value = "'" . mysql_escape_string($value) . "'";
 				} else {
 					$value = "'" . mysql_real_escape_string($value) . "'";
 				}
+			} else {
+				$value = intval($value);
 			}
 		}
 		return $value;
@@ -510,6 +514,7 @@ function resetOlder(old){
 		}
 
 		if ($archive) {
+			$y = $m = $d = '';
 			sscanf($archive, '%d-%d-%d', $y, $m, $d);
 			if ($d) {
 				$timestamp_start = mktime(0, 0, 0, $m, $d, $y);
@@ -1087,23 +1092,23 @@ tagIndexSeparator
 // <mod by shizuki>
 		if (isset($ready)) {
 			$ready = preg_replace('|[^a-z0-9-~+_.?#=&;,/:@%]|i', '', $ready);
-			$reqReadyPlus = explode('+', $ready);
-			foreach ($reqReadyPlus as $ANDkey => $ANDval) {
+			$reqReadyAND = explode('+', $ready);
+			foreach ($reqReadyAND as $ANDkey => $ANDval) {
 				if (strpos(':', $ANDval)) {
-					$reqReadyOr = explode(':', $ANDval);
-					foreach ($reqReadyOr as $ORkey => $ORval) {
+					$reqReadyOR = explode(':', $ANDval);
+					foreach ($reqReadyOR as $ORkey => $ORval) {
 						if (!$this->_isValidTag($ORval)) {
-							$trush = array_splice($reqReadyOr);
+							$trush = array_splice($reqReadyOR);
 						}
 					}
-					$ANDval = implode(':', $reqReadyOr); 
+					$ANDval = implode(':', $reqReadyOR); 
 				} else {
 					if (!$this->_isValidTag($ANDval)) {
 						$trush = array_splice($reqReadyAND);
 					}
 				}
 			}
-			$ready = implode('+', $reqReadyPlus);
+			$ready = implode('+', $reqReadyAND);
 		}
 // </mod by shizuki>
 		
@@ -1134,15 +1139,11 @@ tagIndexSeparator
  */
 	function _isValidTag($encodedTag)
 	{
-		$encodedTag = rawurldecode($str);
+		$encodedTag = rawurldecode($encodedTag);
 		if (_CHERSET != 'UTF-8') {
 			$str = mb_convert_encoding($encodedTag, _CHARSET, "UTF-8");
 		}
-		if (version_compare(phpversion(),"4.3.0")=="-1") {
-			$str = '"' . mysql_escape_string($str) . '"';
-		} else {
-			$str = '"' . mysql_real_escape_string($str) . '"';
-		}
+		$str = quote_smart($str);
 		$q = 'SELECT listid as result FROM %s WHERE tag = %s';
 		$Vali = quickQuery(sprintf($q, sql_table('plug_tagex_klist'), $str));
 		if (mysql_nums_row($Vali)) {
