@@ -31,7 +31,8 @@ class NP_ShowBlogs extends NucleusPlugin
 {
 	function getName()
 	{
-		return 'Show Blogs'; } 
+		return 'Show Blogs';
+	}
 
 	function getMinNucleusVersion()
 	{
@@ -50,7 +51,7 @@ class NP_ShowBlogs extends NucleusPlugin
 
 	function getVersion()
 	{
-		return '2.63';
+		return '2.64';
 	}
 
 	function getDescription()
@@ -88,7 +89,8 @@ class NP_ShowBlogs extends NucleusPlugin
 //		$this->createOption('catnametoshow',	_CATNAME_SHOW,	'text',		'0');
 		$this->createOption('stickmode',		_STICKMODE,		'text',		'1');
 		$this->createOption('ads',				_ADCODE_1,		'textarea',	'' . "\n");
-//		$this->createOption('ads2',				_ADCODE_2,		'textarea',	'' . "\n");
+		$this->createOption('ads2',				_ADCODE_2,		'textarea',	'' . "\n");
+		$this->createOption('tagMode',			'TagEX narrow mode(0 or 1 or 2)',	'select',	'2',	'all blogs|0|currentblog only|1|narrowed with catid/subcatid|2');
 /* todo can't install ? only warning ?
  * douyatte 'desc' ni keikoku wo daseba iinoka wakaranai desu
 		$ver_min = (getNucleusVersion() < $this->getMinNucleusVersion());
@@ -114,9 +116,9 @@ class NP_ShowBlogs extends NucleusPlugin
 	{
 		global $manager, $CONF, $blog, $blogid, $catid, $itemid, $archive;
 
-/***************************************
-	extra setting
-***************************************/
+//***************************************
+//	extra setting
+//***************************************
 /* blogid(blogshortname) you want to hide 
 	example:
 	 $hide =array(5)
@@ -127,11 +129,7 @@ class NP_ShowBlogs extends NucleusPlugin
 		$hide = array();
 //show blogID
 		$show = array();
-/* limit number of pages(months) 
-	Please delete the character '//' of the head of the following.
-*/
-//$pagelimit = 10;
-//$monthlimit = 12;
+// limit number of pages(months) 
 $pagelimit = 0;
 $monthlimit = 0;
 		$catformat = $this->getOption('catformat');
@@ -219,7 +217,6 @@ $monthlimit = 0;
 				$hidden = '';
 				$temp = $y = $m = $d = '';
 				if ($archive) {
-//					$hidden .= '<input type="hidden" name="archive" value="' . htmlspecialchars($archive) . '" />' . "\n";
 					sscanf($archive, '%d-%d-%d', $y, $m, $d);
 					if ($d) {
 						$timestamp_start = mktime(0, 0, 0, $m, $d, $y);
@@ -241,47 +238,16 @@ $monthlimit = 0;
 					$where .= ' AND i.itime <= ' . mysqldate($b->getCorrectTime());
 				}
 
-				if (isset($catid)) {
-//					$hidden .= '<input type="hidden" name="catid" value="' . intval($catid) . '" />' . "\n";
+				if (!empty($catid)) {
 					if ($manager->pluginInstalled('NP_MultipleCategories')) {
-						$where .= ' AND ((i.inumber = p.item_id AND (p.categories REGEXP "(^|,)'
-								. intval($catid) . '(,|$)" OR i.icat = ' . intval($catid) . ')) OR (i.icat = '
-								. intval($catid) . ' AND p.item_id IS NULL))';
-						$mtable = ' LEFT JOIN ' . sql_table('plug_multiple_categories') .
-								' as p ON  i.inumber = p.item_id';
-						$mplugin =& $manager->getPlugin('NP_MultipleCategories');
-						if (method_exists($mplugin, 'getRequestName')) {
-							$mplugin->event_PreSkinParse(array());
-							global $subcatid;
-							if ($subcatid) {
-
-								$tres = sql_query('SELECT * FROM ' . sql_table('plug_multiple_categories_sub')
-										. ' WHERE scatid = ' . intval($subcatid));
-								$ra = mysql_fetch_array($tres, MYSQL_ASSOC);
-								if (array_key_exists('parentid', $ra)) {
-									$Children = array();
-									$Children = explode('/', intval($subcatid) . $this->getChildren(intval($subcatid)));
-								}
-								if ($Children[1]) {
-									for ($i=0;$i<count($Children);$i++) {
-										$temp_whr[] = ' p.subcategories REGEXP "(^|,)' . intval($Children[$i]) . '(,|$)" ';
-									}
-									$where .= ' AND ( ';
-									$where .= join(' OR ', $temp_whr);
-									$where .= ' )';
-								} else {
-									$where .= ' AND p.subcategories REGEXP "(^|,)' . intval($subcatid) . '(,|$)"';
-								}
-							}
-						}
+						$mcat_query = $this->_getSubcategoriesWhere($catid);
+						$mtable = $mcat_query['m'];
+						$where .= $mcat_query['w'];
 					} else {
 						$where .= ' AND i.icat=' . intval($catid);
 					}
 					$linkparams['catid'] = $todayparams['catid'] = intval($catid);
 				}
-//				if ($blogid) {
-//					$hidden .= '<input type="hidden" name="blogid" value="' . intval($blogid) . '" />'."\n";
-//				}
 
 				if ($type >= 1) {
 					$page_switch = $this->PageSwitch($type, $pageamount, $offset, $where, $sort, $mtable);
@@ -289,49 +255,51 @@ $monthlimit = 0;
 						echo $page_switch['buf'];
 					}
 				}
+			}
 
-				$sh_query = 'SELECT i.inumber as itemid, i.ititle as title, i.ibody as body, m.mname as author,' .
-						' m.mrealname as authorname, UNIX_TIMESTAMP(i.itime) as timestamp, i.itime,' .
-						' i.imore as more, m.mnumber as authorid,';
-				if (!$catblogname) {
-					$sh_query .= ' c.cname as category,';
-				} else {
-					$sh_query .= ' concat(' . $catformat . ') as category,';
-				}
-				$sh_query .= ' i.icat as catid, i.iclosed as closed';
-				$sh_query .= ' FROM '
-							. sql_table('member') . ' as m, '
-							. sql_table('category') . ' as c, '
-							. sql_table('item') . ' as i';
-				if ($bmode == 'all') {
-					$sh_query .= ', ' . sql_table('blog') . ' as b ';
-				}
-				$sh_query .= ' WHERE i.iauthor = m.mnumber AND i.icat = c.catid';
-				if ($bmode == 'all') {
-					$sh_query .= ' AND b.bnumber = c.cblog';
-				}
-				if ($page_switch['startpos'] == 0 && !$catid && $sticky != '') {
-					$ads = 1;
-					foreach ($stickys as $stickynumber) {
-						$tempblogid = getBlogIDFromItemID($stickynumber);
-						if ($bmode != 'all') {
-							$sh_query .= ' AND i.iblog = ' . $nowbid;
-						}
-						$sh_query .= ' AND i.inumber = ' . intval($stickynumber);
-						$sh_query .= ' AND i.itime <= ' . mysqldate($b->getCorrectTime());
-						$sh_query .= ' AND i.idraft = 0';
-						if ($this->getOption('stickmode') == 1 && intval($nowbid) == $tempblogid) {
-							$b->showUsingQuery($sticktemplate, $sh_query, 0, 1, 0); 
-						} elseif (!$this->getOption('stickmode')) {
-							$b->showUsingQuery($sticktemplate, $sh_query, 0, 1, 0); 
-						}
-						if ($ads == 1) {
-							echo $this->getOption('ads');
-						} elseif ($ads ==2) {
-							echo $this->getOption('ads2');
-						}
-						$ads++;
+			$sh_query = 'SELECT i.inumber as itemid, i.ititle as title, i.ibody as body,' .
+					' m.mname as author, m.mrealname as authorname,' .
+					' UNIX_TIMESTAMP(i.itime) as timestamp, i.itime,' .
+					' i.imore as more, m.mnumber as authorid,';
+			if (!$catblogname) {
+				$sh_query .= ' c.cname as category,';
+			} else {
+				$sh_query .= ' concat(' . $catformat . ') as category,';
+			}
+			$sh_query .= ' i.icat as catid, i.iclosed as closed';
+			$sh_query .= ' FROM '
+						. sql_table('member') . ' as m, '
+						. sql_table('category') . ' as c, '
+						. sql_table('item') . ' as i';
+			if ($bmode == 'all') {
+				$sh_query .= ', ' . sql_table('blog') . ' as b ';
+			}
+			$sh_query .= ' WHERE i.iauthor = m.mnumber AND i.icat = c.catid';
+			if ($bmode == 'all') {
+				$sh_query .= ' AND b.bnumber = c.cblog';
+			}
+
+			if ($page_switch['startpos'] == 0 && !$catid && $sticky != '' && $skinType != 'item') {
+				$ads = 1;
+				foreach ($stickys as $stickynumber) {
+					$tempblogid = getBlogIDFromItemID($stickynumber);
+					if ($bmode != 'all') {
+						$sh_query .= ' AND i.iblog = ' . $nowbid;
 					}
+					$sh_query .= ' AND i.inumber = ' . intval($stickynumber);
+					$sh_query .= ' AND i.itime <= ' . mysqldate($b->getCorrectTime());
+					$sh_query .= ' AND i.idraft = 0';
+					if ($this->getOption('stickmode') == 1 && intval($nowbid) == $tempblogid) {
+						$b->showUsingQuery($sticktemplate, $sh_query, 0, 1, 0); 
+					} elseif (!$this->getOption('stickmode')) {
+						$b->showUsingQuery($sticktemplate, $sh_query, 0, 1, 0); 
+					}
+					if ($ads == 1) {
+						echo $this->getOption('ads');
+					} elseif ($ads ==2) {
+						echo $this->getOption('ads2');
+					}
+					$ads++;
 				}
 			}
 
@@ -361,21 +329,21 @@ $monthlimit = 0;
 		$onlyone_query = $showQuery . ' LIMIT ' . intval($q_startpos) .', 1';
 		$b->showUsingQuery($template, $onlyone_query, 0, 1, 1);
 		if ($q_startpos == 0 && !$catid && $sticky != '') {
-//			$ads = 1;
+			$ads = 1;
 			if ($stickys == 1) {
 				echo $this->getOption('ads2');
 			}
 //------------SECOND AD CODE-------------
-//		} else {
-//			echo $this->getOption('ads');
+		} else {
+			echo $this->getOption('ads');
 		}
-/*		$q_startpos++;
+		$q_startpos++;
 		$q_amount--;
 		$onlyone_query = $showQuery . ' LIMIT ' . intval($q_startpos) . ', 1';
 		$b->showUsingQuery($template, $onlyone_query, 0, 1, 1); 
 		if (mysql_num_rows(sql_query($onlyone_query)) && empty($ads)) {
 			echo $this->getOption('ads2');
-		}*/
+		}
 //------------SECOND AD CODE END-------------
 		$q_startpos++;
 		$q_amount--;
@@ -383,60 +351,97 @@ $monthlimit = 0;
 		$b->showUsingQuery($template, $second_query, 0, 1, 1);
 	}
 
-	function PageSwitch($type, $pageamount, $offset, $where, $sort, $mtable = '')	//, $b)	//, $hidden = '')
+	function event_parseURL($data)
 	{
-		global $CONF, $manager, $archive;
+		global $CONF;
+		$usePathInfo = ($CONF['URLMode'] == 'pathinfo');
+		if (serverVar('REQUEST_URI') == '') {
+			$uri = (serverVar('QUERY_STRING')) ?
+				serverVar('SCRIPT_NAME') . serverVar('QUERY_STRING') : serverVar('SCRIPT_NAME');
+		} else { 
+			$uri = serverVar('REQUEST_URI');
+		}
+		$this->page_str = ($usePathInfo) ? 'page/' : 'page=';
+		list($org_uri, $currentpage) = explode($this->page_str, $uri, 2);
+		$this->currentpage = intval($currentpage);
+		$_REQUEST['page'] = $this->currentpage;
+	}
+
+	function PageSwitch($type, $pageamount, $offset, $where, $sort, $mtable = '')
+	{
+		global $CONF, $manager, $archive, $catid, $subcatid;
+
+// initialize
 		$startpos = 0;
+		$catid = intval($catid);
+		$subcatid = intval($subcatid);
+		$usePathInfo = ($CONF['URLMode'] == 'pathinfo');
 		$pageamount = intval($pageamount);
 		$offset = intval($offset);
-		if ($_SERVER['REQUEST_URI']=='') {
-			$uri = (serverVar("QUERY_STRING"))? 
-				sprintf("%s%s%s?%s","http://", serverVar("HTTP_HOST"), serverVar("SCRIPT_NAME"), serverVar("QUERY_STRING")):
-				sprintf("%s%s%s","http://", serverVar("HTTP_HOST"), serverVar("SCRIPT_NAME"));
-		} else { 
-			$uri = sprintf("%s%s%s", "http://", serverVar("HTTP_HOST"), serverVar("REQUEST_URI"));
+		if ($archive) {
+			$y = $m = $d = '';
+			sscanf($archive, '%d-%d-%d', $y, $m, $d);
+			if (!empty($d)) {
+				$archive = sprintf('%04d-%02d-%02d', $y, $m, $d);
+			} else {
+				$archive = sprintf('%04d-%02d', $y, $m);
+			}
 		}
-		$page_str = ($CONF['URLMode'] == 'pathinfo') ? 'page/' : 'page=';
-		list($pagelink, $currentpage) = explode($page_str,$uri);
-		$currentpage = intval($currentpage);
-		$pagelink = preg_replace('|[^a-z0-9-~+_.?#=&;,/:@%]|i', '', $pagelink);
+
+		$page_str = $this->page_str;
+		$currentpage = $this->currentpage; 
+
+// createBaseURL
+		if (!empty($catid)) {
+			$catrequest = ($usePathInfo) ? $CONF['CategoryKey'] : 'catid';
+			if (!empty($subcatid)) {
+				$mplugin =& $manager->getPlugin('NP_MultipleCategories');
+				$subrequest = $mplugin->getRequestName(array());
+				if (!empty($archive)) {
+					$pagelink = createArchiveLink($archive, array($catrequest => $catid, $subrequest => $subcatid));
+				} else {
+					$pagelink = createCategoryLink($catid, array($subrequest => $subcatid));
+				}
+			} else {
+				if (!empty($archive)) {
+					$pagelink = createArchiveLink($archive, array($catrequest => $catid));
+				} else {
+					$pagelink = createCategoryLink($catid);
+				}
+			}
+		} else {
+			if (!empty($archive)) {
+				$pagelink = createArchiveLink($archive);
+			} else {
+				$pagelink = $CONF['BlogURL'];
+			}
+		}
 		if ($manager->pluginInstalled('NP_TagEX')) {
 			$tplugin =& $manager->getPlugin('NP_TagEX');
 			$requestTag = $tplugin->getNoDecodeQuery('tag');
 			if (!empty($requestTag)) {
-				$pagelink = $tplugin->creatTagLink($requestTag);
-			} else {
-				$pagelink = rawurldecode($pagelink);
-				$pagelink = stripslashes($pagelink);				
+				$pagelink = $tplugin->creatTagLink($requestTag, $this->getOption('tagMode'));
 			}
-		} else {
-			$pagelink = rawurldecode($pagelink);
-			$pagelink = stripslashes($pagelink);			
 		}
+		$uri = parse_url($pagelink);
+		if (!$usePathInfo) {
+			if ($pagelink == $CONF['BlogURL']) { // add
+				$pagelink .= '?';
+			} elseif ($uri['query']) {
+				$pagelink .= '&amp;';
+			}
+			$pagelink = str_replace('&amp;&amp;', '&amp;', $pagelink);
+		} elseif ($usePathInfo && substr($pagelink, -1) != '/') {
+			$pagelink .= '/';
+			if (strstr ($pagelink, '//')) $link = preg_replace("/([^:])\/\//", "$1/", $pagelink);
+		}
+
 		if ($currentpage>0) {
 			$startpos = ($currentpage-1) * $pageamount;
 		} else {
 			$currentpage = 1;
-			$uri = parse_url($pagelink);
-			if ($pagelink == $CONF['BlogURL'] && $CONF['URLMode'] != 'pathinfo') { // add
-//				$pagelink = $b->getURL();
-				if ($uri['query']) {
-					$pagelink .= '?' . $uri['query'];
-					$uri['query'] = true;
-				}
-			}
-			if ($uri['query']) {
-//				$pagelink .= '&';
-				$pagelink .= '&amp;';
-//				$pagelink = str_replace('&&', '&', $pagelink);
-				$pagelink = str_replace('&amp;&amp;','&amp;',$pagelink);
-			} elseif (strpos('?', $pagelink) && $CONF['URLMode'] != 'pathinfo') {
-				$pagelink .= '?';
-			}
 		}
-		if ($CONF['URLMode'] == 'pathinfo' && substr($pagelink, -1) != '/') {
-			$pagelink .= '/';
-		}
+			
 //		$pagelink = htmlspecialchars($pagelink);
 
 		$totalamount = 0;
@@ -483,18 +488,11 @@ $monthlimit = 0;
 //		$lastpagelink .= '.html';
 
 		if ($type >= 1) {
-			if($CONF['URLMode'] == 'pathinfo'){
-//				$buf = '<form method="get" action="'.substr($pagelink,0,-1).'">'."\n";
-				$buf .= '<div class="pageswitch">'."\n";
-			}else{
-//				$buf = '<form method="get" action="'.$CONF['Self'].'">'."\n";
-				$buf .= '<div class="pageswitch">'."\n";
-//				$buf .= $hidden;
-			}
-//			$buf .= "<a rel=\"first\" title=\"first page\" href=\"{$firstpagelink}\">&lt;TOP&gt;</a> |    \n";
-			if ($prevpage) {
+			$buf .= '<div class="pageswitch">' . "\n";
+//			$buf .= "<a rel=\"first\" title=\"first page\" href=\"{$firstpagelink}\">&lt;TOP&gt;</a> |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n";
+			if (!empty($prevpage)) {
 				$prevpagelink = $pagelink . $page_str . $prevpage;
-				$prevpagelink .= '.html';
+//				$prevpagelink .= '.html';
 				$buf .= "\n<a href=\"{$prevpagelink}\" title=\"Previous page\" rel=\"Prev\">&laquo;Prev</a> |";
 			} elseif ($type >= 2) {
 				$buf .= "\n&laquo;Prev |";
@@ -522,9 +520,6 @@ $monthlimit = 0;
 				}
 				$buf = rtrim($buf);
 			}
-//			if($totalpages>=10){
-//				$buf .= '<input type="text" name="page" size="1" maxlength="3" title="Input page number and press Enter" style="width:20px;" />'."\n";
-//			}
 			if (intval($type) == 3) {
 				$buf .= "|";
 				$sepstr = '&middot;';
@@ -533,7 +528,7 @@ $monthlimit = 0;
 //					$i_pagelink .= '.html';
 					$paging = 5;
 					if ($i == $currentpage) {
-						$buf .= " <strong>{$i}</strong> {$sepstr}\n";
+						$buf .= " <strong>{$currentpage}</strong> {$sepstr}\n";
 					} elseif ($totalpages < 10 || (($i < ($currentpage + $paging)) && (($currentpage - $paging) < $i))) {
 						$buf .= " <a href=\"{$i_pagelink}\" title=\"Page No.{$i}\">{$i}</a> {$sepstr}\n";
 					} elseif ($currentpage - $paging == $i) {
@@ -553,11 +548,49 @@ $monthlimit = 0;
 			} elseif ($type >= 2) {
 				$buf .= "| Next&raquo;\n";
 			}
-//			$buf .= "    | <a rel=\"last\" title=\"Last page\" href=\"{$lastpagelink}\">&lt;LAST&gt;</a>\n";
+//			$buf .= "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a rel=\"last\" title=\"Last page\" href=\"{$lastpagelink}\">&lt;LAST&gt;</a>\n";
 			$buf .= "</div>\n";
-//			$buf .= "</form>\n";
 			return array('buf' => $buf, 'startpos' => intval($startpos));
 		}
+	}
+
+	function _getSubcategoriesWhere($catid)
+	{
+		global $manager;
+		$mwhere = '';
+		$mwhere = ' AND ((i.inumber = p.item_id' .
+				' AND (p.categories REGEXP "(^|,)' . intval($catid) . '(,|$)" OR i.icat = ' . intval($catid) . '))' .
+				' OR (i.icat = ' . intval($catid) . ' AND p.item_id IS NULL))';
+		$mtable = ' LEFT JOIN ' . sql_table('plug_multiple_categories') . ' as p' .
+				' ON i.inumber = p.item_id';
+		$mplugin =& $manager->getPlugin('NP_MultipleCategories');
+		if (method_exists($mplugin, 'getRequestName')) {
+			$mplugin->event_PreSkinParse(array());
+			global $subcatid;
+			if ($subcatid) {
+
+				$mque = 'SELECT * FROM %s WHERE scatid = %d';
+				$tres = sql_query(sprintf($mque, sql_table('plug_multiple_categories_sub'), intval($subcatid)));
+//				$tres = sql_query('SELECT * FROM ' . sql_table('plug_multiple_categories_sub') .
+//								' WHERE scatid = ' . intval($subcatid));
+				$ra = mysql_fetch_array($tres, MYSQL_ASSOC);
+				if (array_key_exists('parentid', $ra)) {
+					$Children = array();
+					$Children = explode('/', intval($subcatid) . $this->getChildren(intval($subcatid)));
+				}
+				if ($Children[1]) {
+					for ($i=0;$i<count($Children);$i++) {
+						$temp_whr[] = ' p.subcategories REGEXP "(^|,)' . intval($Children[$i]) . '(,|$)" ';
+					}
+					$mwhere .= ' AND ( ';
+					$mwhere .= join(' OR ', $temp_whr);
+					$mwhere .= ' )';
+				} else {
+					$mwhere .= ' AND p.subcategories REGEXP "(^|,)' . intval($subcatid) . '(,|$)"';
+				}
+			}
+		}
+		return array(w => $mwhere, m => $mtable);
 	}
 
 	function getParents($subcat_id)
