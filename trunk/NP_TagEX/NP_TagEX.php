@@ -258,7 +258,7 @@ class NP_TagEX extends NucleusPlugin
  * From http://blog.uribou.net/
  *
  */
-	function _ItemFormExtras($oldforj = '', $itags = '', $blogid = 0)
+	function _ItemFormExtras($oldforj = '', $itags = '', $tagrows, $tagcols, $blogid = 0)
 	{
 	$blogid = intval($blogid);	
 // Exstra form for add or update Item
@@ -267,17 +267,17 @@ class NP_TagEX extends NucleusPlugin
 		<p style="float:left">
 			<label for="tagex">Tag(s):</label>
 			<a href="javascript:resetOlder('<?php echo $oldforj ?>')">[Reset]</a><br />
-			<textarea id="tagex" name="itags" rows="5" cols="20"><?php echo htmlspecialchars($itags) ?></textarea>
+			<textarea id="tagex" name="itags" rows="<?php echo intval($tagrows) ?>" cols="<?php echo intval($tagcols) ?>"><?php echo htmlspecialchars($itags) ?></textarea>
 		</p>
 <script language="JavaScript" type="text/javascript"> 
 <!--
 function insertag(tag){ 
 	if(document.getElementById('tagex').value != '')
 		tag = "\n" + tag;
-	document.getElementById('tagex').value += tag;		
+	document.getElementById('tagex').value += tag;
 }
 function resetOlder(old){
-	document.getElementById('tagex').value = old;		
+	document.getElementById('tagex').value = old;
 }
 //-->
 </script>
@@ -313,7 +313,7 @@ function resetOlder(old){
 // </mod by shizuki>*/
 // Call exstra form
 		$oldforj = $itags = '';
-		$this->_ItemFormExtras($oldforj, $itags, $blogid);	// <current blog only />
+		$this->_ItemFormExtras($oldforj, $itags, 3, 40, $blogid);	// <current blog only />
 	}
 
 	function event_EditItemFormExtras($data)
@@ -330,7 +330,7 @@ function resetOlder(old){
 		$blogid = intval($blogid);
 // </mod by shizuki>*/
 // Call exstra form
-		$this->_ItemFormExtras($oldforj, $itags, $blogid);	// <current blog onry mod by shizuki />
+		$this->_ItemFormExtras($oldforj, $itags, 5, 20, $blogid);	// <current blog onry mod by shizuki />
 	}
 
 	function event_PostAddItem($data)
