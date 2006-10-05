@@ -401,8 +401,12 @@ class NP_ItemNaviEX extends NucleusPlugin
 				}
 				for ($i=0;$i<count($reqTags);$i++) {
 					$tag = trim($reqTags[$i]);
-					$taglist[$i] = '<a href="' . $tagPlugin->creatTagLink($tag, 0) . '">'
-								. htmlspecialchars($tag) . '</a>';
+					$taglist[$i] = '<a href="' .
+									$tagPlugin->creatTagLink($tag, 0) .
+									'" title="' . htmlspecialchars($tag) .
+									'">' .
+									htmlspecialchars($tag) .
+									'</a>';
 				}
 				echo ' <small style="font-family:Tahoma;">';
 //				echo ' (Tag for "'.$tagPlugin->_rawdecode(requestVar('tag')).'")';
@@ -415,24 +419,27 @@ class NP_ItemNaviEX extends NucleusPlugin
 
 	}
 
-    function getParenta($subcat_id, $blogid=0)
+    function getParenta($subcat_id, $blogid = 0)
     {
+    	global $manager;
     	$subcat_id = intval($subcat_id);
     	$blogid = intval($blogid);
     	$r = array();
+		$mplugin =& $manager->getPlugin('NP_MultipleCategories');
+		$subrequest = $mplugin->getRequestName(array());
     	$que = 'SELECT scatid, parentid, sname, catid FROM %s WHERE scatid = %d';
-    	$res = sql_query(sprintf($que, sql_table('plug_multiple_categories_subcat'), $subcat_id));
+    	$res = sql_query(sprintf($que, sql_table('plug_multiple_categories_sub'), $subcat_id));
         list ($sid, $parent, $sname, $cat_id) = mysql_fetch_row($res);
 		if (intval($parent) != 0) {
 			$this->r[] =  $this->getParenta(intval($parent), $blogid);
-			$this->linkparams[subcatid] = $sid;
+			$this->linkparams[$subrequest] = $sid;
 			$r =  array(
 				0 => $sname,
 				1 => createBlogidLink($blogid, $this->linkparams),
 				2 => createArchiveListLink($blogid, $this->linkparams)
 				);
 		}else{
-			$this->linkparams[subcatid] = $sid;
+			$this->linkparams[$subrequest] = $sid;
 			$r =  array(
 				0 => $sname,
 				1 => createBlogidLink($blogid, $this->linkparams),
@@ -446,7 +453,7 @@ class NP_ItemNaviEX extends NucleusPlugin
     {
     	$subcat_id = intval($subcat_id);
     	$que = 'SELECT scatid, parentid, sname FROM %s WHERE scatid = %d';
-    	$res = sql_query(sprintf($que, sql_table('plug_multiple_categories_subcat'), $subcat_id));
+    	$res = sql_query(sprintf($que, sql_table('plug_multiple_categories_sub'), $subcat_id));
         list ($sid, $parent, $sname) = mysql_fetch_row($res);
         if (intval($parent) != 0) {
         	$r = $this->getParent(intval($parent)) . " -> <a href=$subcat_id>$sname</a>";
@@ -460,7 +467,7 @@ class NP_ItemNaviEX extends NucleusPlugin
     {
     	$subcat_id = intval($subcat_id);
     	$que = 'SELECT scatid, parentid, sname FROM %s WHERE scatid = %d';
-    	$res = sql_query(sprintf($que, sql_table('plug_multiple_categories_subcat'), $subcat_id));
+    	$res = sql_query(sprintf($que, sql_table('plug_multiple_categories_sub'), $subcat_id));
 		while ($so =  mysql_fetch_object($res)) {
 			$r .= $this->getChildren($so->scatid) . '/' . intval($so->scatid);
 		}
