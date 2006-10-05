@@ -1085,6 +1085,7 @@ tagIndexSeparator
 				$linkparams['catid'] = intval($catid);
 			}
 			if ($subcatid) {
+				$mplugin = $manager->getPlugin('NP_MultipleCategories');
 				$subrequest = $mplugin->getRequestName(array());
 				$linkparams[$subrequest] = intval($subcatid);
 			}
