@@ -86,10 +86,10 @@ class NP_CommentEdit extends NucleusPlugin
 			if ($member->canAlterComment($comment['commentid'])) {
 			echo '<small class="commedit">';
 			echo '<a href="';
-			echo  $CONF['AdminURL'] . 'index.php?action=commentedit&commentid=' . $comment['commentid'];
+			echo  $CONF['AdminURL'] . 'index.php?action=commentedit&commentid=' . intval($comment['commentid']);
 			echo '" target="_blank">[edit]</a>';
 			echo ' <a href="';
-			echo  $CONF['AdminURL'] . 'index.php?action=commentdelete&commentid=' . $comment['commentid'];
+			echo  $CONF['AdminURL'] . 'index.php?action=commentdelete&commentid=' . intval($comment['commentid']);
 			echo '" target="_blank">[del]</a>';
 			echo '</small>';
 			}
