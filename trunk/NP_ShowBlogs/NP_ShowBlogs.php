@@ -31,6 +31,8 @@ class NP_ShowBlogs extends NucleusPlugin
 {
 
 	var $nowbid;
+	var $currentpage;
+	var $pagestr;
 
 	function getName()
 	{
@@ -54,7 +56,7 @@ class NP_ShowBlogs extends NucleusPlugin
 
 	function getVersion()
 	{
-		return '2.64';
+		return '2.641';
 	}
 
 	function getDescription()
@@ -362,7 +364,7 @@ $monthlimit = 0;
 		$b->showUsingQuery($template, $second_query, 0, 1, 1);
 	}
 
-	function InitSkinParse($data)
+	function event_InitSkinParse($data)
 	{
 		global $CONF;
 		$usePathInfo = ($CONF['URLMode'] == 'pathinfo');
@@ -372,10 +374,9 @@ $monthlimit = 0;
 		} else { 
 			$uri = serverVar('REQUEST_URI');
 		}
-		$page_str = ($usePathInfo) ? 'page/' : 'page=';
-		list($org_uri, $currentpage) = explode($page_str, $uri, 2);
-		$_REQUEST['page'] = intval($currentpage);
-		echo intval($currentpage);
+		$this->pagestr = ($usePathInfo) ? 'page/' : 'page=';
+		list($org_uri, $currentpage) = explode($this->pagestr, $uri, 2);
+		$this->$currentpage = intval($currentpage);
 	}
 
 	function PageSwitch($type, $pageamount, $offset, $where, $sort, $mtable = '')
