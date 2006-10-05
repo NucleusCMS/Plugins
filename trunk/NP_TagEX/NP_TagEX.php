@@ -703,7 +703,7 @@ function resetOlder(old){
 			for ($i=0;$i<count($urlq);$i++) {
 				$tempq = explode('=', $urlq[$i]);
 				if ($tempq[0] == $q) {
-					$str = preg_replace('|[^a-z0-9-~+_.#;,:@%]|i', '', rawurlencode($tempq[1]));
+					$str = preg_replace('|[^a-z0-9-~+_.#;,:@%]|i', '', $tempq[1]);
 					return $str;
 				}
 			}
@@ -1085,32 +1085,31 @@ tagIndexSeparator
 				$linkparams['catid'] = intval($catid);
 			}
 			if ($subcatid) {
-				$linkparams['subcatid'] = intval($subcatid);
+				$subrequest = $mplugin->getRequestName(array());
+				$linkparams[$subrequest] = intval($subcatid);
 			}
 		}
 
 // <mod by shizuki>
 		if (!empty($ready)) {
-			$ready = preg_replace('|[^a-z0-9-~+_.?#=&;,/:@%]|i', '', $ready);
-			$reqReadyAND = explode('+', $ready);
-			foreach ($reqReadyAND as $ANDkey => $ANDval) {
-				if (strpos(':', $ANDval)) {
-					$reqReadyOR = explode(':', $ANDval);
-					foreach ($reqReadyOR as $ORkey => $ORval) {
-						if (!$this->_isValidTag($ORval)) {
-							$trush = array_splice($reqReadyOR, $ORkey, 1);
-						}
-					}
-					$ANDval = implode(':', $reqReadyOR); 
-				} else {
-					if (!$this->_isValidTag($ANDval)) {
-						$trush = array_splice($reqReadyAND, $ANDkey, 1);
-					}
+			$requestTagArray = $this->splitRequestTags($ready);
+			foreach ($requestTagArray['and'] as $key => $val) {
+				if (!$this->_isValidTag($val)) {
+					$trush = array_splice($requestTagArray['and'], $key, 1);
 				}
 			}
-			$ready = implode('+', $reqReadyAND);
+			$reqAnd = implode('+', $requestTagArray['and']);
+			if (!empty($requestTagArray['or'])) {
+				foreach ($requestTagArray['or'] as $key => $val) {
+					if (!$this->_isValidTag($val)) {
+						$trush = array_splice($requestTagArray['and'], $key, 1);
+					}
+				}
+				$reqOr = ':' . implode(':', $requestTagArray['or']);
+			}
+			$ready = $reqAnd . $reqOr;
 		}
-// </mod by shizuki>
+// </mod by shizuki>*/
 
 		if (!$ready) $sep = '';
 		if ($CONF['URLMode'] == 'pathinfo')
@@ -1118,7 +1117,7 @@ tagIndexSeparator
 		else
 			$link = $CONF['BlogURL'] . '?tag=' . $ready . $sep . $this->_rawencode($tag);
 
-/* <add for NP_CustomURL mod by shizuki>
+// <add for NP_CustomURL mod by shizuki>
 		if ($manager->pluginInstalled('NP_CustomURL')) {
 			$urlplugin = $manager->getPlugin('NP_CustomURL');
 			$link = 'tag/' . $ready . $sep . $this->_rawencode($tag);

@@ -27,12 +27,12 @@
  *
  ****************************************************************************/
 
-class NP_ShowBlogsEX extends NucleusPlugin
+class NP_ShowBlogs extends NucleusPlugin
 {
 
 	function getName()
 	{
-		return 'Show BlogsEX';
+		return 'Show Blogs';
 	}
 
 	function getMinNucleusVersion()
@@ -222,7 +222,7 @@ $monthlimit = 0;
 					}
 				}
 
-				$hidden = '';
+//				$hidden = '';
 				$temp = $y = $m = $d = '';
 				if ($archive) {
 					sscanf($archive, '%d-%d-%d', $y, $m, $d);
@@ -288,20 +288,21 @@ $monthlimit = 0;
 				$sh_query .= ' AND b.bnumber = c.cblog';
 			}
 
-			if ($page_switch['startpos'] == 0 && !$catid && $sticky != '' && $skinType != 'item') {
+			if ($page_switch['startpos'] == 0 && !$catid && $sticky != '' && $skinType != 'item' && !$this->tagSelected) {
 				$ads = 1;
+				$sticky_query = $sh_query;
 				foreach ($stickys as $stickynumber) {
 					$tempblogid = getBlogIDFromItemID($stickynumber);
 					if ($bmode != 'all') {
-						$sh_query .= ' AND i.iblog = ' . $nowbid;
+						$sticky_query .= ' AND i.iblog = ' . $nowbid;
 					}
-					$sh_query .= ' AND i.inumber = ' . intval($stickynumber);
-					$sh_query .= ' AND i.itime <= ' . mysqldate($b->getCorrectTime());
-					$sh_query .= ' AND i.idraft = 0';
+					$sticky_query .= ' AND i.inumber = ' . intval($stickynumber);
+					$sticky_query .= ' AND i.itime <= ' . mysqldate($b->getCorrectTime());
+					$sticky_query .= ' AND i.idraft = 0';
 					if ($this->getOption('stickmode') == 1 && intval($nowbid) == $tempblogid) {
-						$b->showUsingQuery($sticktemplate, $sh_query, 0, 1, 0); 
+						$b->showUsingQuery($sticktemplate, $sticky_query, 0, 1, 0); 
 					} elseif (!$this->getOption('stickmode')) {
-						$b->showUsingQuery($sticktemplate, $sh_query, 0, 1, 0); 
+						$b->showUsingQuery($sticktemplate, $sticky_query, 0, 1, 0); 
 					}
 					if ($ads == 1) {
 						echo $this->getOption('ads');
@@ -362,7 +363,7 @@ $monthlimit = 0;
 
 	function event_InitSkinParse($data)
 	{
-		global $CONF;
+		global $CONF, $manager;
 		$usePathInfo = ($CONF['URLMode'] == 'pathinfo');
 		if (serverVar('REQUEST_URI') == '') {
 			$uri = (serverVar('QUERY_STRING')) ?
@@ -370,10 +371,14 @@ $monthlimit = 0;
 		} else { 
 			$uri = serverVar('REQUEST_URI');
 		}
-		$this->pagestr = ($usePathInfo) ? 'page/' : 'page=';
-		list($org_uri, $currentpage) = explode($this->pagestr, $uri, 2);
-		$_GET['page'] = intval($currentpage);
-		$this->currentpage = intval($currentpage);
+		$page_str = ($usePathInfo) ? 'page/' : 'page=';
+		if ($manager->pluginInstalled('NP_CustomURL')) {
+			$page_str = 'page_';
+		}
+		list($org_uri, $currPage) = explode($page_str, $uri, 2);
+		$_GET['page'] = intval($currPage);
+		$this->currPage = intval($currPage);
+		$this->pagestr = $page_str;
 	}
 
 	function PageSwitch($type, $pageamount, $offset, $where, $sort, $mtable = '')
@@ -398,7 +403,7 @@ $monthlimit = 0;
 		}
 
 		$page_str = $this->pagestr;
-		$currentpage = $this->currentpage; 
+		$currentpage = $this->currPage; 
 
 // createBaseURL
 		if (!empty($catid)) {
@@ -429,9 +434,25 @@ $monthlimit = 0;
 			$tplugin =& $manager->getPlugin('NP_TagEX');
 			$requestTag = $tplugin->getNoDecodeQuery('tag');
 			if (!empty($requestTag)) {
-				$pagelink = $tplugin->creatTagLink($requestTag, $this->getOption('tagMode'));
+				$requestTarray = $tplugin->splitRequestTags($requestTag);
+				$tag = array_shift($requestTarray['and']);
+				$tag = $tplugin->_rawdecode($tag);
+				if (!empty($requestTarray['and'])) {
+					$requestT = implode('+', $requestTarray['and']);
+				}
+				if (!empty($requestTarray['or'])) {
+					$requestTor = implode(':', $requestTarray['or']);
+				}
+				if (!empty($requestT) && !empty($requestTor)) {
+					$pagelink = $tplugin->creatTagLink($tag, $this->getOption('tagMode'), $requestT . ':' . $requestTor, '+');
+				} elseif (empty($requestT) && !empty($requestTor)) {
+					$pagelink = $tplugin->creatTagLink($tag, $this->getOption('tagMode'), $requestTor, ':');
+				} else {
+					$pagelink = $tplugin->creatTagLink($tag, $this->getOption('tagMode'));
+				}
 			}
 		}
+
 		$uri = parse_url($pagelink);
 		if (!$usePathInfo) {
 			if ($pagelink == $CONF['BlogURL']) { // add
@@ -492,16 +513,22 @@ $monthlimit = 0;
 		$prevpage = ($currentpage > 1) ? $currentpage - 1 : 0;
 		$nextpage = $currentpage + 1;
 		$firstpagelink = $pagelink . $page_str . '1';
-//		$firstpagelink .= '.html';
+		if ($manager->pluginInstalled('NP_CustomURL')) {
+			$firstpagelink .= '.html';
+		}
 		$lastpagelink = $pagelink . $page_str . $totalpages;
-//		$lastpagelink .= '.html';
+		if ($manager->pluginInstalled('NP_CustomURL')) {
+			$lastpagelink .= '.html';
+		}
 
 		if ($type >= 1) {
 			$buf .= '<div class="pageswitch">' . "\n";
 //			$buf .= "<a rel=\"first\" title=\"first page\" href=\"{$firstpagelink}\">&lt;TOP&gt;</a> |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n";
 			if (!empty($prevpage)) {
 				$prevpagelink = $pagelink . $page_str . $prevpage;
-//				$prevpagelink .= '.html';
+				if ($manager->pluginInstalled('NP_CustomURL')) {
+					$prevpagelink .= '.html';
+				}
 				$buf .= "\n<a href=\"{$prevpagelink}\" title=\"Previous page\" rel=\"Prev\">&laquo;Prev</a> |";
 			} elseif ($type >= 2) {
 				$buf .= "\n&laquo;Prev |";
@@ -511,9 +538,11 @@ $monthlimit = 0;
 				$buf .= "|";
 				for ($i=1; $i<=$totalpages; $i++) {
 					$i_pagelink = $pagelink . $page_str . $i;
-//					$i_pagelink .= '.html';
+					if ($manager->pluginInstalled('NP_CustomURL')) {
+						$i_pagelink .= '.html';
+					}
 					if ($i == $currentpage) {
-						$buf .= " <strong>{$currentpage}</strong> |\n";
+						$buf .= " <strong>{$i}</strong> |\n";
 					} elseif ($totalpages<10 || $i<4 || $i>$totalpages-3) {
 						$buf .= " <a href=\"{$i_pagelink}\" title=\"Page No.{$i}\">{$i}</a> |\n";
 					} else {
@@ -534,10 +563,12 @@ $monthlimit = 0;
 				$sepstr = '&middot;';
 				for ($i=1; $i<=$totalpages; $i++) {
 					$i_pagelink = $pagelink . $page_str . $i;
-//					$i_pagelink .= '.html';
+					if ($manager->pluginInstalled('NP_CustomURL')) {
+						$i_pagelink .= '.html';
+					}
 					$paging = 5;
 					if ($i == $currentpage) {
-						$buf .= " <strong>{$currentpage}</strong> {$sepstr}\n";
+						$buf .= " <strong>{$i}</strong> {$sepstr}\n";
 					} elseif ($totalpages < 10 || (($i < ($currentpage + $paging)) && (($currentpage - $paging) < $i))) {
 						$buf .= " <a href=\"{$i_pagelink}\" title=\"Page No.{$i}\">{$i}</a> {$sepstr}\n";
 					} elseif ($currentpage - $paging == $i) {
@@ -552,7 +583,9 @@ $monthlimit = 0;
 			}
 			if ($totalpages >= $nextpage) {
 				$nextpagelink = $pagelink . $page_str . $nextpage;
-//				$nextpagelink .= '.html';
+				if ($manager->pluginInstalled('NP_CustomURL')) {
+					$nextpagelink .= '.html';
+				}
 				$buf .= "| <a href=\"{$nextpagelink}\" title=\"Next page\" rel=\"Next\">Next&raquo;</a>\n";
 			} elseif ($type >= 2) {
 				$buf .= "| Next&raquo;\n";
@@ -631,6 +664,7 @@ $monthlimit = 0;
 		$tplugin =& $manager->getPlugin('NP_TagEX');
 		$requestTag = $tplugin->getNoDecodeQuery('tag');
 		if (!empty($requestTag) || $skin_type == 'item') {
+			$this->tagSelected = TRUE;
 			$allTags = ($bmode=='all') ? $tplugin->scanExistTags(0) : $tplugin->scanExistTags(2);
 			$arr = $tplugin->splitRequestTags($requestTag);
 			if ($skin_type == 'item') {
