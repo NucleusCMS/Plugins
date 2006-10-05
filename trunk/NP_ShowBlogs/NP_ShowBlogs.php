@@ -27,16 +27,12 @@
  *
  ****************************************************************************/
 
-class NP_ShowBlogs extends NucleusPlugin
+class NP_ShowBlogsEX extends NucleusPlugin
 {
-
-	var $nowbid;
-	var $currentpage;
-	var $pagestr;
 
 	function getName()
 	{
-		return 'Show Blogs';
+		return 'Show BlogsEX';
 	}
 
 	function getMinNucleusVersion()
@@ -56,7 +52,7 @@ class NP_ShowBlogs extends NucleusPlugin
 
 	function getVersion()
 	{
-		return '2.641';
+		return '2.64';
 	}
 
 	function getDescription()
@@ -180,8 +176,7 @@ $monthlimit = 0;
 		} else {
 			$b =& $manager->getBlog($CONF['DefaultBlog']);
 		}
-		$nowbid = intval($b->getID());
-		$this->nowbid = $nowbid;
+		$this->nowbid = $nowbid = intval($b->getID());
 
 		$where = '';
 		$catblogname = 0;
@@ -227,6 +222,7 @@ $monthlimit = 0;
 					}
 				}
 
+				$hidden = '';
 				$temp = $y = $m = $d = '';
 				if ($archive) {
 					sscanf($archive, '%d-%d-%d', $y, $m, $d);
@@ -237,7 +233,7 @@ $monthlimit = 0;
 					} else {
 						$timestamp_start = mktime(0, 0, 0, $m, 1, $y);
 						$timestamp_end = mktime(0, 0, 0, $m+1, 1, $y);
-						$date_str = 'SUBSTRING(i.itime, 1, 7)';
+						$date_str = 'SUBSTRING(i.itime,1,7)';
 					}
 					$where .= ' AND i.itime >= ' . mysqldate($timestamp_start) .
 							' AND i.itime < ' . mysqldate($timestamp_end);
@@ -376,7 +372,8 @@ $monthlimit = 0;
 		}
 		$this->pagestr = ($usePathInfo) ? 'page/' : 'page=';
 		list($org_uri, $currentpage) = explode($this->pagestr, $uri, 2);
-		$this->$currentpage = intval($currentpage);
+		$_GET['page'] = intval($currentpage);
+		$this->currentpage = intval($currentpage);
 	}
 
 	function PageSwitch($type, $pageamount, $offset, $where, $sort, $mtable = '')
@@ -400,6 +397,9 @@ $monthlimit = 0;
 			}
 		}
 
+		$page_str = $this->pagestr;
+		$currentpage = $this->currentpage; 
+
 // createBaseURL
 		if (!empty($catid)) {
 			$catrequest = ($usePathInfo) ? $CONF['CategoryKey'] : 'catid';
@@ -422,7 +422,7 @@ $monthlimit = 0;
 			if (!empty($archive)) {
 				$pagelink = createArchiveLink($this->nowbid, $archive);
 			} else {
-				$pagelink = $CONF['BlogURL'];
+				$pagelink = createBlogidLink($this->nowbid);
 			}
 		}
 		if ($manager->pluginInstalled('NP_TagEX')) {
@@ -444,16 +444,6 @@ $monthlimit = 0;
 			$pagelink .= '/';
 			if (strstr ($pagelink, '//')) $link = preg_replace("/([^:])\/\//", "$1/", $pagelink);
 		}
-
-		if (serverVar('REQUEST_URI') == '') {
-			$uri = (serverVar('QUERY_STRING')) ?
-				serverVar('SCRIPT_NAME') . serverVar('QUERY_STRING') : serverVar('SCRIPT_NAME');
-		} else { 
-			$uri = serverVar('REQUEST_URI');
-		}
-		$page_str = ($usePathInfo) ? 'page/' : 'page=';
-		list($org_uri, $currentpage) = explode($page_str, $uri, 2);
-		$_REQUEST['page'] = intval($currentpage);
 
 		if ($currentpage > 0) {
 			$startpos = ($currentpage - 1) * $pageamount;
