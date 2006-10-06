@@ -74,6 +74,7 @@ class NP_TagEX extends NucleusPlugin
 	{
 		$this->createOption('flg_erase',			'Erase data on uninstall.',				'yesno',	'no');
 // <editable template mod by shizuki>
+		$this->createOption('editTagOrder',		'editform tag order',						'select',	'1',	'1|amount(desc)|2|amount(asc)|3|tag\'s order|4|random');
 		$this->createOption('and',					'template for \'and\'',					'textarea',	'<span style="font-family:tahoma;font-size:smaller;"> <a href="<%andurl%>" title="narrow">&amp;</a>.');
 		$this->createOption('or',					'template for \'or\'',					'textarea',	'<a href="<%orurl%>" title="expand">or</a> </span>');
 		$this->createOption('tagIndex',			'template for \'tagIndex\'',				'textarea',	'<%and%><%or%><span style="font-size:<%fontlevel%>em" title="<%tagamount%> post(s)! <%tagitems%>"><a href="<%taglinkurl%>"><%tag%></a></span>');
@@ -284,9 +285,9 @@ function resetOlder(old){
 <?php		
 		echo '<div style="height: 200px;overflow: auto;">' . "\n";
 		if ($this->getOption('tagsonlycurrent') == no) {
-			$existTags = $this->scanExistTags(0,99999999,1);
+			$existTags = $this->scanExistTags(0, 99999999, intavl($this->getOption('editTagOrder')));
 		} else {
-			$existTags = $this->scanExistTags(1,99999999,1, $blogid);
+			$existTags = $this->scanExistTags(1, 99999999, intavl($this->getOption('editTagOrder')), $blogid);
 		}
 		if($existTags){
 			$existTags = array_keys($existTags);
