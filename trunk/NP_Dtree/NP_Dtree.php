@@ -65,7 +65,7 @@ class NP_Dtree extends NucleusPlugin
 		if ($skinType == 'template') {
 			echo '<script type="text/javascript" src="' .
 					htmlspecialchars($this->getAdminURL()) . 'dtreedata.php?o=' .
-					$randomID.'a&amp;bid=' . $blogid . '&amp;id=' . $itemid . '"></script>';
+					$randomID . 'a&amp;bid=' . $blogid . '&amp;id=' . $itemid . '"></script>';
 			echo '<a href="javascript: ' . $randomID . 'a.openAll();">open all</a>' .
 					' | <a href="javascript: ' . $randomID . 'a.closeAll();">close all</a>';
 			return;
