@@ -11,6 +11,7 @@
 //	0.7:	supports templatevar
 //			supports <%popup()%> 
 //	0.8:	supports gif
+//	0.9             doTemplateVar calls DB data for other PreItem Plugin
 //	0.9:	change '&' to '&amp;'
 
 class NP_TrimImage extends NucleusPlugin
@@ -26,16 +27,14 @@ class NP_TrimImage extends NucleusPlugin
 		return 'nakahara21';
 	}
 
-	function getURL ()
-	{
-		return 'http://nakahara21.com';
+	function getURL () {
+		return 'http://nakahara21.com/';
 	}
-
-	function getVersion ()
-	{
-		return '0.9';
+	
+	function getVersion () {
+		return '1.0';
 	}
-
+	
 	function supportsFeature($what)
 	{
 		switch ($what) {
@@ -221,16 +220,18 @@ class NP_TrimImage extends NucleusPlugin
 	function baseimageCreate($p,$imgtype)
 	{
 		switch ($imgtype) {
+			case 1:
+				return ImageCreateFromGif($p);
 			case 2:
-			return ImageCreateFromJpeg($p);
+				return ImageCreateFromJpeg($p);
 			case 3:
-			return ImageCreateFromPng($p);
+				return ImageCreateFromPng($p);
 			default:
-			return;
+				return;
 		}
 	}
 
-	function doTemplateVar(&$item, $wsize=80, $hsize=80, $point=0)
+	function doTemplateVar(&$item, $wsize=80, $hsize=80, $point=0, $maxAmount=0){
 	{
 		global $CONF;
 		if ($hsize=='') $hsize = 80;
@@ -240,7 +241,14 @@ class NP_TrimImage extends NucleusPlugin
 		$filelist = array();
 		$this->imglists = array();
 		$this->imgfilename = array();
-			$txt = $item->body.$item->more;
+//			$txt = $item->body.$item->more;
+			$txt = '';
+			$q = 'SELECT ibody as body, imore as more FROM '.sql_table('item').' WHERE inumber='.intval($item->itemid);
+			$r = sql_query($q);
+			while ($d = mysql_fetch_object($r)) {
+				$txt .= $d->body.$d->more;
+			}
+
 			preg_match_all("/\<\%image\((.*)\)\%\>/Us", $txt, $imgipnt, PREG_PATTERN_ORDER);
 			@array_walk($imgipnt[1], array(&$this, "exarray"), array($item->itemid, $item->authorid));
 			preg_match_all("/\<\%popup\((.*)\)\%\>/Us",$txt,$imgipntp, PREG_PATTERN_ORDER);
@@ -248,7 +256,10 @@ class NP_TrimImage extends NucleusPlugin
 			
 			$filelist = $this->imglists;
 //			print_r($filelist);
-		$amount = count($filelist);
+			if(!$maxAmount)
+				$amount = count($filelist);
+			else
+				$amount = min($maxAmount, count($filelist));
 
 //		echo '<div style="text-align:center;padding:3px;">';
 
