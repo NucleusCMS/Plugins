@@ -11,8 +11,10 @@
 //	0.7:	supports templatevar
 //			supports <%popup()%> 
 //	0.8:	supports gif
-//	0.9             doTemplateVar calls DB data for other PreItem Plugin
+//	0.9:	doTemplateVar calls DB data for other PreItem Plugin
 //	0.9:	change '&' to '&amp;'
+//	1.1:	NP_Paint supported.
+//			Security Fix.
 
 class NP_TrimImage extends NucleusPlugin
 {
@@ -32,7 +34,7 @@ class NP_TrimImage extends NucleusPlugin
 	}
 	
 	function getVersion () {
-		return '1.0';
+		return '1.1';
 	}
 	
 	function supportsFeature($what)
@@ -47,7 +49,7 @@ class NP_TrimImage extends NucleusPlugin
 
 	function getDescription ()
 	{
-		return 'Extract image in items, and embed these images.';
+		return 'Trim image in items, and embed these images.';
 	}
 
 	function instaii()
@@ -102,7 +104,7 @@ class NP_TrimImage extends NucleusPlugin
 			case 'archive':
 				global $archive;
 				$year = $month = $day = '';
-				sscanf($archive, '%4c-%2c-%2c', $year, $month, $day);
+				sscanf($archive, '%d-%d-%d', $year, $month, $day);
 				if (empty($day)) {
 					$timestamp_start = mktime(0, 0, 0, $month, 1, $year);
 					$timestamp_end = mktime(0, 0, 0, $month + 1, 1, $year);  // also works when $month==12
@@ -165,7 +167,7 @@ class NP_TrimImage extends NucleusPlugin
 			$exq = '';
 			if ($point) $exq = '&amp;pnt=lefttop';
 				
-			echo '<img src="' . $CONF['ActionURL'] . '?action=plugin&amp;name=TrimImage&amp;type=draw&amp;p=' . $filelist[$i][0][0] . '&amp;wsize=' . $wsize . '&amp;hsize=' . $hsize . $exq . '" />';
+			echo '<img src="' . $CONF['ActionURL'] . '?action=plugin&amp;name=TrimImage&amp;type=draw&amp;p=' . htmlspecialchars($filelist[$i][0][0], ENT_QUOTES) . '&amp;wsize=' . $wsize . '&amp;hsize=' . $hsize . $exq . '" />';
 			echo "</a>\n";
 		}
 		echo "</div>\n";
@@ -201,6 +203,8 @@ class NP_TrimImage extends NucleusPlugin
 			@array_walk($imgpnt[1], array(&$this, "exarray"), array($it->itemid, $it->iauthor));
 			preg_match_all("/\<\%popup\((.*)\)\%\>/Us", $txt, $imgpntp, PREG_PATTERN_ORDER);
 			@array_walk($imgpntp[1], array(&$this, "exarray"), array($it->itemid, $it->iauthor));
+			preg_match_all("/\<\%paint\((.*)\)\%\>/Us", $txt, $imgpnta, PREG_PATTERN_ORDER);
+			@array_walk($imgpnta[1], array(&$this, "exarray"), array($it->itemid, $it->iauthor));
 		}
 		return $this->imglists;
 	}
@@ -231,7 +235,7 @@ class NP_TrimImage extends NucleusPlugin
 		}
 	}
 
-	function doTemplateVar(&$item, $wsize=80, $hsize=80, $point=0, $maxAmount=0){
+	function doTemplateVar(&$item, $wsize=80, $hsize=80, $point=0, $maxAmount=0)
 	{
 		global $CONF;
 		if ($hsize=='') $hsize = 80;
@@ -253,7 +257,9 @@ class NP_TrimImage extends NucleusPlugin
 			@array_walk($imgipnt[1], array(&$this, "exarray"), array($item->itemid, $item->authorid));
 			preg_match_all("/\<\%popup\((.*)\)\%\>/Us",$txt,$imgipntp, PREG_PATTERN_ORDER);
 			@array_walk($imgipntp[1], array(&$this, "exarray"), array($item->itemid, $item->authorid));
-			
+			preg_match_all("/\<\%paint\((.*)\)\%\>/Us",$txt,$imgipnta, PREG_PATTERN_ORDER);
+			@array_walk($imgipnta[1], array(&$this, "exarray"), array($item->itemid, $item->authorid));
+
 			$filelist = $this->imglists;
 //			print_r($filelist);
 			if(!$maxAmount)
@@ -293,33 +299,34 @@ class NP_TrimImage extends NucleusPlugin
 
 	function doAction($type)
 	{
-		global $CONF;
 		global $DIR_MEDIA;
-		$return = serverVar('HTTP_REFERER');
-		switch ($type) {
-			case draw:
-				if (!requestVar('p')) return;
-				$p = $DIR_MEDIA . requestVar('p');	//path
 		
-				
-				if (requestVar('p') == 'non') {
-					$im = ImageCreate(requestVar('wsize'), requestVar('hsize')) or die ("Cannnot Initialize new GD image stream");
-					$bgcolor = ImageColorAllocate($im, 0, 255, 255); //color index:0
-//					$strcolor = ImageColorAllocate($im,153,153,153); //color index:1
-					imagecolortransparent($im, $bgcolor);
-//					imageString($im, 1, 4, 0,'No images',$strcolor);
-					header ("Content-type: image/png");
-					ImagePng($im);
-					imagedestroy($im);
-					berak;
-				}
+		$tsize['w'] = intRequestVar('wsize') ? intRequestVar('wsize') : 80;
+		$tsize['h'] = intRequestVar('hsize') ? intRequestVar('hsize') : 80;
+		$point = requestVar('pnt');
 
-				list($imgwidth, $imgheight, $imgtype) = GetImageSize($p);
+		if (!requestVar('p')) 'No such file';
+		if (requestVar('p') == 'non') {
+			$im = @ImageCreate($tsize['w'], $tsize['h']) or die ("Cannnot Initialize new GD image stream");
+			$bgcolor = ImageColorAllocate($im, 0, 255, 255); //color index:0
+			//					$strcolor = ImageColorAllocate($im,153,153,153); //color index:1
+			imagecolortransparent($im, $bgcolor);
+			//					imageString($im, 1, 4, 0,'No images',$strcolor);
+			header ("Content-type: image/png");
+			ImagePng($im);
+			imagedestroy($im);
+			berak;
+		}
 		
-				$tsize['w'] = requestVar('wsize');
-				$tsize['h'] = requestVar('hsize');
-				$point = requestVar('pnt');
+		$p = $DIR_MEDIA . requestVar('p');	//path
+		$p = realpath($p);
+		if( !$p ) return 'No such file';
+		if( strpos($p, $DIR_MEDIA) !== 0 ) return 'No such file';
 				
+		switch ($type) {
+			case 'draw':
+				list($imgwidth, $imgheight, $imgtype) = GetImageSize($p);
+						
 				if ($imgwidth / $imgheight < $tsize['w'] / $tsize['h']) { // height longer
 					$trimX = 0;
 					$trimW = $imgwidth;
@@ -361,7 +368,7 @@ class NP_TrimImage extends NucleusPlugin
 			break;
 
 			default:
-				Header('Location: ' . $return);
+				return 'No such action';
 				break;
 //_=======
 		}
