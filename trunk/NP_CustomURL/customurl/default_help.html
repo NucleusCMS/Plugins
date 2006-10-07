@@ -1,0 +1,170 @@
+<h3>Outline of plug-in</h3>
+
+<p>
+
+It is a plug-in that replaces dynamic URL generated with NucleusCMS with static URL of a free name.<br />
+<em style="color:#cc0000;">Operation only in FancyURL mode and required 'mod-rewrite'.</em><br />
+Categories, the Sub-Categories, Archive list, etc. are considered to be a directory respectively.When narrowing it by the category, it becomes an image that refers to the index file that exists in the directory of a category concerned.<br />
+<ul style="margin:0 0 25px 12px;">ex.
+<li>Image of access to Categories:
+<ul><li>http://example.jp/nucleuscms/</li></ul></li>
+<li>Image of access to Sub-Categories:
+<ul><li>http://example.jp/nucleuscms/plugins/</li></ul></li>
+<li>Image of access to Archives:
+<ul><li>http://example.jp/archives/</li><li>http://example.jp/archives/nucleuscms/</li></ul></li>
+</ul>
+Member's detailed page and individual item page become images accessed a file concerned html file.<br />
+<ul style="margin:0 0 25px 12px;">ex.
+<li>http://example.jp/nucleuscms/plugins/NP_CustomURL.html</li>
+<li>http://example.jp/new_nucleus_comming_soon.html</li>
+<li>http://example.jp/member/Hiroyuki.html</li>
+</ul>
+
+</p>
+
+<h3>Installation and operation beginning procedure</h3>
+
+<p>
+
+<ol style="margin:0 0 25px 12px;">
+<li>After up-loading the "NP_CustomURL.php" file and the "customurl" directory that can be done by developing the downloaded compression file to the "plugins" directory of the server.It installs it from the management area.</li>
+<li>First of all, "URL mode" is changed to "Fancy" on "Global setting" page of the management screen.</li>
+<li>"fancyurls.config.php" is copied to a top directory according to the procedure of FancyURLs and it edits it.<br />At this time, copying it should not copy the following file with "fancyurls.config.php" file alone.</li>
+<li>Next, "index.php" is edited."<code>$CONF['Self']</code>" and the line that is are rewritten as "<code>$CONF['Self'] = '.'</code>" and One line is written "<code>$curl_blogid = 1;</code>" and it adds. ("1" is ID of Brog accessed by "index.php".)
+<blockquote><pre style="overflow:auto;">&lt;?php
+// This file will generate and return the main page of the site
+$CONF = array();
+$CONF['Self'] = '.';
+$curl_blogid = 1;
+
+include('./config.php');
+include('./fancyurls.config.php');
+
+selector();
+
+?&gt;
+</pre></blockquote>
+</li>
+<li>Next, <code>.htaccess</code> is edited.<ul>
+    <li>The content is here.<blockquote><pre style="overflow:auto;">RewriteEngine on
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php?curl=$1 [L,QSA]
+</pre></blockquote>
+Even if nothing is written now by these four lines alone, it is safe.</li></ul></li>
+</ol>
+It is preparation completion by this.<br />
+<br />
+Note:Please delete or save operation in another directory the file for FancyURLs with FancyURLs now.It is not necessary because everything has been received by this plug-in.<br />
+</p>
+
+<h3>How to use.</h3>
+
+<p>
+
+<ul>
+<li style="margin-top:3px;">The option is additional to Brog item category member's edit page respectively, and apply a favorite name, please.</li>
+<li style="margin-top:3px;">These edit displays do not go out when new addition of the member and new addition of the category on a "setting of Brog" page, and edit it respectively, please after it adds it.</li>
+<li style="margin-top:3px;">The name of the default when newly adding it,Blog as [shortname],Categories as [category_(catid)],Sub-Categories as [subcategory_(scatid)],Item as [item_(itemid)],Member as [login-name].<br />
+	Path has been generated to all the subBrog item category category members who existed in Brog when the plug-in is installed with the automatic operation.</li>
+<li style="margin-top:3px;">The name in the same key in Brog the same cannot overlap and take care, please.<br />
+	When path that tried to be registered overlaps, each ID is added in the form of '_ id'.<br />
+	Even if it is same Brog, the category, the subcategory, and the item can apply the same name.<br />
+	In a word, "http://example.jp/nucleuscms/nucleuscms/nucleuscms.html" becomes effective path.</li>
+<li style="margin-top:3px;">".html" is automatically added to path of the member and the item.</li>
+<li style="margin-top:3px;">"Member directory", "Archive directory", and "Archive list directory" are revokable in the edit display of the plug-in.An initial value is a value of each "<code>$CONF['***Key']</code>".</li>
+<li style="margin-top:3px;">The character that can be used as a directory name and a file name is only a-z,A-Z,0-9,-,_.<br />
+	"/" and "." included in the specified character string are automatically converted into "_".<br />
+	When URL is generated, capital letters and small letters of the alphabet are distinguished.However, when accessing it, it doesn't distinguish.</li>
+<li style="margin-top:3px;">The directory name for the Sub-Categories can be edited only on the management screen now.<br />
+	The data base has been updated about the subcategory newly added in the timing of the link generation.</li>
+<li style="margin-top:3px;">When the directory name is made a blank by the management screen and the edit display, the name is deleted from the data base, and URL becomes past FancyURLs.</li>
+<li style="margin-top:3px;">The same name cannot be applied to path for Brog and path for the category.</li>
+<li style="margin-top:3px;">The access with URL is possible even after this plug-in is installed so far.</li>
+<li style="margin-top:3px;">It can be selected whether to change URI of each Brog by the option.</li>
+</ul>
+
+</P>
+
+<h3>Skin/Template variable</h3>
+
+<p>
+It is possible to fill it in skin, the template, and in the article.<br />
+Useage:<code>&lt;%CustomURL(link ahead, link text, title text)%&gt;</code><br />
+<ul>
+<li>link ahead:kind link ahead/id or name/specified type
+	<ul>
+		<li>Paragraph 1:One of i, c, s, b, and m.Each initial of item, category, subcategory, blog, and member.</li>
+		<li>Paragraph 2:Id or name link ahead.The name is not a path name but is "Category name" and "Shortname of Brog", etc.When the item is selected the link ahead, specifying it for here becomes only id.</li>
+		<li>Paragraph 3:"i" and filling in when id, "n" and filling in when name is specified by paragraph 2.</li>
+	</ul>
+</li>
+<li>link text:Character string placed between a tag.Only URL is generated when omitted.</li>
+<li>title text:It is set to the "title" attribute of a tag.If the link text exists, it is set to the change when omitted.Even if only the title is specified without specifying the link text, the link tag is not generated.</li>
+<li>It can be written &lt:%CustomURL%&gt; by omitting all parameters.In this case, URI of default is written by the filling in place.
+	<ul>
+		<li>skin:URI to the top page of present "Brog" is written.</li>
+		<li>template:URI to the written item is written.(Replacement of &lt;%itemlink%&gt;)</li>
+		<li>article:URI to oneself is written.</li>
+	</ul>
+</li>
+</ul>
+Filling in example:
+<ul>
+	<li>When id links with the item of 123:&lt;a href="&lt;%CustomURL(i/123/i)%&gt;"&gt;'Here is freely written.'&lt;/a&gt;<br />
+	Written character string:&lt;a href="http://blog.example.jp/item_123.html"&gt;'Here is freely written.'&lt;/a&gt;</li>
+	<li>When the category name writes URI of the category of "Diary":&lt;%CustomURL(c/Diary/n)%&gt;<br />
+	Written character string(When id of "Diary" category is 12)ÅFhttp://blog.example.jp/category_12/</li>
+	<li>When you set the link of Brog to shortening name "bibouroku" to the link from the character string "This Brog":&lt;%CustomURL(c/bibouroku/n, This Blog)%&gt;<br />
+	Written character string:&lt;a href="http://blog.example.jp/"&gt;This Blog&lt;/a&gt;</li>
+</ul>
+When only id is filled in like skin template article both "&lt;%CustomURL(123)%&gt;", URI to the item with the id is written.<br />
+Moreover, passing set to the item with the id like item_123 can be written by writing "&lt;%CustomURL(123/path)%&gt;" only for the item.<br />
+</p>
+
+<h3>Operation report and bug report</h3>
+
+<p>...following URL.. I hope the comment or the track back the operation report and bug report.<br />
+<a href="http://shizuki.kinezumi.net/NucleusCMS/Plugins/NP_CustomURL/NP_CustomURL.html">
+http://shizuki.kinezumi.net/NucleusCMS/Plugins/NP_CustomURL/NP_CustomURL.html</a></p>
+
+<h3>Version history</h3>
+
+<ul>
+<li>Version 0.2.1:
+	<ul>
+	<li>Making of Sub-Categories multistep URL</li>
+	<li>Trouble not to be able to delete the data of the subcategory when the category and Brog are deleted is corrected.</li>
+	<li>Other correction.</li>
+	</ul>
+</li>
+<li>Version 0.1.9:
+	<ul>
+	<li>It corresponds to the movement between Brog of the category and the item.</li>
+	</ul>
+</li>
+<li>Version 0.1.8a:
+	<ul>
+	<li>Correction according to timing change in passing registration of new Sub-Categories.</li>
+	<li>To select whether to use customized URI of each Brog, the option is added.</li>
+	<li>Correction of Help file.</li>
+	</ul>
+</li>
+<li>Version 0.1.8:
+	<ul>
+	<li>It corresponds to trouble that URI to 'General' category made by the automatic operation when Brog is newly made doesn't operate normally.</li>
+	<li>It corresponds to trouble that URI of "Category", "Subcategory", and "Item" that belongs to deleted Brog remained in the table when Brog is deleted.</li>
+	<li>When the link is generated, the timing of the registration of passing of new Sub-Category is changed.(When URI has been set on the management screen before the link is generated, set URI is used.)</li>
+	<li>It is corrected that item URI was not normally displayed on the management page.</li>
+	</ul>
+</li>
+<li>Version 0.1.7:
+	<ul>
+	<li>It rewrites it almost completely.</li>
+	<li>When the track back is transmitted when a new item is added, trouble not to be able to transmit URL in the track back origin correctly is corrected.</li>
+	<li>When passing the subcategory is edited from the management screen, trouble to which the list is not displayed is corrected.</li>
+	</ul>
+</li>
+<li>Version 0.1.5: Version of opening to the public.</li>
+<li>Version 0.01: First version(Remodeling version of NP_Path)</li>
+</ul>
