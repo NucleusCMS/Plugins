@@ -98,7 +98,7 @@ class NP_ShowBlogs extends NucleusPlugin
 		$this->createOption('stickmode',		_STICKMODE,		'text',		'1');
 		$this->createOption('ads',				_ADCODE_1,		'textarea',	'' . "\n");
 		$this->createOption('ads2',				_ADCODE_2,		'textarea',	'' . "\n");
-		$this->createOption('tagMode',			'TagEX narrow mode(0 or 1 or 2)',	'select',	'2',	'all blogs|0|currentblog only|1|narrowed with catid/subcatid|2');
+		$this->createOption('tagMode',			_TAG_MODE,		'select',		'2',	_TAG_SELECT);
 /* todo can't install ? only warning ?
  * douyatte 'desc' ni keikoku wo daseba iinoka wakaranai desu
 		$ver_min = (getNucleusVersion() < $this->getMinNucleusVersion());

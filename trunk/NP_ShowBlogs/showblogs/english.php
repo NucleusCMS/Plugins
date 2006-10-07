@@ -7,4 +7,6 @@
 	define('_STICKMODE',		'[currentblog mode only] 0:show all stickyID, 1:show current blog stickyID only');
 	define('_ADCODE_1',		'[Ads code_1] code displayed under first and second item of the page');
 	define('_ADCODE_2',		'[Ads code_2] code displayed under second and third item of the page');
+	define('_TAG_MODE',		'TagEX narrow mode on page-switch');
+	define('_TAG_SELECT',		'all blogs|0|currentblog only|1|narrowed with catid/subcatid|2');
 ?>
