@@ -7,6 +7,8 @@
 //			Initialize $this->exquery
 //	0.5:	use createGlobalItemLink
 //			sql_table support :-P
+//	0.6:	GIF supported
+//			Security Fix
 	
 class NP_ExtractImage extends NucleusPlugin
 {
@@ -27,7 +29,7 @@ class NP_ExtractImage extends NucleusPlugin
 
 	function getVersion ()
 	{
-		return '0.5';
+		return '0.6';
 	}
 
 	function supportsFeature($what)
@@ -51,7 +53,7 @@ class NP_ExtractImage extends NucleusPlugin
 */	
 	}
 	function init() {
-		$this->fileex = array('.jpg', '.png');
+		$this->fileex = array('.jpg', '.png', '.gif');
 		$this->random = 1;
 	}
 	
@@ -87,7 +89,7 @@ class NP_ExtractImage extends NucleusPlugin
 			case 'archive': 
 				global $archive;
 				$y = $m = $d = '';
-				sscanf($archive, '%4d-%2d-%2d', $y,$m,$d);
+				sscanf($archive, '%d-%d-%d', $y,$m,$d);
 				if (empty($d)) {
 					$timestamp_start = mktime(0, 0, 0, $m, 1, $y);
 					$timestamp_end = mktime(0, 0, 0, $m + 1, 1, $y);  // also works when $month==12
@@ -101,16 +103,13 @@ class NP_ExtractImage extends NucleusPlugin
 //			break;
 			default:
 				if (empty($exmode)) {
-					$this->exquery .= ' and iblog = ' . $b->getID();
+						$this->exquery .= ' and iblog = ' . intval($b->getID());
 					global $catid;
 					if ($catid) {	
 						$this->exquery .= ' and icat = ' . intval($catid);
 					}
 				}
 		}
-
-
-
 
 		$filelist = array();
 		$this->imglists = array();
@@ -131,8 +130,8 @@ class NP_ExtractImage extends NucleusPlugin
 				break;
 			case 'tate':
 				for ($i=0;$i<$amount;$i++) {
-//					$itemlink = $this->createGlobalItemLink($filelist[$i][1], '');
-					$itemlink = createItemLink($filelist[$i][1]);
+					$itemlink = $this->createGlobalItemLink($filelist[$i][1], '');
+//					$itemlink = createItemLink($filelist[$i][1]);
 					echo '<div>';
 					echo '<a href="' . $itemlink . '">';
 					echo '<img src="' . $CONF['ActionURL'] . '?action=plugin&name=ExtractImage&type=draw&p=' . $filelist[$i][0][0] . '&wsize=' . $wsize . '" vspace="1" />';
@@ -143,10 +142,10 @@ class NP_ExtractImage extends NucleusPlugin
 			default:
 				echo '<div>';
 				for ($i=0;$i<$amount;$i++) {
-//					$itemlink =$this->createGlobalItemLink($filelist[$i][1], '');
-					$itemlink =$this->createItemLink($filelist[$i][1]);
+					$itemlink =$this->createGlobalItemLink($filelist[$i][1], '');
+//					$itemlink = createItemLink($filelist[$i][1]);
 					echo '<a href="'.$itemlink.'">';
-					echo '<img src="' . $CONF['ActionURL'] . '?action=plugin&name=ExtractImage&type=draw&p=' . $filelist[$i][0][0] . '&hsize=' . $hsize . '" />';
+					echo '<img src="' . $CONF['ActionURL'] . '?action=plugin&name=ExtractImage&type=draw&p=' . htmlspecialchars($filelist[$i][0][0], ENT_QUOTES) . '&hsize=' . $hsize . '" />';
 					echo "</a>\n";
 				}
 					echo "</div>\n";
@@ -209,33 +208,34 @@ class NP_ExtractImage extends NucleusPlugin
 	function baseimageCreate($p, $im_info)
 	{
 		switch($im_info[2]){
+			case 1:
+				return ImageCreateFromGif($p);
 			case 2:
-			return ImageCreateFromJpeg($p);
+				return ImageCreateFromJpeg($p);
 			case 3:
-			return ImageCreateFromPng($p);
+				return ImageCreateFromPng($p);
 			default:
-			return;
+				return;
 		}
 	}
 
 	function doAction($type)
 	{
-		global $CONF;
 		global $DIR_MEDIA;
-		$return = serverVar('HTTP_REFERER');
-		$return = preg_replace('|[^a-z0-9-~+_.?#=&;,/:@%]|i', '', $return);
-		switch ($type) {
-			case draw:
-				if(!requestVar('p')) return;
-				$p = $DIR_MEDIA.requestVar('p');	//Œ³‰æ‘œ‚Ö‚ÌƒpƒX
-//				$id = requestVar('id');
 		
-				//Œ³‰æ‘œ‚Ìî•ñ‚ð“¾‚é
+		if(!requestVar('p')) return 'No such file';
+		$p = $DIR_MEDIA.requestVar('p');	//path
+		$p = realpath($p);
+		if( !$p ) return 'No such file';
+		if( strpos($p, $DIR_MEDIA) !== 0 ) return 'No such file';
+		
+		switch ($type) {
+			case 'draw':
 				$this->im_info = GetImageSize($p);
 		
-				$tsize['h'] = requestVar('hsize');
-				if (!$tsize['h'] && requestVar('wsize')){
-					$tsize['w'] = requestVar('wsize');
+				$tsize['h'] = intRequestVar('hsize');
+				if (!$tsize['h'] && intRequestVar('wsize')){
+					$tsize['w'] = intRequestVar('wsize');
 					$tsize['h'] = intval($this->im_info[1] * $tsize['w'] / $this->im_info[0]);
 				}
 				if (!$tsize['h']) {
@@ -251,6 +251,11 @@ class NP_ExtractImage extends NucleusPlugin
 				ImageCopyResampled( $im, $im_r, 0, 0, 0, 0, $tsize['w'], $tsize['h'], $this->im_info[0], $this->im_info[1] );
 
 				switch ($this->im_info[2]) {
+					case 1:
+					header ("Content-type: image/gif");
+					ImageGif($im);
+					imagedestroy($im);
+					break;
 					case 2:
 					header ("Content-type: image/jpeg");
 					ImageJpeg($im);
@@ -267,7 +272,7 @@ class NP_ExtractImage extends NucleusPlugin
 			break;
 
 			default:
-				Header('Location: ' . $return);
+				return 'No such action';
 				break;
 //_=======
 		}
