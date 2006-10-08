@@ -1,4 +1,9 @@
 <?php
+
+//history
+//	0.71:	Fixed security issue.
+//			Fixed typo.
+
 // plugin needs to work on Nucleus versions <=2.0 as well
 if (!function_exists('sql_table')){
 	function sql_table($name) { return 'nucleus_' . $name; }
@@ -8,7 +13,7 @@ class NP_UpdateTime extends NucleusPlugin {
 	function getName() { return 'UpdateTime'; }
 	function getAuthor()  { return 'nakahara21'; }
 	function getURL() { return 'http://xx.nakahara21.net/'; }
-	function getVersion() { return '0.7'; }
+	function getVersion() { return '0.71'; }
 	function getDescription() { return 'Record updatetime when the item updated.'; }
 	function supportsFeature($what) {
 		switch($what){
@@ -22,14 +27,14 @@ class NP_UpdateTime extends NucleusPlugin {
 	function getEventList() { return array('EditItemFormExtras','PreUpdateItem'); }
 	function install() {
 		sql_query('CREATE TABLE IF NOT EXISTS ' . sql_table('plugin_rectime'). ' (up_id int(11) not null, updatetime datetime, PRIMARY KEY (up_id))');
-		$this->createOption('DefautMode','¥Ç¥Õ¥©¥ë¥È¤Î¥â¡¼¥É¤Ï¡©(0:²¿¤â¤·¤Ê¤¤, 1:¹¹¿·Æü»şµ­Ï¿¤Î¤ß, 2:¥¢¥¤¥Æ¥àÆü»ş¾å½ñ¤­)','text','1');
-		$this->createOption('BeforeTime','¥¢¥¤¥Æ¥àÆü»ş¾å½ñ¤­¤Î¾ì¹ç¤ÎÉ½¼¨·Á¼°:','text','¢¨ ¤³¤Î¥¢¥¤¥Æ¥à¤Ï<%utime%>¤ËÊİÂ¸¤µ¤ì¤¿¤â¤Î¤òºÆÊÔ½¸¤·¤Æ¤¤¤Ş¤¹');
-		$this->createOption('AfterTime','¹¹¿·Æü»şµ­Ï¿¤Î¤ß¤Î¾ì¹ç¤ÎÉ½¼¨·Á¼°','text','ºÇ½ª¹¹¿·Æü»ş:<%utime%>');
-		$this->createOption('DateFormat','¥Æ¥ó¥×¥ì¡¼¥ÈÆâ¤ÎÆü»şÉ½¼¨·Á¼°(php¤Îdate´Ø¿ô Îã Y-m-d H:i:s):','text','Y-m-d H:i:s');
-		$this->createOption('s_lists','ºÇ¿·¹¹¿·¥ê¥¹¥È¤Î³«»Ï¥¿¥°','text','<ul class="nobullets">');
-		$this->createOption('e_lists','ºÇ¿·¹¹¿·¥ê¥¹¥È¤Î½ªÎ»¥¿¥°','text','</ul>');
-		$this->createOption('s_items','ºÇ¿·¹¹¿·¥ê¥¹¥È¤Î³Æ¥¢¥¤¥Æ¥à¤Î³«»Ï¥¿¥°','text','<li>');
-		$this->createOption('e_items','ºÇ¿·¹¹¿·¥ê¥¹¥È¤Î³Æ¥¢¥¤¥Æ¥à¤Î½ªÎ»¥¿¥°','text','</li>');
+		$this->createOption('DefautMode','ãƒ‡ãƒ•ã‚©ãƒ«ãƒˆã®ãƒ¢ãƒ¼ãƒ‰ã¯ï¼Ÿ','select', '1', 'ä½•ã‚‚ã—ãªã„|0|æ›´æ–°æ—¥æ™‚è¨˜éŒ²ã®ã¿|1|ã‚¢ã‚¤ãƒ†ãƒ æ—¥æ™‚ä¸Šæ›¸ã|2');
+		$this->createOption('BeforeTime','ã‚¢ã‚¤ãƒ†ãƒ æ—¥æ™‚ä¸Šæ›¸ãã®å ´åˆã®è¡¨ç¤ºå½¢å¼:','text','â€» ã“ã®ã‚¢ã‚¤ãƒ†ãƒ ã¯<%utime%>ã«ä¿å­˜ã•ã‚ŒãŸã‚‚ã®ã‚’å†ç·¨é›†ã—ã¦ã„ã¾ã™');
+		$this->createOption('AfterTime','æ›´æ–°æ—¥æ™‚è¨˜éŒ²ã®ã¿ã®å ´åˆã®è¡¨ç¤ºå½¢å¼','text','æœ€çµ‚æ›´æ–°æ—¥æ™‚:<%utime%>');
+		$this->createOption('DateFormat','ãƒ†ãƒ³ãƒ—ãƒ¬ãƒ¼ãƒˆå†…ã®æ—¥æ™‚è¡¨ç¤ºå½¢å¼(phpã®dateé–¢æ•° ä¾‹ Y-m-d H:i:s):','text','Y-m-d H:i:s');
+		$this->createOption('s_lists','æœ€æ–°æ›´æ–°ãƒªã‚¹ãƒˆã®é–‹å§‹ã‚¿ã‚°','text','<ul class="nobullets">');
+		$this->createOption('e_lists','æœ€æ–°æ›´æ–°ãƒªã‚¹ãƒˆã®çµ‚äº†ã‚¿ã‚°','text','</ul>');
+		$this->createOption('s_items','æœ€æ–°æ›´æ–°ãƒªã‚¹ãƒˆã®å„ã‚¢ã‚¤ãƒ†ãƒ ã®é–‹å§‹ã‚¿ã‚°','text','<li>');
+		$this->createOption('e_items','æœ€æ–°æ›´æ–°ãƒªã‚¹ãƒˆã®å„ã‚¢ã‚¤ãƒ†ãƒ ã®çµ‚äº†ã‚¿ã‚°','text','</li>');
 		$this->createOption("del_uninstall", "Delete tables on uninstall?", "yesno", "no");
 	}
 	function unInstall() { 
@@ -45,33 +50,32 @@ class NP_UpdateTime extends NucleusPlugin {
 
 	function event_EditItemFormExtras($data) {
 		$checked_flag[$this->def_mode] = ' checked="checked"';
-		echo '<h3 style="margin-bottom:0;">¹¹¿·»ş¹ï¤Îµ­Ï¿ÊıË¡¤ÎÁªÂò</h3>';
-		echo '<input type="radio" name="updatetime" value="2" id="updatetime_2"'.$checked_flag[2].' /><label for="updatetime_2">¥¢¥¤¥Æ¥àÆü»ş¤È¤·¤Æ¾å½ñ¤­¤¹¤ë</label><br />';
-		echo '<input type="radio" name="updatetime" value="1" id="updatetime_1"'.$checked_flag[1].' /><label for="updatetime_1">¹¹¿·Æü»ş¤òµ­Ï¿¤¹¤ë¤Î¤ß</label><br />';
-		echo '<input type="radio" name="updatetime" value="0" id="updatetime_0"'.$checked_flag[0].' /><label for="updatetime_0">²¿¤â¤·¤Ê¤¤</label><br />';
+		echo '<h3 style="margin-bottom:0;">æ›´æ–°æ™‚åˆ»ã®è¨˜éŒ²æ–¹æ³•ã®é¸æŠ</h3>';
+		echo '<input type="radio" name="updatetime" value="2" id="updatetime_2"'.$checked_flag[2].' /><label for="updatetime_2">ã‚¢ã‚¤ãƒ†ãƒ æ—¥æ™‚ã¨ã—ã¦ä¸Šæ›¸ãã™ã‚‹</label><br />';
+		echo '<input type="radio" name="updatetime" value="1" id="updatetime_1"'.$checked_flag[1].' /><label for="updatetime_1">æ›´æ–°æ—¥æ™‚ã‚’è¨˜éŒ²ã™ã‚‹ã®ã¿</label><br />';
+		echo '<input type="radio" name="updatetime" value="0" id="updatetime_0"'.$checked_flag[0].' /><label for="updatetime_0">ä½•ã‚‚ã—ãªã„</label><br />';
 	}
 
 	function event_PreUpdateItem($data) {
-		global $manager;
-
 		$recd = intRequestVar('updatetime');
 		if (!$recd) return;
 		if (postVar('actiontype') == 'adddraft') return;
 
 		$updatetime = mysqldate($data['blog']->getCorrectTime());
 		if ($recd == 2){
-			$up_query = 'UPDATE '.sql_table('item').' SET itime='.$updatetime.' WHERE inumber='.$data['itemid'];
-			$updatetime = '"'.quickQuery('SELECT itime as result FROM '.sql_table('item').' WHERE inumber='.$data['itemid']).'"';
-			$tmptime = '"'.quickQuery('SELECT updatetime as result FROM '.sql_table('plugin_rectime').' WHERE up_id='.$data['itemid']).'"';
+			$up_query = 'UPDATE '.sql_table('item').' SET itime='.$updatetime.' WHERE inumber='.intval($data['itemid']);
+			$updatetime = '"'.quickQuery('SELECT itime as result FROM '.sql_table('item').' WHERE inumber='.intval($data['itemid'])).'"';
+			$tmptime = '"'.quickQuery('SELECT updatetime as result FROM '.sql_table('plugin_rectime').' WHERE up_id='.intval($data['itemid'])).'"';
 			if($tmptime > $updatetime)
 				$updatetime = $tmptime;
 			sql_query($up_query);
 		}
-		sql_query('DELETE FROM '.sql_table('plugin_rectime')." WHERE up_id=".$data['itemid']);
-		$query = 'INSERT INTO ' . sql_table('plugin_rectime') . " (up_id, updatetime) VALUES ('".$data['itemid']."',".$updatetime.")";
+		sql_query('DELETE FROM '.sql_table('plugin_rectime')." WHERE up_id=".intval($data['itemid']));
+		$query = 'INSERT INTO ' . sql_table('plugin_rectime') . " (up_id, updatetime) VALUES ('".intval($data['itemid'])."',".$updatetime.")";
 		$res = @mysql_query($query);
 		if (!$res) 
 			return 'Could not save data: ' . mysql_error();
+		return '';
 	}
 
 	function doSkinVar($skinType, $maxtoshow = 5, $bmode = 'current') {
@@ -84,10 +88,10 @@ class NP_UpdateTime extends NucleusPlugin {
 		if($maxtoshow == ''){$maxtoshow = 5;}
 		if($bmode == ''){$bmode = 'current';}
 
-		echo $this->getOption(s_lists)."\n";
+		echo $this->getOption('s_lists')."\n";
 		$query = 'SELECT r.up_id as up_id, IF(INTERVAL(r.updatetime, i.itime), UNIX_TIMESTAMP(r.updatetime), UNIX_TIMESTAMP(i.itime) ) as utime FROM '.sql_table('plugin_rectime') . ' as r, '.sql_table('item') .' as i WHERE  r.up_id=i.inumber';
 		if($bmode != 'all'){
-			$query .= ' and i.iblog='.$blogid;
+			$query .= ' and i.iblog='.intval($blogid);
 		}	
 		$query .= ' ORDER BY utime DESC';
 		$query .= ' LIMIT 0,'.intval($maxtoshow);
@@ -100,12 +104,12 @@ class NP_UpdateTime extends NucleusPlugin {
 				$itemtitle = shorten($itemtitle,26,'..');
 				$itemdate = date('m/d H:i',$row->utime);
 
-				echo $this->getOption(s_items)."\n";
-				echo '<a href="'.$itemlink.'">'.$itemtitle.'</a> <small>'.$itemdate."</small>\n";
-				echo $this->getOption(e_items)."\n";
+				echo $this->getOption('s_items')."\n";
+				echo '<a href="'.$itemlink.'">'.htmlspecialchars($itemtitle,ENT_QUOTES).'</a> <small>'.$itemdate."</small>\n";
+				echo $this->getOption('e_lists')."\n";
 			}
 		}
-		echo $this->getOption(e_lists);
+		echo $this->getOption('e_lists');
 	}
 
 	function doTemplateVar(&$item){
@@ -114,9 +118,9 @@ class NP_UpdateTime extends NucleusPlugin {
 		if($row = mysql_fetch_assoc($res)){
 			$data['utime'] = date($this->getOption('DateFormat'),$row['updatetime']);
 			if($row['updatetime'] > $row['itemtime']){
-				echo TEMPLATE::fill($this->getOption('AfterTime'),$data);;
+				echo TEMPLATE::fill($this->getOption('AfterTime'),$data);
 			}elseif($row['updatetime'] < $row['itemtime']){
-				echo TEMPLATE::fill($this->getOption('BeforeTime'),$data);;
+				echo TEMPLATE::fill($this->getOption('BeforeTime'),$data);
 			}
 		}
 	}
