@@ -4,6 +4,7 @@
 //	0.5:	test version
 //	0.51	htmlspecialchars text
 //	0.52	linkurl ready :: rename to pholiot
+//	0.53	Security fix.
 
 // plugin needs to work on Nucleus versions <=2.0 as well
 if (!function_exists('sql_table')){
@@ -16,7 +17,7 @@ class NP_Pholiot extends NucleusPlugin {
 	function getName () {return 'Pholiot'; }
 	function getAuthor () {return 'nakahara21'; }
 	function getURL () {return 'http://xx.nakahara21.net/';}
-	function getVersion () {return '0.52';}
+	function getVersion () {return '0.53';}
 	function supportsFeature($what) {
 		switch($what){
 			case 'SqlTablePrefix':
@@ -52,7 +53,7 @@ class NP_Pholiot extends NucleusPlugin {
 		switch($skinType){
 			case 'archive': 
 				global $archive;
-				sscanf($archive,'%4c-%2c-%2c',$year,$month,$day);
+				sscanf($archive,'%d-%d-%d',$year,$month,$day);
 				if ($day == 0) {
 					$timestamp_start = mktime(0,0,0,$month,1,$year);
 					$timestamp_end = mktime(0,0,0,$month+1,1,$year);  // also works when $month==12
@@ -62,14 +63,14 @@ class NP_Pholiot extends NucleusPlugin {
 				}
 				$this->exquery .= ' and itime>=' . mysqldate($timestamp_start)
 				                . ' and itime<' . mysqldate($timestamp_end);
-
-//			break;
+				break;
 			default:
-				if(!$exmode){
-					$this->exquery .= ' and iblog =' . $b->getID();
-					global $catid;
-					if($catid)	$this->exquery .= ' and icat =' . $catid;
-				}
+				break;
+		}
+		if(!$exmode){
+			$this->exquery .= ' and iblog =' . intval($b->getID());
+			global $catid;
+			if($catid)	$this->exquery .= ' and icat =' . intval($catid);
 		}
 
 		$filelist = array();
@@ -98,7 +99,7 @@ EOD;
 					foreach($filelist as $imglist){
 						$linkurl = $this->createGlobalItemLink($imglist[1],'');
 						$feed .= '<image>';
-						$feed .= '<imageurl>'.$CONF[MediaURL].$imglist[0].'</imageurl>';
+						$feed .= '<imageurl>'.$CONF['MediaURL'].$imglist[0].'</imageurl>';
 						$feed .= '<caption>'.$imglist[2].'</caption>';
 						$feed .= '<linkurl name="'.$imglist[3].' ID:'.$imglist[1].'">'.$linkurl.'</linkurl>';
 						$feed .= '</image>';
@@ -135,7 +136,7 @@ EOD;
 	}
 
 	function listup(){
-		global $blog,$manager;
+		global $blog,$manager,$CONF;
 		($blog)?
 			$b =& $blog :
 			$b =& $manager->getBlog($CONF['DefaultBlog']);
@@ -169,7 +170,7 @@ EOD;
 	function exarray($imginfo,$key,$iaid){
 		list($iid, $auid, $capt,$item_ymd) = $iaid;
 		$imginfo = explode("|",$imginfo);
-		if(trim($imginfo[3])) $capt = htmlspecialchars(shorten(strip_tags($imginfo[3]),30,'..'));
+		if(trim($imginfo[3])) $capt = htmlspecialchars(shorten(strip_tags($imginfo[3]),30,'..'),ENT_QUOTES);
 		
 		if(!in_array(strtolower(strrchr($imginfo[0], "." )),$this->fileex)) return;
 		if(in_array($imginfo[0],$this->imgfilename)) return;
