@@ -74,16 +74,16 @@ class NP_TagEX extends NucleusPlugin
 	{
 		$this->createOption('flg_erase',			'Erase data on uninstall.',				'yesno',	'no');
 // <editable template mod by shizuki>
-		$this->createOption('editTagOrder',		'editform tag order',						'select',	'1',	'1|amount(desc)|2|amount(asc)|3|tag\'s order|4|random');
+		$this->createOption('editTagOrder',		'editform tag order',						'select',	'1',	'amount(desc)|1|amount(asc)|2|tag\'s order|3|random|4');
 		$this->createOption('and',					'template for \'and\'',					'textarea',	'<span style="font-family:tahoma;font-size:smaller;"> <a href="<%andurl%>" title="narrow">&amp;</a>.');
 		$this->createOption('or',					'template for \'or\'',					'textarea',	'<a href="<%orurl%>" title="expand">or</a> </span>');
 		$this->createOption('tagIndex',			'template for \'tagIndex\'',				'textarea',	'<%and%><%or%><span style="font-size:<%fontlevel%>em" title="<%tagamount%> post(s)! <%tagitems%>"><a href="<%taglinkurl%>"><%tag%></a></span>');
 		$this->createOption('tagItemHeader',		'template for \'tagItemHeader\'',		'textarea',	'');
 		$this->createOption('tagItem',				'template for \'tagItem\'',				'textarea',	'<%itemid%>:<%itemtitle%>');
-		$this->createOption('tagItemSeparator',	'template for \'tagItemSeparator\'',	'textarea',	' , ');
+		$this->createOption('tagItemSeparator',	'template for \'tagItemSeparator\'',	'text',	' , ');
 		$this->createOption('tagItemFooter',		'template for \'tagItemFooter\'',		'textarea',	'');
 		$this->createOption('tagIndexSeparator',	'template for \'tagIndexSeparator\'',	'text',			' | ');
-		$this->createOption('tagsonlycurrent',	'show tags only current items have',	'yesno',		'no');
+		$this->createOption('tagsonlycurrent',	'show tags only current blog have',	'yesno',		'no');
 		$this->createOption('colorfulhighlight',	'colorful highlight mode ?',				'yesno',		'no');
 		$this->createOption('highlight',			'template for normal highlightmode',	'text',		'<span class="highlight">\0</span>');
 //</mod by shizuki>*/
@@ -773,9 +773,15 @@ function resetOlder(old){
 
 			case 'tag':
 				if ($requestTarray) {
-					$reqANDp = @join('"+"', $reqAND);
+					foreach ($reqAND as $val) {
+						$reqAndLink[] = '<a href="' . $this->creatTagLink($val) . '" title="' . $val . '">' . $val . '</a>';
+					}
+					$reqANDp = @join('" + "', $reqAndLink);
 					if ($reqOR) {
-						$reqORp = '"</u> or <u>"' . @join('"</u> or <u>"', $reqOR);
+						foreach ($reqOR as $val) {
+							$reqOrLink[] = '<a href="' . $this->creatTagLink($val) . '" title="' . $val . '">' . $val . '</a>';
+						}
+						$reqORp = '"</u> or <u>"' . @join('"</u> or <u>"', $reqOrLink);
 					}
 					echo '<h1> Tag for <u>"' . $reqANDp . $reqORp . '"</u></h1>';
 				}
