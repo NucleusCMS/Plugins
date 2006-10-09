@@ -187,7 +187,8 @@ class NP_ItemNaviEX extends NucleusPlugin
 		if ($showHome == 1) {
 			$naviUnit[] = array(
 				0 => 'Home',
-				1 => $CONF['IndexURL']
+				1 => $CONF['IndexURL'],
+				2 => createArchiveListLink($blogid)
 			);
 		}
 
