@@ -693,17 +693,19 @@ class NP_CustomURL extends NucleusPlugin
 						'bid' => $blogid,
 						'name' => $pathName
 					);
+					$comp = FALSE;
 				// category ?
-					if (!$cLink && !$iLink && substr($pathName, -5) != '.html') {
+					if (!$comp && !$cLink && !$iLink && substr($pathName, -5) != '.html') {
 						$linkObj['linkparam'] = 'category';
 						$cat_id = $this->getRequestPathInfo($linkObj);
 						if (!empty($cat_id)) {
 							$catid = intval($cat_id);
 							$cLink = TURE;
+							$comp = TRUE;
 						}
 					}
 				// subcategory ?
-					if ($cLink && !$iLink && $mcategories && substr($pathName, -5) != '.html') {
+					if (!$comp && $cLink && !$iLink && $mcategories && substr($pathName, -5) != '.html') {
 						$linkObj['linkparam'] = 'subcategory';
 						$linkObj['bid'] = $catid;
 						$subcat_id = $this->getRequestPathInfo($linkObj);
@@ -711,6 +713,7 @@ class NP_CustomURL extends NucleusPlugin
 							$_REQUEST[$subrequest] = intval($subcat_id);
 							$subcatid = intval($subcat_id);
 							$sc = $i;
+							$comp = TRUE;
 						}
 					}
 				// item ?
