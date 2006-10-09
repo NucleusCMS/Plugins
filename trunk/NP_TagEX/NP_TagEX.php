@@ -285,9 +285,9 @@ function resetOlder(old){
 <?php		
 		echo '<div style="height: 200px;overflow: auto;">' . "\n";
 		if ($this->getOption('tagsonlycurrent') == no) {
-			$existTags = $this->scanExistTags(0, 99999999, intavl($this->getOption('editTagOrder')));
+			$existTags = $this->scanExistTags(0, 99999999, intval($this->getOption('editTagOrder')));
 		} else {
-			$existTags = $this->scanExistTags(1, 99999999, intavl($this->getOption('editTagOrder')), $blogid);
+			$existTags = $this->scanExistTags(1, 99999999, intval($this->getOption('editTagOrder')), $blogid);
 		}
 		if($existTags){
 			$existTags = array_keys($existTags);
