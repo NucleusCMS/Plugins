@@ -458,7 +458,7 @@ function resetOlder(old){
 		}
 		
 		if (isset($inums)) {
-			$q_query = 'UPDATE %s SET inums = %s, inums_count = %d, WHERE tag = %s';
+			$q_query = 'UPDATE %s SET inums = %s, inums_count = %d WHERE tag = %s';
 			sql_query(sprintf($q_query, _TAGEX_KLIST_TABLE, $this->quote_smart($inums), intval($inums_count), $tag));
 		}
 	}
