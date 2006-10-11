@@ -14,7 +14,8 @@ global $CONF;
 	$CategoryKey = ($usePathInfo) ? $CONF['CategoryKey'] : 'catid';
 
 //	$objectId = requestVar('o');
-	$objectId = 'tree' . intval(substr(requestVar('o'), 4));
+	$objectId = 'tree' . preg_replace('|[^0-9a-f]|i', '', substr(requestVar('o'), 4));
+//	$objectId = 'tree' . intval(substr(requestVar('o'), 4));
 	$blogid = intRequestVar('bid');
 	if (empty($blogid)) $blogid = intval($CONF['DefaultBlog']);
 	$blogname = getBlogNameFromID($blogid);
@@ -63,7 +64,7 @@ global $CONF;
 //		$url = createBlogidLink($blogid, array('catid'=>$catid));
 		$url = createCategoryLink($catid);
 //		$url = createBlogidLink($blogid, array("$CategoryKey"=>$catid));
-		echo $objectId . ".add(" . $n . ",0,'" . htmlspecialchars($o->cname) . "','" . htmlspecialchars($url) . "');\n";
+		echo $objectId . ".add(" . $n . ",0,'" . htmlspecialchars($o->cname) . "','" . htmlspecialchars($url) . "','" . htmlspecialchars($o->cdesc) . "');\n";
 		$catFilter[] = $catid;
 		$n++;
 	}
@@ -106,8 +107,9 @@ global $CONF;
 //		$url = createBlogidLink($blogid, array('catid'=>$u->catid, 'subcatid'=>$scatid));
 		$url = createCategoryLink($u->catid, array($subrequest => $scatid));
 //		$url = createBlogidLink($blogid, array("$CategoryKey"=>$u->catid, 'subcatid'=>$scatid));
+		$scat_desc = $b->getCategoryDesc($catid);
 		$pnode = (!empty($parent_id)) ? $nodeArray['subcat'][$parent_id] : $nodeArray['cat'][$cat_id];
-		echo $objectId . ".add(" . $nodeArray['subcat'][$scatid] . "," . $pnode . ",'" . htmlspecialchars($u->sname) . "','" . $url . "');\n";
+		echo $objectId . ".add(" . $nodeArray['subcat'][$scatid] . "," . $pnode . ",'" . htmlspecialchars($u->sname) . "','" . htmlspecialchars($url) . "','" . htmlspecialchars($u->sdesc) . "');\n";
 	}
 
 	echo "document.write(" . $objectId . ");\n";

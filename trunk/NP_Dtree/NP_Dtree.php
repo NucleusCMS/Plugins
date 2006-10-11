@@ -1,9 +1,12 @@
 <?
 /**
- * 
+ *
+ * 0.94 bug fix
+ *		add language files
+ *		configuration by option
  * 0.93 sec fix
- * 		subcategory link bug fix
- * 
+ *		subcategory link bug fix
+ *
  */
 
 class NP_Dtree extends NucleusPlugin
@@ -26,12 +29,12 @@ class NP_Dtree extends NucleusPlugin
 
 	function getVersion()
 	{
-		return '0.93'; 
+		return '0.94'; 
 	}
 
 	function getDescription()
 	{ 
-		return 'Show Navigation Tree. Usage: &lt;%Dtree()%&gt;';
+		return _DTREE_DESCRIPTION;	//'Show Navigation Tree. Usage: &lt;%Dtree()%&gt;';
 	}
 
 	function supportsFeature($what)
@@ -41,6 +44,29 @@ class NP_Dtree extends NucleusPlugin
 				return 1;
 			default:
 				return 0;
+		}
+	}
+
+	function install()
+	{
+		$this->createOption('folderLinks',		_DTREE_DIR_LINK,	'yesno',	'yes');
+		$this->createOption('useSelection',		_DTREE_SELECTION,	'yesno',	'no');
+		$this->createOption('useCookies',		_DTREE_COOKIE,		'yesno',	'no');
+		$this->createOption('useLines',			_DTREE_LINE,		'yesno',	'yes');
+		$this->createOption('useIcons',			_DTREE_ICON,		'yesno',	'yes');
+		$this->createOption('useStatusText',	_DTREE_ST_TEXT,		'yesno',	'no');
+		$this->createOption('closeSameLevel',	_DTREE_CL_SLEVEL,	'yesno',	'no');
+		$this->createOption('inOrder',			_DTREE_IN_ORDER,	'yesno',	'no');
+	}
+
+	function init()
+	{
+		global $admin;
+		$language = ereg_replace( '[\\|/]', '', getLanguageName());
+		if (file_exists($this->getDirectory().'language/'.$language.'.php')) {
+			include_once($this->getDirectory().'language/'.$language.'.php');
+		}else {
+			include_once($this->getDirectory().'language/english.php');
 		}
 	}
 
@@ -81,8 +107,8 @@ class NP_Dtree extends NucleusPlugin
 		echo '<script type="text/javascript" src="' .
 				htmlspecialchars($this->getAdminURL()) . 'dtreedata.php?o=' . $randomID . 'd&amp;bid=' .
 				$blogid . $eq . '"></script>';
-		echo '<a href="javascript: '.$randomID.'d.openAll();">open all</a>' .
-				' | <a href="javascript: ' . $randomID . 'd.closeAll();">close all</a>';
+		echo '<a href="javascript: ' . $randomID . 'd.openAll();">' . _DTREE_OPENALL . '</a>' .
+				' | <a href="javascript: ' . $randomID . 'd.closeAll();">' . _DTREE_CLOSEALL . '</a>';
 
 	}
 
