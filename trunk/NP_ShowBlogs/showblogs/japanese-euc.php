@@ -1,5 +1,5 @@
 <?php
-	define('_SHOWB_DESC',		'&lt;%blog%&gt;を置き換えるプラグインです。<br />' .
+	define('_SHOWB_DESC',		'&lt;%blog%&gt;と&lt;%archive%&gt;を置き換えるプラグインです。<br />' .
 			'全ブログ、または任意のブログをページスイッチつきで表示します<br />' .
 			'NP_MultipleCategories v0.15 以降のマルチカテゴリ、およびNP_TagEX に対応しています<br />' .
 			'Usage: &lt;%ShowBlogs(default/index, 15, all, 2, DESC, 6/15/56/186, default/stick)%&gt;');
