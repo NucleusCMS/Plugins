@@ -43,18 +43,22 @@ class NP_TagEX extends NucleusPlugin
 	{
 		return 'Tags Extension';
 	}
+
 	function getAuthor()
 	{
 		return 'nakahara21 + shizuki';
 	}
+
 	function getURL()
 	{
 		return 'http://nakahara21.com';
 	}
+
 	function getVersion()
 	{
 		return '0.42';
 	}
+
 	function getDescription()
 	{
 		return 'Tags Extension (for Japanese users)';
@@ -144,7 +148,7 @@ class NP_TagEX extends NucleusPlugin
 				$value = array_map("stripslashes", $value);
 			}
 			if (!array_map("is_numeric",$value)) {
-				if (version_compare(phpversion(),"4.0.3") == "-1") {
+				if (version_compare(phpversion(),"4.3.0") == "-1") {
 					$value = array_map("mysql_escape_string",$value);
 				} else {
 					$value = array_map("mysql_real_escape_string",$value);
@@ -157,7 +161,7 @@ class NP_TagEX extends NucleusPlugin
 				$value = stripslashes($value);
 			}
 			if (!is_numeric($value)) {
-				if (version_compare(phpversion(),"4.0.3") == "-1") {
+				if (version_compare(phpversion(),"4.3.0") == "-1") {
 					$value = "'" . mysql_escape_string($value) . "'";
 				} else {
 					$value = "'" . mysql_real_escape_string($value) . "'";
@@ -226,7 +230,7 @@ class NP_TagEX extends NucleusPlugin
 //
 			$i = 0;
 			foreach($highlightKeys as $qValue) {
-				$pattern = '<span class=\'highlight_'.$i.'\'>\0</span>';
+				$pattern = '<span class=\'highlight_' . $i . '\'>\0</span>';
 				$curItem->body = highlight($curItem->body, $qValue, $pattern);
 				$i++;
 				if ($i == 10) $i = 0;
@@ -234,7 +238,7 @@ class NP_TagEX extends NucleusPlugin
 			if ($curItem->more) {
 				$i = 0;
 				foreach($highlightKeys as $qValue) {
-					$pattern = '<span class=\'highlight_'.$i.'\'>\0</span>';
+					$pattern = '<span class=\'highlight_' . $i . '\'>\0</span>';
 					$curItem->more = highlight($curItem->more, $qValue, $pattern);
 					$i++;
 					if ($i == 10) $i = 0;
@@ -268,7 +272,7 @@ class NP_TagEX extends NucleusPlugin
 		<p style="float:left">
 			<label for="tagex">Tag(s):</label>
 			<a href="javascript:resetOlder('<?php echo $oldforj ?>')">[Reset]</a><br />
-			<textarea id="tagex" name="itags" rows="<?php echo intval($tagrows) ?>" cols="<?php echo intval($tagcols) ?>"><?php echo htmlspecialchars($itags) ?></textarea>
+			<textarea id="tagex" name="itags" rows="<?php echo intval($tagrows) ?>" cols="<?php echo intval($tagcols) ?>" style="width:60%;"><?php echo htmlspecialchars($itags) ?></textarea>
 		</p>
 <script language="JavaScript" type="text/javascript"> 
 <!--
@@ -808,8 +812,9 @@ function resetOlder(old){
 							$taglist[$i] = htmlspecialchars($tag);
 						}
 					}
-					if ($taglist)
-						echo @join(' ', $taglist);
+					if (!empty($taglist)) {
+						$tag_str = @join($sep, $taglist);
+					}
 				} else {
 					if ($tags = $this->scanExistTags($type[1], $amount, $type[2])) {
 						$eachTag = array();
@@ -818,15 +823,17 @@ function resetOlder(old){
 							$eachTag[$t] = htmlspecialchars($tag);
 							$t++;
 						}
-						if ($type[3] != 'ad') {
-							echo @join($sep, $eachTag);
-						} elseif ($type[3] == 'ad') {
+						if (!empty($eachTag)) {
+//						if ($type[3] != 'ad') {
+//							echo @join($sep, $eachTag);
+//						} elseif ($type[3] == 'ad') {
 							$tag_str = @join($sep, $eachTag);
+//						}
 						}
 					}
 				}
 				if ($type[3] != 'ad') {
-					echo '" />';
+					echo $tag_str . '" />';
 				} elseif ($type[3] == 'ad') {
 //					$tag_str = mb_convert_encoding($tag_str, 'UTF-8', 'UTF-8');
 					$tag_str = urlencode($tag_str);
