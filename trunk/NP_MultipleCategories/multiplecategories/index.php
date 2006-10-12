@@ -49,6 +49,7 @@ class NpMCategories_ADMIN {
 
 	function action_overview($msg='') {
 		global $member, $oPluginAdmin;
+		global $manager; //<sato(na)0.5j />
 		
 		$member->isAdmin() or $this->disallow();
 
@@ -66,6 +67,11 @@ class NpMCategories_ADMIN {
 ?>
 			<form method="post" action="<?php echo $this->url ?>index.php"><div>
 				<input type="hidden" name="action" value="tableUpgrade" />
+<?php
+	//<sato(na)0.5j>
+	$manager->addTicketHidden();
+	//</sato(na)0.5j>
+?>
 				<input type="submit" tabindex="10" value="upgrade table" />
 			</div></form>
 <?php
@@ -112,6 +118,7 @@ class NpMCategories_ADMIN {
 
 	function action_scatoverview($msg = '') {
 		global $member, $oPluginAdmin;
+		global $manager; //<sato(na)0.5j />
 		
 		$member->isAdmin() or $this->disallow();
 		
@@ -171,6 +178,11 @@ class NpMCategories_ADMIN {
 	<form method="post" action="<?php echo $this->url ?>index.php"><div>
 	
 		<input name="action" value="scatnew" type="hidden" />
+<?php
+	//<sato(na)0.5j>
+	$manager->addTicketHidden();
+	//</sato(na)0.5j>
+?>
 		<input name="catid" value="<?php echo $catid ?>" type="hidden" />
 		<table><tr>
 			<td><?php echo _MC_SCAT_NAME ?></td>
@@ -206,6 +218,7 @@ class NpMCategories_ADMIN {
 	
 	function action_scatedit($msg = '') {//-----
 		global $member, $oPluginAdmin;
+		global $manager; //<sato(na)0.5j />
 		
 		$member->isAdmin() or $this->disallow();
 
@@ -230,6 +243,11 @@ class NpMCategories_ADMIN {
 <script language=javascript src=<?php echo $this->url ?>orderlist.js></script>
 <form method="post" action="<?php echo $this->url ?>index.php?action=scatedit&catid=<?php echo $catid; ?>&scatid=<?php echo $scatid; ?>">
 	<input type="hidden" name="action" value="scatupdate" />
+<?php
+	//<sato(na)0.5j>
+	$manager->addTicketHidden();
+	//</sato(na)0.5j>
+?>
 	<input type="hidden" name="scatid" value="<?php echo $scatid; ?>" />
 	<input type="hidden" name="catid" value="<?php echo $catid; ?>" />
 
@@ -360,6 +378,7 @@ class NpMCategories_ADMIN {
 
 	function action_scatdelete() {
 		global $member, $oPluginAdmin;
+		global $manager; //<sato(na)0.5j />
 		
 		$member->isAdmin() or $this->disallow();
 		
@@ -406,6 +425,11 @@ class NpMCategories_ADMIN {
 			
 			<form method="post" action="<?php echo $this->url ?>index.php"><div>
 				<input type="hidden" name="action" value="scatdeleteconfirm" />
+<?php
+	//<sato(na)0.5j>
+	$manager->addTicketHidden();
+	//</sato(na)0.5j>
+?>
 				<input type="hidden" name="scatid" value="<?php echo $scatid ?>" />
 				<input type="hidden" name="catid" value="<?php echo $catid ?>" />
 				<?php echo $extraInput ?>
@@ -559,7 +583,21 @@ class NpMCategories_ADMIN {
 	
 
 	function action($action) {
-		$methodName = 'action_' . $action;
+		//<sato(na)0.5j>
+		global $manager;
+		$methodName         = 'action_' . $action;
+		$this->action       = strtolower($action);
+		$aActionsNotToCheck = array( //チケット確認が必要ない、安全なアクションのリスト
+			'overview',
+			'scatoverview',
+			'scatedit',
+			'scatdelete',
+		);
+		if (!in_array($this->action, $aActionsNotToCheck)) {
+			if (!$manager->checkTicket()) $this->error(_ERROR_BADTICKET);
+		}
+		//</sato(na)0.5j>
+		
 		if (method_exists($this, $methodName)) {
 			call_user_func(array(&$this, $methodName));
 		} else {
@@ -612,12 +650,19 @@ class NpMCategories_ADMIN {
     }
     
 	function showOrderMenu($catid, $subcatid=0){//<sato(na)0.402j />
+		global $manager; //<sato(na)0.5j />
 		$text = "<h3>"._MC_MODIFY_CHILDREN_ORDER."</h3>\n";
 		if ($sorder = $this->subcatOrd($catid, $subcatid)){
 			$text .= "<table style='width:auto;'>\n";
 			$text .= "<script language=javascript src={$this->url}orderlist.js></script>\n";
 			$text .= "<form method='post' name='ordform' onsubmit=\"submitCatOrder();\">\n";
 			$text .= "<input type='hidden' name='action' value='scatOrder'>\n";
+			//<sato(na)0.5j>
+			ob_start();
+			$manager->addTicketHidden();
+			$text .= ob_get_contents();
+			ob_end_clean();
+			//</sato(na)0.5j>
 			$text .= "<input type='hidden' name='redirect' value='".getVar('action')."'>\n";
 			$text .= "<input type=hidden name=orderList value=''>\n";
 			//<sato(na)0.402j>

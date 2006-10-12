@@ -34,7 +34,7 @@ class NP_MultipleCategories extends NucleusPlugin {
 	function getName()	{ return 'Multiple Categories [Custom Edition]'; }
 	function getAuthor()	  { return 'Anand + nakahara21 + Taka + sato(na)'; }
 	function getURL()	 { return 'http://reverb.jp/vivian/download.php?itemid=NP_MultipleCategories'; }
-	function getVersion()	 { return '0.403j'; }
+	function getVersion()	 { return '0.5j'; }
 	function getMinNucleusVersion()	 { return '220'; }
 	function getDescription(){ return 'Multiple Categories, Sub Categories'; }
 	function supportsFeature($what) {
