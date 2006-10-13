@@ -349,14 +349,14 @@ $monthlimit = 0;
 		}
 		$q_startpos++;
 		$q_amount--;
-		if ($q_amount <= $q_startpos) return;
+		if ($q_amount < $q_startpos) return;
 		$onlyone_query = $showQuery . ' LIMIT ' . intval($q_startpos) . ', 1';
 		$b->showUsingQuery($template, $onlyone_query, 0, 1, 1); 
 		if (mysql_num_rows(sql_query($onlyone_query)) && empty($ads)) {
 			echo $this->getOption('ads2');
 		}
 //------------SECOND AD CODE END-------------
-		if ($q_amount <= $q_startpos) return;
+		if ($q_amount < $q_startpos) return;
 		$q_startpos++;
 		$q_amount--;
 		$second_query = $showQuery . ' LIMIT ' . intval($q_startpos) . ',' . intval($q_amount);
