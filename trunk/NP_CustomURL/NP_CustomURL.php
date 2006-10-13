@@ -45,7 +45,7 @@ class NP_CustomURL extends NucleusPlugin
 
 	function getVersion()
 	{
-		return '0.3.0';
+		return '0.3.01';
 	}
 
 	function getDescription()
@@ -370,7 +370,8 @@ class NP_CustomURL extends NucleusPlugin
 // Admin area check
 		$uri = str_replace('/', '\/', sprintf("%s%s%s","http://",serverVar("HTTP_HOST"),serverVar("SCRIPT_NAME")));
 		$plug_url = str_replace('/', '\/', $CONF['PluginURL']);
-		if (strpos($uri, $plug_url) === 0) $UsingPlugAdmin = TRUE;
+		$u_plugAction = (getVar('action') == 'plugin' && getVar('name'));
+		if (strpos($uri, $plug_url) === 0 || $u_plugAction) $UsingPlugAdmin = TRUE;
 
 // redirect to other URL style
 		if ($this->getBlogOption(intval($blogid), 'use_customurl') == 'yes' && !$UsingPlugAdmin && !$CONF['UsingAdminArea']) {
@@ -399,7 +400,8 @@ class NP_CustomURL extends NucleusPlugin
 // redirection nomal URL to FancyURL
 			$temp_req = explode('?', serverVar('REQUEST_URI'));
 			$request_path = reset($temp_req);
-			$feeds = ($request_path == 'xml-rss1.php' || $request_path == 'xml-rss2.php' || $request_path == 'atom.php');
+			$feeds = ($request_path == '/xml-rss1.php' || $request_path == '/xml-rss2.php' || $request_path == '/atom.php');
+			if ($feeds) return;
 			if ($this->getBlogOption(intval($blogid), 'redirect_normal') == 'yes' && serverVar('QUERY_STRING') && !$feeds && !$exLink) {
 				$temp = explode('&', serverVar('QUERY_STRING'));
 				foreach ($temp as $k => $val) {
