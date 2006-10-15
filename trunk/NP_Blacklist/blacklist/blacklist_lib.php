@@ -121,15 +121,6 @@ function pbl_checkforspam($text, $ipblock = false, $ipthreshold = 10, $logrule =
 
 	if( $ipblock && $listedrbl = check_for_iprbl() )  {
 		pbl_suspectIP ($ipthreshold);
-// cles::blog
-		if( $listedrbl[0] != 'rbl.cles.net'){
-			$query = sprintf("INSERT INTO cles_iprbl(ip, reason) values('%s','%s')" 
-				, mysql_real_escape_string( $listedrbl[1] )
-				, mysql_real_escape_string( 'RBL:' . $listedrbl[0] )
-				);
-			@mysql_query($query);
-		}
-// cles::blog
 		$ref = serverVar('HTTP_REFERER');
 		return "ip listed on {$listedrbl[0]} found (Referer:{$ref})";
 	}
@@ -138,15 +129,6 @@ function pbl_checkforspam($text, $ipblock = false, $ipthreshold = 10, $logrule =
         if ($ipblock) {
             pbl_suspectIP ($ipthreshold);
         }
-// cles::blog
-		if( $listedrbl[0] != 'rbl.cles.net'){
-			$query = sprintf("INSERT INTO cles_urlrbl(url, reason) values('%s','%s')" 
-				, mysql_real_escape_string( $listedrbl[1] )
-				, mysql_real_escape_string( 'RBL:' . $listedrbl[0] )
-				);
-			@mysql_query($query);
-		}
-// cles::blog
 		return("url(s) listed on {$listedrbl[0]} ({$listedrbl[1]}) found");
 	}
 
@@ -353,13 +335,6 @@ function pbl_addexpression($expression, $comment)  {
 		}
 		fwrite($handle, $expression."\n");
 		fclose($handle);
-		
-//cles::blog
-		$query = 	"update " . sql_table("plugin_referrer_cache") . 
-					" set ref_block = 1, ref_spam = 1 " . 
-					"WHERE ref_from REGEXP '" . $expression . "'";
-		mysql_query($query);
-//cles::blog
 	}
 }
 
@@ -536,10 +511,7 @@ function check_for_iprbl () {
 }
 
 function check_for_domainrbl ( $comment_text ) {
-// cles::blog
-	$domainrbl = array('rbl.cles.net', 'rbl.bulkfeeds.jp', 'url.rbl.jp', 'bsb.spamlookup.net');
-//	$domainrbl = array('rbl.bulkfeeds.jp', 'url.rbl.jp', 'bsb.spamlookup.net');
-// cles::blog
+	$domainrbl = array('rbl.bulkfeeds.jp', 'url.rbl.jp', 'bsb.spamlookup.net');
 	//$regex_url   = "/((http:\/\/)|(www\.))([^\/\"<\s]*)/i";
 	$regex_url   = "{https?://(?:www\.)?([a-z0-9._-]{2,})(?::[0-9]+)?((?:/[_.!~*a-z0-9;@&=+$,%-]+){0,2})}m";
 	$comment_text = mb_strtolower($comment_text);
@@ -747,7 +719,7 @@ function pbl_htaccess($type) {
         }
     }
     if ($type != "ip") {
-        $htaccess .= "\nRewriteRule .* ï¿½ [F,L]\n";
+        $htaccess .= "\nRewriteRule .* ?¿½ [F,L]\n";
     }
     return $htaccess;
 }
