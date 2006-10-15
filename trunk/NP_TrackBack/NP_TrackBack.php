@@ -221,6 +221,17 @@
 		function doAction($type)
 		{
 			global $CONF,$manager;
+			$aActionsNotToCheck = array(
+				'',
+				'ping',
+				'form',
+				'redirect',
+				'left',
+			);
+			if (!in_array($type, $aActionsNotToCheck)) {
+				if (!$manager->checkTicket()) return _ERROR_BADTICKET;
+			}
+			
 			switch ($type) {
 	
 				// When no action type is given, assume it's a ping
@@ -260,8 +271,6 @@
 	
 				// Detect trackback
 				case 'detect':
-					if (!$manager->checkTicket()) return '';
-					
 					list($url, $title) = 
 						$this->getURIfromLink(html_entity_decode(requestVar('tb_link')));
 
@@ -286,14 +295,12 @@
 				
 				// delete a trackback(local)
 				case 'deletelc':
-					if (!$manager->checkTicket()) return _ERROR_BADTICKET;
-				
 					$err = $this->deleteLocal(intRequestVar('tb_id'), intRequestVar('from_id'));
 					if( $err )
 						return $err;
 					header('Location: ' . serverVar('HTTP_REFERER'));
 					break;
-			} 
+			}
 
 			exit;
 		} 
