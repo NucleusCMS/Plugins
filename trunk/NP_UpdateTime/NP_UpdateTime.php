@@ -80,6 +80,12 @@ class NP_UpdateTime extends NucleusPlugin {
 
 	function doSkinVar($skinType, $maxtoshow = 5, $bmode = 'current') {
 		global $manager, $CONF, $blogid;
+		if (is_numeric($blogid)) {
+			$blogid = intval($blogid);
+		} else {
+			$blogid = gttBlogIDFromName($blogid);
+		}
+		
 		$b =& $manager->getBlog($CONF['DefaultBlog']);
 		$this->defaultblogurl = $b->getURL() ;
 		if(!$this->defaultblogurl)
@@ -87,7 +93,7 @@ class NP_UpdateTime extends NucleusPlugin {
 
 		if($maxtoshow == ''){$maxtoshow = 5;}
 		if($bmode == ''){$bmode = 'current';}
-
+		
 		echo $this->getOption('s_lists')."\n";
 		$query = 'SELECT r.up_id as up_id, IF(INTERVAL(r.updatetime, i.itime), UNIX_TIMESTAMP(r.updatetime), UNIX_TIMESTAMP(i.itime) ) as utime FROM '.sql_table('plugin_rectime') . ' as r, '.sql_table('item') .' as i WHERE  r.up_id=i.inumber';
 		if($bmode != 'all'){
