@@ -1,14 +1,14 @@
 <?php
-
 	$strRel = '../../../'; 
 	include($strRel . 'config.php');
+	
+	global $manager, $CONF;
+	$action = $manager->addTicketToUrl($CONF['ActionURL'] . '?action=plugin&name=TrackBack&type=detect')	
 ?>
-
-	var TrackbackAction = "<?php echo $CONF['ActionURL'];?>";
 	var xmlhttp = false;
 	var inProgress = false;
 	
-	var TrackbackAction = "<?php echo $CONF['ActionURL'];?>";
+	var TrackbackAction = "<?php echo $action; ?>";
 	var TrackbackSource = new Array;
 	var TrackbackName   = new Array;
 	var TrackbackURL    = new Array;
@@ -61,7 +61,7 @@
 				// The reason we use GET instead of POST is because
 				// Opera does not properly support setting headers yet,
 				// which is a requirement for using POST.
-				xmlhttp.open("GET", TrackbackAction + "?action=plugin&name=TrackBack&type=detect&tb_link=" + escape(Lookup), true);
+				xmlhttp.open("GET", TrackbackAction + "&tb_link=" + escape(Lookup), true);
 				xmlhttp.onreadystatechange = tbStateChange;
 				xmlhttp.send('');
 			}

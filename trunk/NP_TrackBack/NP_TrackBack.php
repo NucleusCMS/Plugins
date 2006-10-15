@@ -31,7 +31,7 @@
 
 //modify start+++++++++
 		function _createItemLink($itemid, $b){
-			global $CONF, $manager, $blog;
+			global $CONF, $manager;
 			$blogurl = $b->getURL();
 		
 			if (!$blogurl) {
@@ -64,7 +64,7 @@
 		 */
 		function doSkinVar($skinType, $what = '', $tb_id = '', $amount = 'limit-1') {
 
-			global $itemid;
+			global $itemid, $manager, $CONF;
 
 //modify start+++++++++
 			if(eregi('limit', $tb_id)){
@@ -137,6 +137,10 @@
 				case 'form':
 				case 'manualpingformlink':
 					echo $this->getManualPingUrl($tb_id);
+					break;
+				
+				case 'sendpinglink':
+					echo $manager->addTicketToUrl($CONF['PluginURL'] . 'trackback/index.php?action=ping&amp;id=' . intval($tb_id));
 					break;
 	
 				// Insert TrackBack count
@@ -216,7 +220,7 @@
 		 */
 		function doAction($type)
 		{
-			global $CONF;
+			global $CONF,$manager;
 			switch ($type) {
 	
 				// When no action type is given, assume it's a ping
@@ -232,7 +236,6 @@
 				// Manual ping
 				case 'ping':
 					$errorMsg = $this->handlePing();
-					
 					if ($errorMsg != '')
 						$this->showManualPingError(intRequestVar('tb_id'), $errorMsg);
 					else
@@ -257,6 +260,8 @@
 	
 				// Detect trackback
 				case 'detect':
+					if (!$manager->checkTicket()) return '';
+					
 					list($url, $title) = 
 						$this->getURIfromLink(html_entity_decode(requestVar('tb_link')));
 
@@ -281,6 +286,8 @@
 				
 				// delete a trackback(local)
 				case 'deletelc':
+					if (!$manager->checkTicket()) return _ERROR_BADTICKET;
+				
 					$err = $this->deleteLocal(intRequestVar('tb_id'), intRequestVar('from_id'));
 					if( $err )
 						return $err;
@@ -433,8 +440,10 @@
 			);
 			
 			if ($member->isLoggedIn() && $member->isAdmin()){
-				$gVars['admin'] = '<a href="' . $CONF['PluginURL'] . 'trackback/index.php?action=list&amp;id=' . intval($tb_id) . '" target="_blank">[admin]</a>';
-				$gVars['pingform'] = '<a href="' . $CONF['PluginURL'] . 'trackback/index.php?action=ping&amp;id=' . intval($tb_id) . '" target="_blank">[pingform]</a>';
+				$adminurl = $manager->addTicketToUrl($CONF['PluginURL'] . 'trackback/index.php?action=list&amp;id=' . intval($tb_id));
+				$pingformurl = $manager->addTicketToUrl($CONF['PluginURL'] . 'trackback/index.php?action=ping&amp;id=' . intval($tb_id));
+				$gVars['admin'] = '<a href="' . $adminurl . '" target="_blank">[admin]</a>';
+				$gVars['pingform'] = '<a href="' . $pingformurl . '" target="_blank">[pingform]</a>';
 			}
 
 			echo TEMPLATE::fill($this->getOption('tplHeader'), $gVars);
@@ -1025,7 +1034,7 @@
 					'live'   	=> true,
 					
 					/* Backwards compatibility with SpamCheck API 1*/
-					'data'		=> $url . ' ' . $title . ' ' . $excerpt . ' ' . $blog_name,
+					'data'		=> $url . "\n" . $title . "\n" . $excerpt . "\n" . $blog_name . "\n" . serverVar('HTTP_USER_AGENT'),
 					'ipblock'   => true,
 				);
 				
@@ -1221,8 +1230,7 @@
 				
 		function getRequiredURL($itemid){
 			global $manager;
-//			$blog = & $manager->getBlog(getBlogIDFromItemID($item['itemid']));
-			$blog = & $manager->getBlog(getBlogIDFromItemID($itemid));
+			$blog = & $manager->getBlog(getBlogIDFromItemID($item['itemid']));
 			if( $this->isEnableLinkCheck($itemid) )
 				return $this->_createItemLink($itemid, $blog);
 			return null;
@@ -2512,7 +2520,7 @@ function _strip_controlchar($string){
 	  * Show the list of TrackBack pings for a certain Trackback ID
 	  */
 	function showLocalList($tb_id) {
-		global $CONF;
+		global $CONF, $manager;
 		
 		// create SQL query
 		$query = 'SELECT t.from_id as from_id , i.ititle as ititle, i.ibody as ibody, i.itime as itime, i.iblog as iblog FROM '.sql_table('plugin_tb_lc').' as t, '.sql_table('item').' as i WHERE t.tb_id='.intval($tb_id) .' and i.inumber=t.from_id ORDER BY i.itime DESC';
@@ -2539,7 +2547,7 @@ function _strip_controlchar($string){
 				'timestamp' => strftime('%Y-%m-%d',strtotime($o->itime)),
 				'title' => htmlspecialchars($o->ititle),
 				'excerpt' => htmlspecialchars(shorten(strip_tags($o->ibody),200,'...')),
-				'delete' => $canDelete?'<a href="'.$CONF['ActionURL'].'?action=plugin&amp;name=TrackBack&amp;type=deletelc&amp;tb_id='.$tb_id.'&amp;from_id='.$o->from_id.'">[delete]</a>':'',
+				'delete' => $canDelete?'<a href="'. $manager->addTicketToUrl($CONF['ActionURL'].'?action=plugin&amp;name=TrackBack&amp;type=deletelc&amp;tb_id='.intval($tb_id).'&amp;from_id='.intval($o->from_id)).'">[delete]</a>':'',
 				'tburl' => $this->getTrackBackUrl($tb_id),
 				'commentcount'=> quickQuery('SELECT COUNT(*) as result FROM '.sql_table('comment').' WHERE citem=' . intval($o->from_id))
 			);
@@ -2562,7 +2570,7 @@ function _strip_controlchar($string){
 	function canDelete($tb_id) {
 		global $member, $manager;
 		
-		if (!$member->isLoggedIn()) return 0;
+		if ( ! $member->isLoggedIn() ) return 0;
 		
 		$checkIDs = $this->getOption('CheckIDs');
 		$itemExists =& $manager->existsItem($tb_id,0,0);
@@ -2583,7 +2591,7 @@ function _strip_controlchar($string){
 		function getName()   	  { 		return 'TrackBack';   }
 		function getAuthor() 	  { 		return 'rakaz + nakahara21 + hsur'; }
 		function getURL()    	  { 		return 'http://blog.cles.jp/np_cles/category/31/subcatid/3'; }
-		function getVersion()	  { 		return '2.0.3 jp6'; }
+		function getVersion()	  { 		return '2.0.3 jp7'; }
 		function getDescription() { 		return _TB_DESCRIPTION; }
 	
 //modify start+++++++++
