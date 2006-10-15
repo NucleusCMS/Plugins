@@ -77,7 +77,7 @@ class NP_Blacklist extends NucleusPlugin {
 	function getName() 		  { return 'Blacklist'; }
 	function getAuthor()  	  { return 'xiffy + cles'; }
 	function getURL()  		  { return 'http://blog.cles.jp/np_cles/category/31/subcatid/11'; }
-	function getVersion() 	  { return '0.98 jp8'; }
+	function getVersion() 	  { return '0.98 jp9'; }
 	function getDescription() { return 'Blacklist for commentspammers (SpamCheck API 2.0 compatible)';	}
 	function supportsFeature($what) {
 		switch($what) {
@@ -110,7 +110,10 @@ class NP_Blacklist extends NucleusPlugin {
 
 	function getEventList() {
 		$this->_initSettings();
-		return array('QuickMenu','PreAddComment','PreSkinParse','ValidateForm', 'SpamCheck');
+// cles::blog
+		//return array('QuickMenu','PreAddComment','PreSkinParse','ValidateForm', 'SpamCheck');
+		return array('QuickMenu', 'SpamCheck', 'PreSkinParse');
+// cles::blog
 	}
 
 	function hasAdminArea() {

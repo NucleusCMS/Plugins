@@ -25,8 +25,8 @@ define('NP_BLACKLIST_CACHE_LIFE', 86400);
 define('NP_BLACKLIST_CACHE_GC_INTERVAL', NP_BLACKLIST_CACHE_LIFE/8);
 define('NP_BLACKLIST_CACHE_GC_TIMESTAMP', 'gctime');
 define('NP_BLACKLIST_CACHE_GC_TIMESTAMP_LIFE', NP_BLACKLIST_CACHE_LIFE*3);
-require_once(dirname(__FILE__).'/cache_file.php');
-//require_once(dirname(__FILE__).'/cache_eaccelerator.php');
+//require_once(dirname(__FILE__).'/cache_file.php');
+require_once(dirname(__FILE__).'/cache_eaccelerator.php');
 
 function pbl_getconfig()  {
     global $pbl_config;
@@ -79,7 +79,7 @@ function pbl_checkforspam($text, $ipblock = false, $ipthreshold = 10, $logrule =
 			$explodedSplitBuffer = explode("/", $expression);
 			$expression = $explodedSplitBuffer[0];
 			if (strlen($expression) > 0)  {
-				if(preg_match("/".trim($expression)."/i", $text))  {
+				if(preg_match("/".trim($expression)."/im", $text))  {
 	                if ($ipblock) {
 	                    pbl_suspectIP ($ipthreshold);
 	                }
@@ -104,7 +104,7 @@ function pbl_checkforspam($text, $ipblock = false, $ipthreshold = 10, $logrule =
 //    		    if(is_domain($expression))  {
 //	    		    $expression = str_replace(".","\.",$expression);
 //		        }
-			    if(preg_match("/".trim($expression)."/i", $text))  {
+			    if(preg_match("/".trim($expression)."/im", $text))  {
                     if ($ipblock) {
                         pbl_suspectIP ($ipthreshold);
                     }
@@ -121,6 +121,15 @@ function pbl_checkforspam($text, $ipblock = false, $ipthreshold = 10, $logrule =
 
 	if( $ipblock && $listedrbl = check_for_iprbl() )  {
 		pbl_suspectIP ($ipthreshold);
+// cles::blog
+		if( $listedrbl[0] != 'rbl.cles.net'){
+			$query = sprintf("INSERT INTO cles_iprbl(ip, reason) values('%s','%s')" 
+				, mysql_real_escape_string( $listedrbl[1] )
+				, mysql_real_escape_string( 'RBL:' . $listedrbl[0] )
+				);
+			@mysql_query($query);
+		}
+// cles::blog
 		$ref = serverVar('HTTP_REFERER');
 		return "ip listed on {$listedrbl[0]} found (Referer:{$ref})";
 	}
@@ -129,6 +138,15 @@ function pbl_checkforspam($text, $ipblock = false, $ipthreshold = 10, $logrule =
         if ($ipblock) {
             pbl_suspectIP ($ipthreshold);
         }
+// cles::blog
+		if( $listedrbl[0] != 'rbl.cles.net'){
+			$query = sprintf("INSERT INTO cles_urlrbl(url, reason) values('%s','%s')" 
+				, mysql_real_escape_string( $listedrbl[1] )
+				, mysql_real_escape_string( 'RBL:' . $listedrbl[0] )
+				);
+			@mysql_query($query);
+		}
+// cles::blog
 		return("url(s) listed on {$listedrbl[0]} ({$listedrbl[1]}) found");
 	}
 
@@ -336,6 +354,12 @@ function pbl_addexpression($expression, $comment)  {
 		fwrite($handle, $expression."\n");
 		fclose($handle);
 		
+//cles::blog
+		$query = 	"update " . sql_table("plugin_referrer_cache") . 
+					" set ref_block = 1, ref_spam = 1 " . 
+					"WHERE ref_from REGEXP '" . $expression . "'";
+		mysql_query($query);
+//cles::blog
 	}
 }
 
@@ -351,7 +375,7 @@ function pbl_checkregexp($re) {
 	global $g_reOk;
 	$g_reOk = true;
 	set_error_handler("_hdl");
-	preg_match("/".trim($re)."/i", "");
+	preg_match("/".trim($re)."/im", "");
 	restore_error_handler();
 	return $g_reOk;
 }
@@ -512,7 +536,10 @@ function check_for_iprbl () {
 }
 
 function check_for_domainrbl ( $comment_text ) {
-	$domainrbl = array('rbl.bulkfeeds.jp', 'url.rbl.jp', 'bsb.spamlookup.net');
+// cles::blog
+	$domainrbl = array('rbl.cles.net', 'rbl.bulkfeeds.jp', 'url.rbl.jp', 'bsb.spamlookup.net');
+//	$domainrbl = array('rbl.bulkfeeds.jp', 'url.rbl.jp', 'bsb.spamlookup.net');
+// cles::blog
 	//$regex_url   = "/((http:\/\/)|(www\.))([^\/\"<\s]*)/i";
 	$regex_url   = "{https?://(?:www\.)?([a-z0-9._-]{2,})(?::[0-9]+)?((?:/[_.!~*a-z0-9;@&=+$,%-]+){0,2})}m";
 	$comment_text = mb_strtolower($comment_text);
