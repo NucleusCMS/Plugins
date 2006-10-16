@@ -657,12 +657,7 @@ class NpMCategories_ADMIN {
 			$text .= "<script language=javascript src={$this->url}orderlist.js></script>\n";
 			$text .= "<form method='post' name='ordform' onsubmit=\"submitCatOrder();\">\n";
 			$text .= "<input type='hidden' name='action' value='scatOrder'>\n";
-			//<sato(na)0.5j>
-			ob_start();
-			$manager->addTicketHidden();
-			$text .= ob_get_contents();
-			ob_end_clean();
-			//</sato(na)0.5j>
+			$text .= "<input type='hidden' name='ticket' value='".$manager->_generateTicket()."'>\n"; //<sato(na)0.5j />
 			$text .= "<input type='hidden' name='redirect' value='".getVar('action')."'>\n";
 			$text .= "<input type=hidden name=orderList value=''>\n";
 			//<sato(na)0.402j>
