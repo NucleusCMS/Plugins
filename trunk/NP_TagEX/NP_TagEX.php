@@ -386,7 +386,7 @@ function resetOlder(old){
 		if (empty($oldTags)) {
 			return;
 		} else {
-			sql_query('DELETE FROM %s WHERE inum = %d', sql_table('plug_tagex'), $inum);
+			sql_query(sprintf('DELETE FROM %s WHERE inum = %d', sql_table('plug_tagex'), $inum));
 			$deleteTags = $this->getTags($oldTags);
 			for ($i=0;$i<count($deleteTags);$i++) {
 				$this->deleteTags($deleteTags[$i], $inum);
