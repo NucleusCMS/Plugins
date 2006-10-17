@@ -21,10 +21,14 @@
 		$oPluginAdmin->end();
 		exit;
 	}
-
-
-	if (isset($_GET['page'])) {$action = $_GET['page'];}
-	if (isset($_POST['page'])) {$action = $_POST['page'];}
+	
+	$action = requestVar('action');
+	$aActionsNotToCheck = array(
+		'',
+	);
+	if (!in_array($action, $aActionsNotToCheck)) {
+		if (!$manager->checkTicket()) doError(_ERROR_BADTICKET);
+	}
 
 	// Okay; we are allowed. let's go
 	// create the admin area page
@@ -100,13 +104,13 @@
         echo "<h2>Here you can generate .htaccess snippets</h2>";
         pbl_htaccesspage();
     } elseif ($action == 'spamsubmission') {
-		if( $_REQUEST['action'] == 'send' && !empty($_REQUEST['url']) ){
-			$result = $oPluginAdmin->plugin->submitSpamToBulkfeeds($_REQUEST['url']);
+		$url = requestVar('url');
+		if( requestVar('type') == 'send' && ! empty($url) ){
+			$result = $oPluginAdmin->plugin->submitSpamToBulkfeeds( $url );
 
 			echo "<h2>Spam submission</h2>";
 			echo "<h3>result</h3>";
-			echo "<pre>" . htmlspecialchars($result) . "</pre>";
-						
+			echo "<pre>" . htmlspecialchars($result, ENT_QUOTES) . "</pre>";
 		} else {
 			echo "<h2>Spam submission</h2>";
 			pbl_spamsubmission_form();

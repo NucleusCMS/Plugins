@@ -110,10 +110,7 @@ class NP_Blacklist extends NucleusPlugin {
 
 	function getEventList() {
 		$this->_initSettings();
-// cles::blog
-		//return array('QuickMenu','PreAddComment','PreSkinParse','ValidateForm', 'SpamCheck');
-		return array('QuickMenu', 'SpamCheck', 'PreSkinParse');
-// cles::blog
+		return array('QuickMenu','PreAddComment','PreSkinParse','ValidateForm', 'SpamCheck');
 	}
 
 	function hasAdminArea() {

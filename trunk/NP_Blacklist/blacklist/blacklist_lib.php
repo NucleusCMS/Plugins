@@ -199,21 +199,22 @@ function is_domain($stheDomain) {
 
 
 function pbl_nucmenu() {
+	global $manager;
    	echo "<h2>Blacklist menu</h2>\n";
 	echo "<ul>\n";
-	echo "<li><a href=\"".serverVar('PHP_SELF')."?page=blacklist\"><img src=\"".dirname(serverVar('PHP_SELF'))."/icons/i_edit.gif\" /> Blacklist Editor</a></li>\n";
-	echo "<li><a href=\"".serverVar('PHP_SELF')."?page=log\"><img src=\"".dirname(serverVar('PHP_SELF'))."/icons/i_log.gif\" /> Blacklist Log</a></li>\n";
-	echo "<li><a href=\"".dirname(serverVar('PHP_SELF'))."/../../index.php?action=pluginoptions&amp;plugid=".getPlugid()."\"><img src=\"".dirname(serverVar('PHP_SELF'))."/icons/i_prefs.gif\" /> Blacklist options</a></li>\n";
-	echo "<li><a href=\"".serverVar('PHP_SELF')."?page=testpage\"><img src=\"".dirname(serverVar('PHP_SELF'))."/icons/i_edit.gif\" /> Test Blacklist</a></li>\n";
-	echo "<li><a href=\"".serverVar('PHP_SELF')."?page=showipblock\"><img src=\"".dirname(serverVar('PHP_SELF'))."/icons/i_log.gif\" /> Show blocked ip addresses</a></li>\n";
-	echo "<li><a href=\"".serverVar('PHP_SELF')."?page=htaccess\"><img src=\"".dirname(serverVar('PHP_SELF'))."/icons/i_edit.gif\" /> Generate .htaccess snippets</a></li>\n";
-	echo "<li><a href=\"".serverVar('PHP_SELF')."?page=spamsubmission\"><img src=\"".dirname(serverVar('PHP_SELF'))."/icons/i_edit.gif\" /> Spam submission (Bulkfeeds)</a></li>\n";
+	echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?action=blacklist"),ENT_QUOTES)."\"><img src=\"".dirname(serverVar('PHP_SELF'))."/icons/i_edit.gif\" /> Blacklist Editor</a></li>\n";
+	echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?action=log"),ENT_QUOTES)."\"><img src=\"".dirname(serverVar('PHP_SELF'))."/icons/i_log.gif\" /> Blacklist Log</a></li>\n";
+	echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(dirname(serverVar('PHP_SELF'))."/../../index.php?action=pluginoptions&plugid=".getPlugid()),ENT_QUOTES)."\"><img src=\"".dirname(serverVar('PHP_SELF'))."/icons/i_prefs.gif\" /> Blacklist options</a></li>\n";
+	echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?action=testpage"),ENT_QUOTES)."\"><img src=\"".dirname(serverVar('PHP_SELF'))."/icons/i_edit.gif\" /> Test Blacklist</a></li>\n";
+	echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?action=showipblock"),ENT_QUOTES)."\"><img src=\"".dirname(serverVar('PHP_SELF'))."/icons/i_log.gif\" /> Show blocked ip addresses</a></li>\n";
+	echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?action=htaccess"),ENT_QUOTES)."\"><img src=\"".dirname(serverVar('PHP_SELF'))."/icons/i_edit.gif\" /> Generate .htaccess snippets</a></li>\n";
+	echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?action=spamsubmission"),ENT_QUOTES)."\"><img src=\"".dirname(serverVar('PHP_SELF'))."/icons/i_edit.gif\" /> Spam submission (Bulkfeeds)</a></li>\n";
 	echo "</ul>\n";
 }
 
 function pbl_blacklisteditor()  {
 
-	global $pblmessage;
+	global $pblmessage, $manager;
 
 	if(strlen($pblmessage) > 0)  {
 		echo "<div class=\"pblmessage\">$pblmessage</div>\n";
@@ -255,7 +256,9 @@ function pbl_blacklisteditor()  {
 	echo "</div>\n";
 	echo "<div class=\"pbform\">\n";
 	echo "<form action=\"".serverVar('PHP_SELF')."\" method=\"get\">\n";
-	echo "<input type=\"hidden\" name=\"page\" value=\"addpersonal\" />\n";
+	$manager->addTicketHidden();
+	
+	echo "<input type=\"hidden\" name=\"action\" value=\"addpersonal\" />\n";
 	echo "<table class=\"pblform\">\n";
 	echo "<tr>\n";
 	echo "<td>expression</td>\n";
@@ -295,7 +298,7 @@ function pbl_blacklisteditor()  {
 				echo "<td>".htmlspecialchars($key,ENT_QUOTES)."</td>\n";
 				echo "<td>".htmlspecialchars($value,ENT_QUOTES)."</td>\n";
 				echo "<td>";
-				echo "<a href=\"".serverVar('PHP_SELF')."?page=deleteexpression&amp;line=".$line."\">delete</a>";
+				echo "<a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?action=deleteexpression&line=".$line),ENT_QUOTES)."\">delete</a>";
 				echo "</td>";
 				echo "</tr>\n";
 			}
@@ -335,6 +338,7 @@ function pbl_addexpression($expression, $comment)  {
 		}
 		fwrite($handle, $expression."\n");
 		fclose($handle);
+		
 	}
 }
 
@@ -419,6 +423,7 @@ function pbl_log($text)  {
 
 
 function pbl_logtable()  {
+	global $manager;
 	if (file_exists(__WEBLOG_ROOT.__EXT."/settings/blacklist.log"))  {
 		$handle = fopen(__WEBLOG_ROOT.__EXT."/settings/blacklist.log", "r");
 		$logrows = "";
@@ -452,8 +457,10 @@ function pbl_logtable()  {
 	}
 	echo "<div class=\"pbform\" style=\"margin-left:10px;\">\n";
 	echo "<form action=\"".serverVar('PHP_SELF')."\" method=\"get\">\n";
-	echo "<input type=\"hidden\" name=\"page\" value=\"resetlog\" />\n";
+	echo "<input type=\"hidden\" name=\"action\" value=\"resetlog\" />\n";
 	echo "<input type=\"submit\" value=\"Reset log\" />\n";
+	$manager->addTicketHidden();
+	
 	echo "</form>\n";
 	echo "</div>\n";
 }
@@ -628,13 +635,15 @@ function pbl_suspectIP($threshold, $remote_ip = '') {
 }
 
 function pbl_showipblock() {
-    global $pblmessage;
+    global $pblmessage, $manager;
 	$filename  = __WEBLOG_ROOT.__EXT."/settings/blockip.pbl";
 	$line = 0;
 	$fp = fopen($filename,'r');
 	echo "<div class=\"pbform\">\n";
 	echo "<form action=\"".serverVar('PHP_SELF')."\" method=\"get\">\n";
-	echo "<input type=\"hidden\" name=\"page\" value=\"addip\" />\n";
+	echo "<input type=\"hidden\" name=\"action\" value=\"addip\" />\n";
+	$manager->addTicketHidden();
+	
 	echo "Add IP to block: ";
 	echo "<input class=\"pbltextinput\" type=\"text\" name=\"ipaddress\" />\n";
 	echo "<input type=\"submit\" value=\"Add\" />\n";
@@ -652,7 +661,8 @@ function pbl_showipblock() {
 			echo "<tr><td>".$ip."</td><td>[".gethostbyaddr(rtrim($ip))."]</td><td>";
 		else
 			echo "<tr><td>".$ip."</td><td>[<em>skipped</em>]</td><td>";
-		echo "<a href=\"".serverVar('PHP_SELF')."?page=deleteipblock&amp;line=".$line."\">delete</a>";
+		// TODO: aaa
+		echo "<a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?action=deleteipblock&line=".$line),ENT_QUOTES)."\">delete</a>";
 		echo "</td></tr>";
 	}
 	echo "</table>";
@@ -725,7 +735,7 @@ function pbl_htaccess($type) {
 }
 
 function pbl_htaccesspage() {
-	global $pblmessage;
+	global $pblmessage, $manager;
 	if(strlen($pblmessage) > 0)  {
 		echo "<div class=\"pblmessage\">$pblmessage</div>\n";
 	}
@@ -739,11 +749,13 @@ function pbl_htaccesspage() {
     }
 	echo "<div class=\"pbform\" style=\"margin-left:10px;\">\n";
 	echo "<form action=\"".serverVar('PHP_SELF')."\" method=\"post\">\n";
+	$manager->addTicketHidden();
+	
     echo "<input type=\"submit\" label=\"ip\" value=\"Generate blocked IP's\" name=\"type\" />\n";
     echo "<input type=\"submit\" label=\"ip\" value=\"Generate rewrite rules\" name=\"type\" />\n";
     echo "<br />";
     echo "<br />";
-	echo "<input type=\"hidden\" name=\"page\" value=\"htaccess\" />\n";
+	echo "<input type=\"hidden\" name=\"action\" value=\"htaccess\" />\n";
     echo "<textarea class=\"pbltextinput\" cols=\"60\" rows=\"15\" name=\"snippet\" >". pbl_htaccess($type)."</textarea><br />";
     echo "<br />";
     echo "<input title=\"this will clean your block IP addresses file\" type=\"submit\" label=\"ip\" value=\"Reset blocked IP's\" name=\"type\" />\n";
@@ -795,6 +807,8 @@ function pbl_test () {
 }
 
 function pbl_testpage () {
+	global $manager;
+	
     // shows user testpage ...
 	global $pblmessage;
 	if(strlen($pblmessage) > 0)  {
@@ -802,7 +816,9 @@ function pbl_testpage () {
 	}
 	echo "<div class=\"pbform\" style=\"margin-left:10px;\">\n";
 	echo "<form action=\"".serverVar('PHP_SELF')."\" method=\"get\">\n";
-	echo "<input type=\"hidden\" name=\"page\" value=\"test\" />\n";
+	echo "<input type=\"hidden\" name=\"action\" value=\"test\" />\n";
+	$manager->addTicketHidden();
+	
     echo "<textarea class=\"pbltextinput\" cols=\"60\" rows=\"6\" name=\"expression\" ></textarea><br />";
 	echo "<input type=\"submit\" value=\"Test this\" />\n";
 	echo "</form>\n";
@@ -810,8 +826,13 @@ function pbl_testpage () {
 }
 
 function pbl_spamsubmission_form()  {
+		global $manager;
+	
 		// form 
-		echo "<form action=\"".serverVar('PHP_SELF')."?page=spamsubmission&action=send\" method=\"post\">\n";
+		echo "<form action=\"".serverVar('PHP_SELF')."\" method=\"post\">\n";
+		echo "<input type=\"hidden\" name=\"action\" value=\"spamsubmission\" />\n";
+		echo "<input type=\"hidden\" name=\"type\" value=\"send\" />\n";
+		$manager->addTicketHidden();
 
 		// table
 		echo "<table>\n";

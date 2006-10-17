@@ -1,10 +1,10 @@
 <?php
 
 /**
-* cache_eaccelerator.php ($Revision: 1.2 $)
+* cache_eaccelerator.php ($Revision: 1.3 $)
 * 
 * by hsur ( http://blog.cles.jp/np_cles )
-* $Id: cache_eaccelerator.php,v 1.2 2006-09-30 11:46:18 hsur Exp $
+* $Id: cache_eaccelerator.php,v 1.3 2006-10-17 15:37:58 hsur Exp $
 */
 
 function pbl_ipcache_write(){
