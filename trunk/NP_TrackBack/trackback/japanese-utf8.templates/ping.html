@@ -1,10 +1,12 @@
+<?php global $manager; ?>
 <h2>手動pingフォーム</h2>
 
 <form method="post" action="<?php echo $CONF['PluginURL'];?>trackback/index.php">
 
     <input type="hidden" name="action" value="sendping" />
     <input type="hidden" name="next" value="ping" />
-    
+    <?php $manager->addTicketHidden(); ?>
+	
     <table>
         <tr>
             <th colspan='2'>手動ping</th>

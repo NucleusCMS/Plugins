@@ -1,3 +1,4 @@
+<?php global $manager; ?>
 <h2>
 	All trackbacks for &quot;<?php echo $story['title'];?>&quot;
 	<?php if ($count > $amount): ?>
@@ -17,6 +18,7 @@
 					<input type="hidden" name="action" value="list" />
 					<input type="hidden" name="id" value="<?php echo $story['id'];?>" />
 					<input type="hidden" name="start" value="<?php echo max(0,$start - $amount);?>" />
+					<?php $manager->addTicketHidden(); ?>
 				</div>
 			</form>
 			<?php endif; ?>
@@ -29,6 +31,7 @@
 					<input type="hidden" name="action" value="list" />
 					<input type="hidden" name="id" value="<?php echo $story['id'];?>" />
 					<input type="hidden" name="start" value="<?php echo ($start + $amount);?>" />
+					<?php $manager->addTicketHidden(); ?>
 				</div>
 			</form>
 			<?php endif; ?>
@@ -57,13 +60,13 @@
 				<?php echo str_replace(' ', '&nbsp;', date("Y-m-d @ H:i",$item['timestamp']));?>
 			</td>
 			<td>
-				<a href='<?php echo $item['url'];?>'>Visit</a>
+				<a href="<?php echo $item['url'];?>">Visit</a>
 			</td>
 			<td>
-				<a href='<?php echo $CONF['PluginURL'];?>trackback/index.php?action=block&amp;tb=<?php echo $item['id'];?>&amp;next=list&amp;id=<?php echo $story['id'];?>&amp;start=<?php echo $start;?>'>Block</a>
+				<a href="<?php echo htmlspecialchars($manager->addTicketToUrl($CONF['PluginURL'].'trackback/index.php?action=block&tb='.$item['id'].'&next=list&id='.$story['id'].'&start='.$start),ENT_QUOTES);?>">Block</a>
 			</td>
 			<td>
-				<a href='<?php echo $CONF['PluginURL'];?>trackback/index.php?action=delete&amp;tb=<?php echo $item['id'];?>&amp;next=list&amp;id=<?php echo $story['id'];?>&amp;start=<?php echo $start;?>'>Delete</a>
+				<a href="<?php echo htmlspecialchars($manager->addTicketToUrl($CONF['PluginURL'].'trackback/index.php?action=delete&tb='.$item['id'].'&next=list&id='.$story['id'].'&start='.$start),ENT_QUOTES);?>">Delete</a>
 			</td>
 		</tr>
 		<?php endwhile; ?>
@@ -81,6 +84,7 @@
 					<input type="hidden" name="action" value="list" />
 					<input type="hidden" name="id" value="<?php echo $story['id'];?>" />
 					<input type="hidden" name="start" value="<?php echo max(0,$start - $amount);?>" />
+					<?php $manager->addTicketHidden(); ?>
 				</div>
 			</form>
 			<?php endif; ?>
@@ -93,6 +97,7 @@
 					<input type="hidden" name="action" value="list" />
 					<input type="hidden" name="id" value="<?php echo $story['id'];?>" />
 					<input type="hidden" name="start" value="<?php echo ($start + $amount);?>" />
+					<?php $manager->addTicketHidden(); ?>
 				</div>
 			</form>
 			<?php endif; ?>

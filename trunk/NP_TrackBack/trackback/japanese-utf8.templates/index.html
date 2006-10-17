@@ -1,3 +1,4 @@
+<?php global $manager; ?>
 <h2>Overview of all items</h2>
 
 <?php if(count($blogs)): ?>
@@ -22,7 +23,7 @@
 				<?php echo htmlspecialchars($item['total']);?>
 			</td>
 			<td>
-				<a href='<?php echo $CONF['PluginURL'];?>trackback/index.php?action=list&amp;id=<?php echo $item['inumber'];?>'>Trackbacks</a>
+				<a href="<?php echo htmlspecialchars($manager->addTicketToUrl($CONF['PluginURL'].'trackback/index.php?action=list&id='.$item['inumber']),ENT_QUOTES);?>">Trackbacks</a>
 			</td>
 		</tr>
 		<?php endwhile; ?>
@@ -31,5 +32,3 @@
 <?php endwhile; ?>
 </table>
 <?php endif; ?>
-
-

@@ -24,6 +24,14 @@
 		exit;
 	}
 	
+	// Actions
+	$action = requestVar('action');
+	$aActionsNotToCheck = array(
+		'',
+	);
+	if (!in_array($action, $aActionsNotToCheck)) {
+		if (!$manager->checkTicket()) doError(_ERROR_BADTICKET);
+	}
 	$oPluginAdmin->start();
 	
 //modify start+++++++++
@@ -46,9 +54,6 @@
 
 	$oTemplate = new Trackback_Template();
 	$oTemplate->set ('CONF', $CONF);
-
-	// Actions
-	$action = requestVar('action');
 
 	switch($action) {
 

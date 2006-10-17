@@ -1,3 +1,4 @@
+<?php global $manager; ?>
 <h2>
 	ブロックされたトラックバック
 	<?php if ($count > $amount): ?>
@@ -6,8 +7,8 @@
 </h2>
 
 <ul>
-	<li><a href='<?php echo $CONF['PluginURL'];?>trackback/index.php?action=blocked_clear&amp;next=blocked'>ブロックされたトラックバックのクリア</a></li>
-	<li><a href='<?php echo $CONF['PluginURL'];?>trackback/index.php?action=blocked_spamclear&amp;next=blocked'>spam判定されたトラックバックのクリア</a></li> 
+	<li><a href="<?php echo htmlspecialchars($manager->addTicketToUrl($CONF['PluginURL'].'trackback/index.php?action=blocked_clear&next=blocked'),ENT_QUOTES); ?>">ブロックされたトラックバックのクリア</a></li>
+	<li><a href="<?php echo htmlspecialchars($manager->addTicketToUrl($CONF['PluginURL'].'trackback/index.php?action=blocked_spamclear&next=blocked'),ENT_QUOTES); ?>">spam判定されたトラックバックのクリア</a></li> 
 </ul>
 
 <?php if(count($items)): ?>
@@ -21,6 +22,7 @@
 					<input type="submit" value="&lt;&lt; Previous" />	
 					<input type="hidden" name="action" value="blocked" />
 					<input type="hidden" name="start" value="<?php echo max(0,$start - $amount);?>" />
+					<?php $manager->addTicketHidden(); ?>
 				</div>
 			</form>
 			<?php endif; ?>
@@ -32,6 +34,7 @@
 					<input type="submit" value="Next &gt; &gt;" />
 					<input type="hidden" name="action" value="blocked" />
 					<input type="hidden" name="start" value="<?php echo ($start + $amount);?>" />
+					<?php $manager->addTicketHidden(); ?>
 				</div>
 			</form>
 			<?php endif; ?>
@@ -76,13 +79,13 @@
 					'<span style="color: darkred;">No</span>';?>
 			</td>
 			<td>
-				<a href='<?php echo $item['url'];?>'>Visit</a>
+				<a href="<?php echo $item['url'];?>">Visit</a>
 			</td>
 			<td>
-				<a href='<?php echo $CONF['PluginURL'];?>trackback/index.php?action=unblock&amp;tb=<?php echo $item['id'];?>&amp;next=blocked&amp;start=<?php echo $start;?>'>Unblock</a>
+				<a href="<?php echo htmlspecialchars($manager->addTicketToUrl($CONF['PluginURL'].'trackback/index.php?action=unblock&tb='.$item['id'].'&next=blocked&start='.$start),ENT_QUOTES);?>">Unblock</a>
 			</td>
 			<td>
-				<a href='<?php echo $CONF['PluginURL'];?>trackback/index.php?action=delete&amp;tb=<?php echo $item['id'];?>&amp;next=blocked&amp;start=<?php echo $start;?>'>Delete</a>
+				<a href="<?php echo htmlspecialchars($manager->addTicketToUrl($CONF['PluginURL'].'trackback/index.php?action=delete&tb='.$item['id'].'&next=blocked&start='.$start),ENT_QUOTES);?>">Delete</a>
 			</td>
 		</tr>
 		<?php endwhile; ?>
@@ -99,6 +102,7 @@
 					<input type="submit" value="&lt;&lt; Previous" />	
 					<input type="hidden" name="action" value="blocked" />
 					<input type="hidden" name="start" value="<?php echo max(0,$start - $amount);?>" />
+					<?php $manager->addTicketHidden(); ?>
 				</div>
 			</form>
 			<?php endif; ?>
@@ -110,6 +114,7 @@
 					<input type="submit" value="Next &gt; &gt;" />
 					<input type="hidden" name="action" value="blocked" />
 					<input type="hidden" name="start" value="<?php echo ($start + $amount);?>" />
+					<?php $manager->addTicketHidden(); ?>
 				</div>
 			</form>
 			<?php endif; ?>

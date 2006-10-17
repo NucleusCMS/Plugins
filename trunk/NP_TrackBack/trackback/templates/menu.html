@@ -1,14 +1,11 @@
-
+<?php global $manager; ?>
 <h2>Trackback</h2>
 
 <ul>
-	<li><a href='<?php echo $CONF['PluginURL'];?>trackback/index.php?action=index'>Overview of all items</a></li>
-	<li><a href='<?php echo $CONF['PluginURL'];?>trackback/index.php?action=all'>All trackbacks</a></li>
-	<li><a href='<?php echo $CONF['PluginURL'];?>trackback/index.php?action=blocked'>Blocked trackbacks</a></li> 
-	<li><a href='<?php echo $CONF['PluginURL'];?>trackback/index.php?action=ping'>Manually ping another weblog</a></li>
-	<li><a href='<?php echo $CONF['PluginURL'];?>trackback/index.php?action=help'>Help</a></li>
-    <li><a href='<?php echo $CONF['AdminURL'];?>index.php?action=pluginoptions&amp;plugid=<?php echo $plugid;?>'>Plugin Options</a></li>
+	<li><a href="<?php echo htmlspecialchars($manager->addTicketToUrl($CONF['PluginURL'].'trackback/index.php?action=index'),ENT_QUOTES);?>">Overview of all items</a></li>
+	<li><a href="<?php echo htmlspecialchars($manager->addTicketToUrl($CONF['PluginURL'].'trackback/index.php?action=all'),ENT_QUOTES);?>">All trackbacks</a></li>
+	<li><a href="<?php echo htmlspecialchars($manager->addTicketToUrl($CONF['PluginURL'].'trackback/index.php?action=blocked'),ENT_QUOTES);?>">Blocked trackbacks</a></li> 
+	<li><a href="<?php echo htmlspecialchars($manager->addTicketToUrl($CONF['PluginURL'].'trackback/index.php?action=ping'),ENT_QUOTES);?>">Manually ping another weblog</a></li>
+	<li><a href="<?php echo htmlspecialchars($manager->addTicketToUrl($CONF['PluginURL'].'trackback/index.php?action=help'),ENT_QUOTES);?>">Help</a></li>
+    <li><a href="<?php echo htmlspecialchars($manager->addTicketToUrl($CONF['AdminURL'].'index.php?action=pluginoptions&plugid='.$plugid);?>">Plugin Options</a></li>
 </ul>
-
-<p>&nbsp;</p>
-	

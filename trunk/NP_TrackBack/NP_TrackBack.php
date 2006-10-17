@@ -300,7 +300,7 @@
 						return $err;
 					header('Location: ' . serverVar('HTTP_REFERER'));
 					break;
-			}
+			} 
 
 			exit;
 		} 
@@ -1770,8 +1770,7 @@
 		/* Internal helper functions for dealing with external file retrieval                 */
 	
 		function retrieveUrl ($url) {
-//mod by cles
-			$ua = ini_set('user_agent', 'NP_TrackBack/'. $this->getVersion());
+//mod by cles			$ua = ini_set('user_agent', 'NP_TrackBack/'. $this->getVersion());
 //mod by cles end
 			if (function_exists('curl_init') && $this->useCurl > 0)
 			{
@@ -2478,8 +2477,7 @@ function _cut_string($string, $dl = 0) {
 	return $string;
 }
 
-function _strip_controlchar($string){
-	$string = preg_replace("/[\x01-\x08\x0b\x0c\x0e-\x1f\x7f]+/","",$string);
+function _strip_controlchar($string){	$string = preg_replace("/[\x01-\x08\x0b\x0c\x0e-\x1f\x7f]+/","",$string);
 	$string = str_replace("\0","",$string);
 	return $string;
 }
