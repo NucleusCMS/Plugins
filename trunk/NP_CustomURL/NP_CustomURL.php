@@ -45,7 +45,7 @@ class NP_CustomURL extends NucleusPlugin
 
 	function getVersion()
 	{
-		return '0.3.01';
+		return '0.3.1';
 	}
 
 	function getDescription()
@@ -741,8 +741,17 @@ class NP_CustomURL extends NucleusPlugin
 			exit;
 		}
 
+		$feedurl = array(
+						'rss1.xml',
+						'index.rdf',
+						'rss2.xml',
+						'atom.xml',
+						'sitemap.xml'
+						);
 		$request_path = end($v_path);
-		$feeds = ($request_path == 'rss1.xml' || $request_path == 'index.rdf' || $request_path == 'rss2.xml' || $request_path == 'atom.xml');
+		$feeds = in_array($request_path, $feedurl, true);
+//		$feeds = ($request_path == 'rss1.xml' || $request_path == 'index.rdf' || $request_path == 'rss2.xml' || $request_path == 'atom.xml');
+
 
 // finish decode
 		if (!$exLink && !$feeds) {
@@ -1174,7 +1183,7 @@ class NP_CustomURL extends NucleusPlugin
 			return;
 		}
 		if (!$link_type) {
-			$link_params = array(0, 'i/' . intval($item->itemid) . '/i,' . $target . ',' . $title);
+			$link_params = array(0, 'i/' . intval($item->itemid) . '/path,' . $target . ',' . $title);
 		} else {
 			$link_params = array(0, $link_type . ',' . $target . ',' . $title);
 		}
