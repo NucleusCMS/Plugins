@@ -311,7 +311,15 @@ function orderKey(key, sequence) {
 		$res   = sql_query($query);
 		$i     = 0;
 		while($row = mysql_fetch_array($res)) {
-			echo 'scatDat['.($i++).'] = new setScatDat('.$row['scatid'].' , "'.$row['sname'].'", "'.$row['sdesc'].'");'."\n";
+			//<sato(na)0.5j>
+			echo 'scatDat['.($i++).'] = new setScatDat('.
+			$row['scatid'].
+			' , "'.
+			addslashes($row['sname']).
+			'", "'.
+			addslashes($row['sdesc']).
+			'");'."\n";
+			//</sato(na)0.5j>
 		}
 		echo '
 	scatDat.sort(eval("sort" + key + sequence));
@@ -657,7 +665,10 @@ function orderKey(key, sequence) {
 		if (!$mycatid && $mysubcatid) $mysubcatid = 0;
 		
 		$query =  'SELECT i.inumber as itemid, i.ititle as title, i.ibody as body, m.mname as author, m.mrealname as authorname, UNIX_TIMESTAMP(i.itime) as timestamp, i.itime, i.imore as more, m.mnumber as authorid, c.cname as category, i.icat as catid, i.iclosed as closed' ;
-		$query .= ' FROM '.sql_table('item').' as i, '.sql_table('member').' as m, '.sql_table('category').' as c';
+		//<sato(na)0.5j>
+		//$query .= ' FROM '.sql_table('item').' as i, '.sql_table('member').' as m, '.sql_table('category').' as c';
+		$query .= ' FROM '.sql_table('category').' as c, '.sql_table('member').' as m, '.sql_table('item').' as i';
+		//</sato(na)0.5j>
 		
 		if ($mycatid) {
 			$query .= ' LEFT JOIN '.sql_table('plug_multiple_categories').' as p ON i.inumber=p.item_id';
@@ -835,7 +846,10 @@ function orderKey(key, sequence) {
 		
 		$query = 'SELECT i.inumber as itemid, i.ititle as title, i.ibody as body, m.mname as author, m.mrealname as authorname, i.itime, i.imore as more, m.mnumber as authorid, m.memail as authormail, m.murl as authorurl, c.cname as category, i.icat as catid, i.iclosed as closed';
 		
-		$query .= ' FROM '.sql_table('item').' as i, '.sql_table('member').' as m, '.sql_table('category').' as c'
+		//<sato(na)0.5j>
+		//$query .= ' FROM '.sql_table('item').' as i, '.sql_table('member').' as m, '.sql_table('category').' as c'
+		$query .= ' FROM '.sql_table('category').' as c, '.sql_table('member').' as m, '.sql_table('item').' as i'
+		//</sato(na)0.5j>
 		       . ' WHERE i.iblog='.$b->getID()
 		       . ' and i.iauthor=m.mnumber'
 		       . ' and i.icat=c.catid'
