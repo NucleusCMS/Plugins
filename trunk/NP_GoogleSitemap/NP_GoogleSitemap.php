@@ -75,48 +75,46 @@ class NP_GoogleSitemap extends NucleusPlugin
 		if (!$blogid) {
 			$blogid = $CONF['DefaultBlog'];
 		} else {
-			if (is_numeric($blogid)) {
-				$blogid = intval($blogid);
-			} else {
-				$blogid = intval(getBlogIDFromName($blogid));
-			}
+			$blogid = (is_numerid($blogid)) ? intval($blogid) : intval(getBlogIDFromName($blogid));
 		}
+
+		$usePathInfo = ($CONF['URLMode'] == 'pathinfo');
+
 		$b =& $manager->getBlog($blogid);
 		$SelfURL = $b->getURL();
-		if (substr($SelfURL, -1) != '/' && substr($SelfURL, -4) != '.php') $SelfURL .= '/';
-		if (substr($SelfURL, -1) == '/' && $CONF['URLMode'] == 'pathinfo') $SelfURL = substr($SelfURL, 0, -1);
+		if (substr($SelfURL, -1) == '/') {
+			$SelfURL = ($usePathInfo) ? substr($SelfURL, 0, -1) : $SelfURL;
+		} else {
+			$SelfURL = (subdtr($SelfURL, -4) == '.php') ? $SelfURL : $SelfURL . '/';
+		}
 
-		if (!$info) {
-			if (serverVar('PATH_INFO')) {
-				$info = serverVar('PATH_INFO');
-			} elseif (getNucleusVersion() < 330) {
-				if (getVar('virtualpath')) $info = getVar('virtualpath');
-			} else {
-				return;
-			}
+		if (getVar('virtualpath')) {
+			$info = preg_replace('|[^a-zA-Z0-9-~+_.?#=&;,/:@%]|i', '', getVar('virtualpath'));
+		} elseif (serverVar('PATH_INFO')) {
+			$info = preg_replace('|[^a-zA-Z0-9-~+_.?#=&;,/:@%]|i', '', serverVar('PATH_INFO'));
+		} else {
+			return;
 		}
 
 		$path_arr = explode('/', $info);
-		$IndexURL = $CONF['IndexURL'];
 		$PcMap = $this->getBlogOption($blogid, 'PcSitemap');
 		$MobileMap = $this->getBlogOption($blogid, 'MobileSitemap');
-		if (substr($IndexURL, -1) != '/' && substr($IndexURL, -4) != '.php') $IndexURL .= '/';
-		if (substr($IndexURL, -1) == '/' && $CONF['URLMode'] == 'pathinfo') $IndexURL = substr($IndexURL, 0, -1);
 		if (end($path_arr) == $PcMap || end($path_arr) == $MobileMap) {
 			$CONF['ItemURL'] = $SelfURL;
 			$CONF['BlogURL'] = $SelfURL;
 			$CONF['CategoryURL'] = $SelfURL;
 			$sitemap = array();
-			if ($this->getOption('AllBlogMap') == 'yes' && $SelfURL == $IndexURL) {
+			if ($this->getOption('AllBlogMap') == 'yes' && $blogid == $CONF['DefaultBlog']) {
 				$blog_query = 'SELECT * FROM %s';
 				$blog_res = sql_query(sprintf($blog_query, sql_table('blog')));
 			} else {
 				$blog_query = 'SELECT * FROM %s WHERE bnumber = %d';
 				$blog_res = sql_query(sprintf($blog_query, sql_table('blog'), $blogid));
+				$current_blog = TRUE;
 			}
 			while ($blogs = mysql_fetch_array($blog_res)) {
 				$blog_id = $blogs['bnumber'];
-				if ($this->getBlogOption($blog_id, 'IncludeSitemap') == 'yes') {
+				if ($this->getBlogOption($blog_id, 'IncludeSitemap') == 'yes' || !empty($current_blog)) {
 					$sitemap[] = array(
 						'loc'   => $this->_prepareLink($SelfURL, createBlogidLink($blog_id)),
 						'priority' => '1.0',
@@ -195,7 +193,6 @@ class NP_GoogleSitemap extends NucleusPlugin
 			
 			echo "</urlset>\n";
 			exit;
-			$CONF['Self'] = $tempURL;
 		}
 	}
 
