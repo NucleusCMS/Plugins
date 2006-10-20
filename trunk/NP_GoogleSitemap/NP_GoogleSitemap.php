@@ -43,7 +43,7 @@ class NP_GoogleSitemap extends NucleusPlugin
 
 	function getVersion()
 	{
-		return '0.5';
+		return '0.7';
 	}
 
 	function getDescription()
@@ -75,17 +75,25 @@ class NP_GoogleSitemap extends NucleusPlugin
 		if (!$blogid) {
 			$blogid = $CONF['DefaultBlog'];
 		} else {
-			$blogid = (is_numerid($blogid)) ? intval($blogid) : intval(getBlogIDFromName($blogid));
+			$blogid = (is_numeric($blogid)) ? intval($blogid) : intval(getBlogIDFromName($blogid));
 		}
-
-		$usePathInfo = ($CONF['URLMode'] == 'pathinfo');
 
 		$b =& $manager->getBlog($blogid);
 		$SelfURL = $b->getURL();
+		$BlogURL = $SelfURL;
+
+		if (substr($SelfURL, -4) == '.php') $CONF['URLMode'] = 'normal';
+
+		$usePathInfo = ($CONF['URLMode'] == 'pathinfo');
+
 		if (substr($SelfURL, -1) == '/') {
-			$SelfURL = ($usePathInfo) ? substr($SelfURL, 0, -1) : $SelfURL;
-		} else {
-			$SelfURL = (subdtr($SelfURL, -4) == '.php') ? $SelfURL : $SelfURL . '/';
+			$SelfURL = ($usePathInfo) ? substr($SelfURL, 0, -1) : $SelfURL . 'index.php';
+		} elseif (substr($SelfURL, -4) != '.php') {
+			$SelfURL = ($usePathInfo) ? $SelfURL : $SelfURL . '/index.php';
+		}
+
+		if (substr($BlogURL, -1) != '/' && substr($BlogURL, -4) != '.php') {
+			$BlogURL .= '/';
 		}
 
 		if (getVar('virtualpath')) {
@@ -99,9 +107,8 @@ class NP_GoogleSitemap extends NucleusPlugin
 		$path_arr = explode('/', $info);
 		$PcMap = $this->getBlogOption($blogid, 'PcSitemap');
 		$MobileMap = $this->getBlogOption($blogid, 'MobileSitemap');
-		if (end($path_arr) == $PcMap || end($path_arr) == $MobileMap) {
+		if (end($path_arr) == $PcMap || (!empty($MobileMap) && end($path_arr) == $MobileMap)) {
 			$CONF['ItemURL'] = $SelfURL;
-			$CONF['BlogURL'] = $SelfURL;
 			$CONF['CategoryURL'] = $SelfURL;
 			$sitemap = array();
 			if ($this->getOption('AllBlogMap') == 'yes' && $blogid == $CONF['DefaultBlog']) {
@@ -115,57 +122,66 @@ class NP_GoogleSitemap extends NucleusPlugin
 			while ($blogs = mysql_fetch_array($blog_res)) {
 				$blog_id = $blogs['bnumber'];
 				if ($this->getBlogOption($blog_id, 'IncludeSitemap') == 'yes' || !empty($current_blog)) {
-					$sitemap[] = array(
-						'loc'   => $this->_prepareLink($SelfURL, createBlogidLink($blog_id)),
-						'priority' => '1.0',
-						'changefreq' => 'daily'
-					);
-					
-					$cat_query = 'SELECT * FROM %s WHERE cblog = %d ORDER BY catid';
-					$cat_res = sql_query(sprintf($cat_query, sql_table('category'), $blog_id));
-					$mcategories = $this->pluginCheck('MultipleCategories');
-					while ($cat = mysql_fetch_array($cat_res)) {
+					$temp_b =& $manager->getBlog($blog_id);
+					$TempURL = $temp_b->getURL();
+					$SelfURL = $TempURL;
+					if (substr($TempURL, -1) != '/' && substr($TempURL, -4) != '.php') {
+						$TempURL .= '/';
+					}
+					$patternURL = '/^' . preg_replace('/\//', '\/', $BlogURL) . '/';
+					if (preg_match($patternURL, $TempURL)) {
 						$sitemap[] = array(
-							'loc' => $this->_prepareLink($SelfURL, createCategoryLink($cat['catid'])),
+							'loc'   => $this->_prepareLink($SelfURL, $TempURL),
 							'priority' => '1.0',
 							'changefreq' => 'daily'
 						);
-						if ($mcategories) {
-							$subrequest = $mcategories->getRequestName();
-							$scat_query = 'SELECT * FROM %s WHERE catid = %d ORDER BY scatid';
-							$scat_res = sql_query(sprintf($scat_query, sql_table('plug_multiple_categories_sub'), $cat['catid']));
-							while ($scat = mysql_fetch_array($scat_res)) {
-								$sitemap[] = array(
-									'loc' => $this->_prepareLink($SelfURL, createCategoryLink($cat['catid'], array($subrequest => $scat['scatid']))),
-									'priority' => '1.0',
-									'changefreq' => 'daily'
-								);
+						
+						$cat_query = 'SELECT * FROM %s WHERE cblog = %d ORDER BY catid';
+						$cat_res = sql_query(sprintf($cat_query, sql_table('category'), $blog_id));
+						$mcategories = $this->pluginCheck('MultipleCategories');
+						while ($cat = mysql_fetch_array($cat_res)) {
+							$sitemap[] = array(
+								'loc' => $this->_prepareLink($SelfURL, createCategoryLink($cat['catid'])),
+								'priority' => '1.0',
+								'changefreq' => 'daily'
+							);
+							if ($mcategories) {
+								$subrequest = $mcategories->getRequestName();
+								$scat_query = 'SELECT * FROM %s WHERE catid = %d ORDER BY scatid';
+								$scat_res = sql_query(sprintf($scat_query, sql_table('plug_multiple_categories_sub'), $cat['catid']));
+								while ($scat = mysql_fetch_array($scat_res)) {
+									$sitemap[] = array(
+										'loc' => $this->_prepareLink($SelfURL, createCategoryLink($cat['catid'], array($subrequest => $scat['scatid']))),
+										'priority' => '1.0',
+										'changefreq' => 'daily'
+									);
+								}
 							}
 						}
-					}
-					
-					$item_query = 'SELECT *, UNIX_TIMESTAMP(itime) AS timestamp FROM %s WHERE iblog = %d AND idraft = 0 ORDER BY inumber DESC';
-					$item_res = sql_query(sprintf($item_query, sql_table('item'), $blog_id));
-					
-					while ($item = mysql_fetch_array($item_res)) {
-						$tz = date('O', $item['timestamp']);
-						$tz = substr($tz, 0, 3) . ':' . substr($tz, 3, 2);	
 						
-						if (time() - $item['timestamp'] < 86400 * 2) {
-							$fq = 'hourly';
-						} elseif (time() - $item['timestamp'] < 86400 * 14) {
-							$fq = 'daily'; 
-						} elseif (time() - $item['timestamp'] < 86400 * 62) {
-							$fq = 'weekly';
-						} else {
-							$fq = 'monthly';
+						$item_query = 'SELECT *, UNIX_TIMESTAMP(itime) AS timestamp FROM %s WHERE iblog = %d AND idraft = 0 ORDER BY inumber DESC';
+						$item_res = sql_query(sprintf($item_query, sql_table('item'), $blog_id));
+						
+						while ($item = mysql_fetch_array($item_res)) {
+							$tz = date('O', $item['timestamp']);
+							$tz = substr($tz, 0, 3) . ':' . substr($tz, 3, 2);	
+							
+							if (time() - $item['timestamp'] < 86400 * 2) {
+								$fq = 'hourly';
+							} elseif (time() - $item['timestamp'] < 86400 * 14) {
+								$fq = 'daily'; 
+							} elseif (time() - $item['timestamp'] < 86400 * 62) {
+								$fq = 'weekly';
+							} else {
+								$fq = 'monthly';
+							}
+							$sitemap[] = array(
+								'loc' => $this->_prepareLink($SelfURL, createItemLink($item['inumber'])),
+								'lastmod' => gmdate('Y-m-d\TH:i:s', $item['timestamp']) . $tz,
+								'priority' => '1.0',
+								'changefreq' => $fq
+							);
 						}
-						$sitemap[] = array(
-							'loc' => $this->_prepareLink($SelfURL, createItemLink($item['inumber'])),
-							'lastmod' => gmdate('Y-m-d\TH:i:s', $item['timestamp']) . $tz,
-							'priority' => '1.0',
-							'changefreq' => $fq
-						);
 					}
 				}
 			}
@@ -173,8 +189,11 @@ class NP_GoogleSitemap extends NucleusPlugin
 			$manager->notify('SiteMap', array ('sitemap' => & $sitemap));
 			
 			header ("Content-type: application/xml");
-			echo "<?xml version='1.0' encoding='UTF-8'?>\n\n";
-			echo "<urlset xmlns='http://www.google.com/schemas/sitemap/0.84'>\n";
+			echo "<" . "?xml version='1.0' encoding='UTF-8'?" . ">\n\n";
+			echo "\t<urlset" . ' xmlns="http://www.google.com/schemas/sitemap/0.84"' . "\n";
+			echo "\t" . 'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"' . "\n";
+			echo "\t" . 'xsi:schemaLocation="http://www.google.com/schemas/sitemap/0.84' . "\n";
+			echo "\t" . '                    http://www.google.com/schemas/sitemap/0.84/sitemap.xsd">' . "\n";
 			
 			while (list(,$url) = each($sitemap)) {
 				echo "\t<url>\n";
@@ -182,7 +201,7 @@ class NP_GoogleSitemap extends NucleusPlugin
 				while (list($key,$value) = each($url)) {
 					if ($key == 'loc') {
 						$value = preg_replace('|[^a-zA-Z0-9-~+_.?#=&;,/:@%]|i', '', $value);
-						echo "\t\t<" . $key . ">" . $value . "</" . $key . ">\n";
+						echo "\t\t<" . $key . ">" . htmlspecialchars($value, ENT_QUOTES) . "</" . $key . ">\n";
 					} else {
 						echo "\t\t<" . $key . ">" . htmlspecialchars($value, ENT_QUOTES) . "</" . $key . ">\n";
 					}
@@ -213,25 +232,34 @@ class NP_GoogleSitemap extends NucleusPlugin
 
 	function event_PostAddItem(&$data)
 	{
-		global $manager;
+		global $manager, $CONF;
 		$blog_id = getBlogIDFromItemID($data['itemid']);
 		if ($this->getOption('PingGoogle') == 'yes') {
 			$b =& $manager->getBlog($blog_id);
 			$b_url = $b->getURL();
-			if (substr($b_url, -1) != '/' && substr($b_url, -4) != '.php') {
-				$b_url .= '/';
-			} elseif (substr($b_url, -4) == '.php') {
-				$b_url .= '?virtualpath=';
+
+			$usePathInfo = ($CONF['URLMode'] == 'pathinfo');
+
+/*			if (substr($b_url, -1) == '/') {
+				$b_url = ($usePathInfo) ? substr($b_url, 0, -1) : $b_url . 'index.php';
+			} else {
+				$b_url = (substr($b_url, -4) == '.php') ? $b_url : $b_url . '/index.php';
 			}
+//			if (substr($b_url, -1) != '/' && substr($b_url, -4) != '.php') {
+//				$b_url .= '/';
+//			} elseif (substr($b_url, -4) == '.php') {
+//				$b_url .= '?virtualpath=';
+//			}*/
+			$siteMap = $this->getBlogOption($blog_id, 'PcSitemap');
 			$url = 'http://www.google.com/webmasters/sitemaps/ping?sitemap=' .
-				   $b_url . $this->getBlogOption($blog_id, 'PcSitemap');
+				   urlencode($b_url . $siteMap);
 			$url = preg_replace('|[^a-zA-Z0-9-~+_.?#=&;,/:@%]|i', '', $url);
 			$fp = @fopen($url, 'r');
 			@fclose($fp);
 			$MobileMap = $this->getBlogOption($blog_id, 'MobileSitemap');
 			if (!empty($MobileMap)) {
 				$url = 'http://www.google.com/webmasters/sitemaps/ping?sitemap=' .
-					   $b_url . $MobileMap;
+					   urlencode($b_url . $MobileMap);
 				$url = preg_replace('|[^a-zA-Z0-9-~+_.?#=&;,/:@%]|i', '', $url);
 				$fp = @fopen($url, 'r');
 				@fclose($fp);
@@ -244,7 +272,7 @@ class NP_GoogleSitemap extends NucleusPlugin
 		$this->createOption('PingGoogle', 'Ping Google after adding a new item', 'yesno', 'yes');
 		$this->createOption('AllBlogMap', 'Generate All Blog\'s Google Sitemap', 'yesno', 'yes');
 		$this->createBlogOption('IncludeSitemap', 'Include this blog in Google Sitemap when All Blog mode', 'yesno', 'yes');
-		$this->createBlogOption('PcSitemap', 'Virtual file name for PC Sitemap', 'text', 'sitemap.xml');
+		$this->createBlogOption('PcSitemap', 'Virtual file name for PC Sitemap', 'text', 'testmap.xml');
 		$this->createBlogOption('MobileSitemap', 'Virtual file name for Mobile Sitemap', 'text', '');
 	}
 }
