@@ -492,12 +492,14 @@ class NP_CustomURL extends NucleusPlugin
 // decode TrackBack URL shorten ver.
 		$tail = end($v_path);
 		if (substr($tail, -10, 10) == '.trackback') {
-			$v_pathName = substr($tail, 0, strlen($tail)-10);
+			$v_pathName = substr($tail, 0, -10);
+//			echo $v_pathName;
 			if (is_numeric($v_pathName)) {
 				$this->_trackback($blogid, $v_pathName);
 			} else {
 				$this->_trackback($blogid, $v_pathName . '.html');
 			}
+			return;
 		}
 
 // decode other type URL
@@ -746,12 +748,22 @@ class NP_CustomURL extends NucleusPlugin
 						'index.rdf',
 						'rss2.xml',
 						'atom.xml',
-						'sitemap.xml'
 						);
+		$SiteMapP = $this->pluginCheck('GoogleSitemap');
+		if ($SiteMapP) {
+			$PcSitemaps = $SiteMapP->getAllBlogOptions('PcSitemap');
+			foreach ($PcSitemaps as $PCsitemap) {
+				if ($PCsitemap) $feedurl[] = $PCsitemap;
+			}
+			$MobSitemaps = $SiteMapP->getAllBlogOptions('MobileSitemap');
+			foreach ($MobSitemaps as $Mobsitemap) {
+				if ($Mobsitemap) $feedurl[] = $Mobsitemap;
+			}
+		}
+		$feedurl = array_unique($feedurl);
 		$request_path = end($v_path);
 		$feeds = in_array($request_path, $feedurl, true);
 //		$feeds = ($request_path == 'rss1.xml' || $request_path == 'index.rdf' || $request_path == 'rss2.xml' || $request_path == 'atom.xml');
-
 
 // finish decode
 		if (!$exLink && !$feeds) {
@@ -925,6 +937,7 @@ class NP_CustomURL extends NucleusPlugin
 				if ($bid != $blogid) {
 					$burl = $this->_generateBlogLink(intval($bid));
 				}
+//				echo $params['extra']['subcatid'].'uu';
 			break;
 			case 'archivelist':
 				if ($this->getBlogOption(intval($blogid), 'use_customurl') == 'no') return;
@@ -971,7 +984,30 @@ class NP_CustomURL extends NucleusPlugin
 		}
 		//NP_Analyze AdminArea check end
 
-		if ($bid != $blogid && !$CONF['UsingAdminArea']) $params['extra'] = array();
+		if (getVar('virtualpath')) {
+			$info = preg_replace('|[^a-zA-Z0-9-~+_.?#=&;,/:@%]|i', '', getVar('virtualpath'));
+		} elseif (serverVar('PATH_INFO')) {
+			$info = preg_replace('|[^a-zA-Z0-9-~+_.?#=&;,/:@%]|i', '', serverVar('PATH_INFO'));
+		}
+		$v_path = explode('/', $info);
+
+		$feedurl = array();
+		$SiteMapP = $this->pluginCheck('GoogleSitemap');
+		if ($SiteMapP) {
+			$PcSitemaps = $SiteMapP->getAllBlogOptions('PcSitemap');
+			foreach ($PcSitemaps as $PCsitemap) {
+				if ($PCsitemap) $feedurl[] = $PCsitemap;
+			}
+			$MobSitemaps = $SiteMapP->getAllBlogOptions('MobileSitemap');
+			foreach ($MobSitemaps as $Mobsitemap) {
+				if ($Mobsitemap) $feedurl[] = $Mobsitemap;
+			}
+		}
+		$feedurl = array_unique($feedurl);
+		$request_path = end($v_path);
+		$feeds = in_array($request_path, $feedurl, true);
+
+		if (!$feeds && $bid != $blogid && !$CONF['UsingAdminArea']) $params['extra'] = array();
 		if ($objPath || $data['type'] == 'blog') {
 			$LinkURI = $this->_addLinkParams($objPath, $params['extra']);
 			if ($LinkURI) {
@@ -985,6 +1021,16 @@ class NP_CustomURL extends NucleusPlugin
 			if ($isArchives && !$isItem && !$isDirectory) {
 				$data['url'] .= '/';
 			}
+	if (requestVar('skinid')) {
+		if (is_numeric(requestVar('skinid'))) {
+			$skinid = intRequestVar('skinid');
+			$data['url'] .= '?skinid=' . $skinid;
+		} else {
+			$skinid = SKIN::getIdFromName(requestVar('skinid'));
+			$skinid = intval($skinid);
+			$data['url'] .= '?skinid=' . $skinid;
+		}
+	}
 			$data['completed'] = TRUE;
 			if (strstr ($data['url'], '//')) $link = preg_replace("/([^:])\/\//", "$1/", $data['url']);
 			return $data;
@@ -1183,6 +1229,8 @@ class NP_CustomURL extends NucleusPlugin
 			return;
 		}
 		if (!$link_type) {
+			$link_params = array(0, 'i/' . intval($item->itemid) . '/i,' . $target . ',' . $title);
+		} elseif ($link_type == 'path') {
 			$link_params = array(0, 'i/' . intval($item->itemid) . '/path,' . $target . ',' . $title);
 		} else {
 			$link_params = array(0, $link_type . ',' . $target . ',' . $title);
