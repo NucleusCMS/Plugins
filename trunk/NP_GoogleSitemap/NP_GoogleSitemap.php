@@ -238,18 +238,23 @@ class NP_GoogleSitemap extends NucleusPlugin
 			$b =& $manager->getBlog($blog_id);
 			$b_url = $b->getURL();
 
+			if (substr($b_url, -4) == '.php') $CONF['URLMode'] = 'normal';
 			$usePathInfo = ($CONF['URLMode'] == 'pathinfo');
 
-/*			if (substr($b_url, -1) == '/') {
-				$b_url = ($usePathInfo) ? substr($b_url, 0, -1) : $b_url . 'index.php';
+			if (substr($b_url, -1) == '/') {
+				if (!$usePathInfo) $b_url .= 'index.php?virtualpath=';
+			} elseif (substr($b_url, -4) == '.php') {
+				$b_url .= '?virtualpath=';
 			} else {
-				$b_url = (substr($b_url, -4) == '.php') ? $b_url : $b_url . '/index.php';
+				$b_url = ($usePathInfo) ? $b_url . '/' : $b_url . '/index.php?virtualpath=';
 			}
+
 //			if (substr($b_url, -1) != '/' && substr($b_url, -4) != '.php') {
 //				$b_url .= '/';
 //			} elseif (substr($b_url, -4) == '.php') {
 //				$b_url .= '?virtualpath=';
-//			}*/
+//			}
+
 			$siteMap = $this->getBlogOption($blog_id, 'PcSitemap');
 			$url = 'http://www.google.com/webmasters/sitemaps/ping?sitemap=' .
 				   urlencode($b_url . $siteMap);
