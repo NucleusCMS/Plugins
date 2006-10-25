@@ -45,7 +45,7 @@ class NP_CustomURL extends NucleusPlugin
 
 	function getVersion()
 	{
-		return '0.3.1';
+		return '0.3.1c';
 	}
 
 	function getDescription()
@@ -658,6 +658,26 @@ class NP_CustomURL extends NucleusPlugin
 						$exLink = TRUE;
 					}
 				break;
+				// for ExtraSkinJP
+				case 'extra':
+					$ExtraSkinJP = $this->pluginCheck('ExtraSkinJP');
+					if ($ExtraSkinJP) {
+						// under v3.2 needs this
+						if ($CONF['DisableSite'] && !$member->isAdmin()) {
+							header('Location: ' . $CONF['DisableSiteURL']);
+							exit;
+						}
+						$extraParams = explode("/",serverVar('PATH_INFO'));
+						array_shift ($extraParams);
+
+						if (isset($extraParams[1]) && preg_match("/^([1-9]+[0-9]*)(\?.*)?$/", $extraParams[1], $matches)) {
+							$extraParams[1] = $matches[1];
+						}
+
+						$ExtraSkinJP->extra_selector($extraParams);
+						exit;
+					}
+				break;
 				// for search query
 				case 'search':
 //					if (isset($v_path[$i]) && is_string($v_path[$i])) {
@@ -848,9 +868,16 @@ class NP_CustomURL extends NucleusPlugin
 			} else {
 				$tb_id = intval($path);
 			}
-			$TrackBack->handlePing($tb_id);
+
+			$errorMsg = $TrackBack->handlePing($tb_id);
+			if ($errorMsg != '') {
+				$TrackBack->xmlResponse($errorMsg);
+			} else {
+				$TrackBack->xmlResponse();
+			}
+//			$TrackBack->handlePing($tb_id);
 		}
-		return;
+		exit;
 	}
 
 	function event_GenerateURL($data)
