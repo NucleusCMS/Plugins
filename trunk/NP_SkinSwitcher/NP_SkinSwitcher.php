@@ -3,9 +3,9 @@
 class NP_SkinSwitcher extends NucleusPlugin {
 
  function getNAME() { return 'Skin Switcher';  }
- function getAuthor()  { return 'Andy + nakahara21';  }
+ function getAuthor()  { return 'Andy + nakahara21 et al.';  }
  function getURL() {  return ''; }
- function getVersion() { return '0.7'; }
+ function getVersion() { return '0.7.1'; }
  function getDescription() { 
   return 'Skin selector. &lt;%SkinSwitcher()%&gt; makes a drop down menu. you can define unselectable skin on each blog, and all blogs.';
  }
@@ -78,7 +78,7 @@ class NP_SkinSwitcher extends NucleusPlugin {
 	}
 
 	function doSkinVar($skinType) {
-		global $blog, $currentSkinName, $CONF;
+		global $blog, $currentSkinName, $CONF,$manager;
 
 		$b =& $blog;
 		$defskinid = $b->getDefaultSkin();
@@ -120,6 +120,8 @@ class NP_SkinSwitcher extends NucleusPlugin {
 			echo '<div id="skindef"><a href="javascript:setDefSkin('."'".$currentSkinID."','".$blogid."'".');">set default skin to "'.htmlspecialchars($currentSkinName).'"</a></div>';
 		}
 if($this->canChange($blogid)){
+	$ticket=$manager->addTicketToUrl('');
+	$ticket=substr($ticket,strpos($ticket,'ticket=')+7);
 ?>
 	<script type="text/javascript">
 	var xmlhttp = false;
@@ -146,11 +148,13 @@ if($this->canChange($blogid)){
 			}
 			
 			if (xmlhttp){
-		var url = scAction + '?action=plugin&name=SkinSwitcher&type=change&s=' + skinid + '&b=' + blogid;
+				var url = scAction + '?action=plugin&name=SkinSwitcher&type=change' +
+					'&s=' + skinid + '&b=' + blogid +
+					'&ticket=<?php echo $ticket; ?>';
 		
-		xmlhttp.onreadystatechange=xmlhttpChange
-		xmlhttp.open("GET",url,true)
-		xmlhttp.send('')
+				xmlhttp.onreadystatechange=xmlhttpChange
+				xmlhttp.open("GET",url,true)
+				xmlhttp.send('')
 			}
 		}
 	function xmlhttpChange()
@@ -186,6 +190,10 @@ if($this->canChange($blogid)){
 
 	function doAction($type){
 		global $CONF, $manager;
+		if (!$manager->checkTicket()) {
+			echo '<b style="color:red;">'._ERROR_BADTICKET.'</b>';
+			return;
+		}
 		switch ($type) {
 			case 'change':
 				if(!($blogid = intGetVar('b'))) return;
