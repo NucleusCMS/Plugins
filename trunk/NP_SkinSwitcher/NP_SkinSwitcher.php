@@ -5,7 +5,7 @@ class NP_SkinSwitcher extends NucleusPlugin {
  function getNAME() { return 'Skin Switcher';  }
  function getAuthor()  { return 'Andy + nakahara21 et al.';  }
  function getURL() {  return ''; }
- function getVersion() { return '0.7.1'; }
+ function getVersion() { return '0.7.2'; }
  function getDescription() { 
   return 'Skin selector. &lt;%SkinSwitcher()%&gt; makes a drop down menu. you can define unselectable skin on each blog, and all blogs.';
  }
@@ -97,18 +97,18 @@ class NP_SkinSwitcher extends NucleusPlugin {
 		echo '<select name="skinselector" onchange="'.$cookieContent.'">';
 		echo '<optgroup label="Blog default" style="color:red;">';
 			$exstr = ($defskinid==$currentSkinID)? ' selected="selected"': '';
-			echo '<option value="' . $defskinid . '"'.$exstr.'>';
+			echo '<option value="' . (int)$defskinid . '"'.$exstr.'>';
 			echo htmlspecialchars($defskinName).'</option>';
 		echo '</optgroup>';
 
 		echo '<optgroup label="oters">';
 		$global_sdnums = $this->getSdnums(0);
 		$sdnums = $this->getSdnums($blogid);
-		$res = sql_query('SELECT * FROM '.sql_table('skin_desc').' WHERE sdnumber<>'.$defskinid);
+		$res = sql_query('SELECT * FROM '.sql_table('skin_desc').' WHERE sdnumber<>'.(int)$defskinid);
 		while ($skinObj = mysql_fetch_object($res)) {
 			if(in_array($skinObj->sdnumber,$global_sdnums) || in_array($skinObj->sdnumber,$sdnums)) continue;
 			$exstr = ($skinObj->sdnumber==$currentSkinID)? ' selected': '';
-			echo '<option value="' . $skinObj->sdnumber . '"'.$exstr.'>';
+			echo '<option value="' . (int)$skinObj->sdnumber . '"'.$exstr.'>';
 			echo htmlspecialchars($skinObj->sdname).'</option>';
 		}
 		echo '</optgroup>';
@@ -117,52 +117,52 @@ class NP_SkinSwitcher extends NucleusPlugin {
 		echo '</form>';
 
 		if($currentSkinID != $defskinid && $this->canChange($blogid)){
-			echo '<div id="skindef"><a href="javascript:setDefSkin('."'".$currentSkinID."','".$blogid."'".');">set default skin to "'.htmlspecialchars($currentSkinName).'"</a></div>';
+			echo '<div id="np_skinswitcher_skindef"><a href="javascript:np_skinswitcher_setDefSkin('."'".(int)$currentSkinID."','".(int)$blogid."'".');">set default skin to "'.htmlspecialchars($currentSkinName).'"</a></div>';
 		}
 if($this->canChange($blogid)){
 	$ticket=$manager->addTicketToUrl('');
 	$ticket=substr($ticket,strpos($ticket,'ticket=')+7);
 ?>
 	<script type="text/javascript">
-	var xmlhttp = false;
+	var np_skinswitcher_xmlhttp = false;
 	var scAction = "<?php echo $CONF['ActionURL'];?>";
-		function setDefSkin(skinid, blogid){
+		function np_skinswitcher_setDefSkin(skinid, blogid){
 			try 
 			{
-				xmlhttp = new ActiveXObject("Msxml2.XMLHTTP");
+				np_skinswitcher_xmlhttp = new ActiveXObject("Msxml2.XMLHTTP");
 			} 
 			catch (e) 
 			{
 				try 
 				{
-					xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+					np_skinswitcher_xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
 				} 
 				catch (e) 
 				{
-					xmlhttp = false;
+					np_skinswitcher_xmlhttp = false;
 				}
 			}
 
-			if (!xmlhttp && typeof XMLHttpRequest!='undefined'){
-				xmlhttp = new XMLHttpRequest();
+			if (!np_skinswitcher_xmlhttp && typeof XMLHttpRequest!='undefined'){
+				np_skinswitcher_xmlhttp = new XMLHttpRequest();
 			}
 			
-			if (xmlhttp){
+			if (np_skinswitcher_xmlhttp){
 				var url = scAction + '?action=plugin&name=SkinSwitcher&type=change' +
 					'&s=' + skinid + '&b=' + blogid +
 					'&ticket=<?php echo $ticket; ?>';
 		
-				xmlhttp.onreadystatechange=xmlhttpChange
-				xmlhttp.open("GET",url,true)
-				xmlhttp.send('')
+				np_skinswitcher_xmlhttp.onreadystatechange=np_skinswitcher_xmlhttpChange
+				np_skinswitcher_xmlhttp.open("GET",url,true)
+				np_skinswitcher_xmlhttp.send('')
 			}
 		}
-	function xmlhttpChange()
+	function np_skinswitcher_xmlhttpChange()
 	{
-		if (xmlhttp.readyState == 4 && xmlhttp.status == 200) 
+		if (np_skinswitcher_xmlhttp.readyState == 4 && np_skinswitcher_xmlhttp.status == 200) 
 		{
-			var deff = document.getElementById("skindef");
-			deff.innerHTML = xmlhttp.responseText;
+			var deff = document.getElementById("np_skinswitcher_skindef");
+			deff.innerHTML = np_skinswitcher_xmlhttp.responseText;
 		}
 	}
 	
@@ -174,7 +174,7 @@ if($this->canChange($blogid)){
 	}
 
 	function getSdnums($blogid=0) {
-		$pq = 'SELECT disskinid FROM '.sql_table('plug_skinswitcher').' WHERE sblogid='.$blogid;
+		$pq = 'SELECT disskinid FROM '.sql_table('plug_skinswitcher').' WHERE sblogid='.(int)$blogid;
 		$pres = sql_query($pq);
 		if (mysql_num_rows($pres) == 0) return array();
 		$sdnums = mysql_result($pres,0,0);
@@ -207,7 +207,7 @@ if($this->canChange($blogid)){
 				if($res){
 					echo '<b style="color:red;">Done! Please reload.</b>';
 				}else{
-					echo 'Could not update: ' . mysql_error() . $query;
+					echo 'Could not update: ' . htmlspecialchars( mysql_error().$query );
 				}		
 				break;
 			default:
