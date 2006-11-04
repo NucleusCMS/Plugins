@@ -1,21 +1,46 @@
 <?php
-class NP_SearchResultsEX extends NucleusPlugin {
-	function getName() { return 'SearchResults EX'; } 
-	function getAuthor() { return 'Taka + nakahara21 + Andy + shizuki'; } 
-	function getURL() { return 'http://shizuki.kinezumi.net/NucleusCMS/Plugins/SearchResultsEX/'; } 
-	function getVersion() { return '0.01'; } 
-	function getDescription() {
+class NP_SearchResultsEX extends NucleusPlugin
+{
+	function getName()
+	{
+	    return 'SearchResults EX';
+	} 
+
+	function getAuthor()
+	{
+	    return 'Taka + nakahara21 + Andy + shizuki';
+	}
+
+	function getURL()
+	{
+	    return 'http://shizuki.kinezumi.net/NucleusCMS/Plugins/SearchResultsEX/';
+	}
+
+	function getVersion()
+	{
+	    return '0.03';
+	}
+
+	function getDescription()
+	{
 		return 'This plugin replace &lt;%searchresults()%&gt; with page switch<br />
 		Usage: &lt;%SearchResultsEX(default/index,15,,2,500)%&gt;<br />
 		Requered NP_ExtensibleSearch'; 
 	} 
 
-	function getEventList() { return array('PreSearchResults'); }
+	function getEventList()
+	{
+	    return array('PreSearchResults');
+	}
 
-	function getPluginDep() { return array('NP_ExtensibleSearch'); }
+	function getPluginDep()
+	{
+	    return array('NP_ExtensibleSearch');
+	}
 
-	function supportsFeature($what) {
-		switch($what){
+	function supportsFeature($what)
+	{
+		switch ($what) {
 			case 'SqlTablePrefix':
 				return 1;
 			default:
@@ -23,48 +48,64 @@ class NP_SearchResultsEX extends NucleusPlugin {
 		}
 	}
 
-	function install() {
-		$this->createOption("srex_ads1", "[Ads code] code displayed under first and second item of the page", "textarea",''."\n");
-		$this->createOption("srex_ads2", "[Ads code] code displayed under second and third item of the page", "textarea",''."\n");
+	function install()
+	{
+		$this->createOption("srex_ads1",
+		                    "[Ads code] code displayed under first and second item of the page",
+		                    "textarea",
+		                    "");
+		$this->createOption("srex_ads2",
+		                    "[Ads code] code displayed under second and third item of the page",
+		                    "textarea",
+		                    "");
 	}
 
-	function event_PreSearchResults(&$data) {	// Orign NP_CommentSearch by Andy
+	function event_PreSearchResults(&$data)
+	{	// Orign NP_CommentSearch by Andy
 		global $blog, $manager;
-		$blogs = $data['blogs'];
-		$query = $data['query'];
-		$items = & $data['items'];
+		$blogs       = $data['blogs'];
+		$query       = $data['query'];
+		$items       = & $data['items'];
 		$searchclass =& new SEARCH($query);
 
-		$sqlquery = 'SELECT i.inumber as itemid FROM ';
-		$tables = sql_table('item').' as i ';
+		$sqlquery  = 'SELECT i.inumber as itemid FROM ';
+		$tables    = sql_table('item') . ' as i ';
 		$where_str = 'xxx.cm.cbody';
 //		if ($manager->pluginInstalled('NP_TagEX')) {
-//			$tables .= ' left join '.sql_table('plug_tagex').' as tag on i.inumber = tag.inum';
+//			$tables    .= ' left join ' . sql_table('plug_tagex') . ' as tag on i.inumber = tag.inum';
 //			$where_str .= ',xxx.tag.itags';
 //		}
 		if ($manager->pluginInstalled('NP_TrackBack')) {
-			$tables .= ' left join '.sql_table('plugin_tb').' as t on i.inumber = t.tb_id';
+			$tables    .= ' left join '.sql_table('plugin_tb').' as t on i.inumber = t.tb_id';
 			$where_str .= ',xxx.t.title,xxx.t.excerpt';
 		}
-		$sqlquery .= $tables.' left join '.sql_table('comment').' as cm on i.inumber = cm.citem ';
-		$where = $searchclass->boolean_sql_where($where_str);
-		$where = strtr($where, array('i.xxx.'=> ''));
-		$sqlquery .= ' WHERE i.idraft = 0 and i.itime <= '.mysqldate($blog -> getCorrectTime())
-				.' and i.iblog in (' . implode(',', $blogs) . ') '
-				.' and '.$where;
-		$res = sql_query($sqlquery);
-		$array = array();
+		$sqlquery .= $tables . ' left join ' . sql_table('comment') . ' as cm on i.inumber = cm.citem ';
+		$where     = $searchclass->boolean_sql_where($where_str);
+		$where     = strtr($where, array('i.xxx.'=> ''));
+		$sqlquery .= ' WHERE i.idraft = 0 and i.itime <= ' . mysqldate($blog -> getCorrectTime())
+				   . ' and i.iblog in (' . implode(',', $blogs) . ') '
+				   . ' and ' . $where;
+		$res       = sql_query($sqlquery);
+		$array     = array();
 		while ($itemid = mysql_fetch_row($res)) {
 			array_push($array, $itemid[0]);
 		}
 		$data['items'] = array_unique(array_merge($items,$array));
 	}
 
-	function doSkinVar($skinType, $template = 'default/index', $p_amount = 10, $type = 1, $bmode = 'all', $maxresults = '') {
+	function doSkinVar($skinType,
+	                   $template   = 'default/index',    // display template
+	                   $p_amount   = 10,                 // amount par page
+	                   $type       = 1,                  // page switch type
+	                   $bmode      = 'all',              // blog mode
+	                   $maxresults = '')                 // max results
+    {
 		global $manager, $CONF, $blog, $query, $amount, $startpos;
 		$this->maxamount = ($maxresults) ? $maxresults : 0;
 
-//		if (!$manager->pluginInstalled('NP_ExtensibleSearch') && getNucleusVersion() < ???) return;	// Future
+//        if (!$manager->pluginInstalled('NP_ExtensibleSearch') && getNucleusVersion() < ???) {
+//            return;	// Future
+//        }
 		$type = floatval($type);
 		$typeExp = intval(($type - floor($type))*10); //0 or 1 or 9
 		list($pageamount, $offset) = sscanf($p_amount, '%d(%d)');
@@ -88,13 +129,16 @@ class NP_SearchResultsEX extends NucleusPlugin {
 
 		if ($template == 'form') {
 			$q = getVar('query');
-			echo "<form method=\"get\" action=\"",createBlogidLink($nowbid)."\">\n";
-			echo "\t<div class=\"searchform\">\n";
-			echo "\t\t<input name=\"query\" class=\"formfield\" size=\"10\" maxlength=\"60\" accesskey=\"4\" value=\"".$q."\" />\n";
-			echo "\t\t<br />\n";
-			echo "\t\t<input type=\"submit\" value=\"_SEARCHFORM_SUBMIT\" class=\"formbutton\" />\n";
-			echo "\t</div>\n";
-			echo "</form>\n";
+			echo '<form method="get" action="' . createBlogidLink($nowbid) . '">' . "\n";
+			echo "\t" . '<div class="searchform">' . "\n";
+			echo "\t\t";
+			echo '<input name="query" class="formfield" size="10" maxlength="60"';
+			echo ' accesskey="4" value="' . $q . '" />' . "\n";
+			echo "\t\t" . '<br />' . "\n";
+			echo "\t\t" . '<input type="submit" value="' . _SEARCHFORM_SUBMIT . '" ';
+			echo 'class="formbutton" />' . "\n";
+			echo "\t" . '</div>' . "\n";
+			echo '</form>' . "\n";
 			return;
 		}
 
@@ -153,13 +197,17 @@ class NP_SearchResultsEX extends NucleusPlugin {
 		}
 	}
 
-	function _showUsingQuery($template, $showQuery, $highlight, $q_startpos, $q_amount, $b) {
+	function _showUsingQuery($template, $showQuery, $highlight, $q_startpos, $q_amount, $b)
+	{
 		$onlyone_query = $showQuery . ' LIMIT ' . intval($q_startpos) .', 1';
 		$b->showUsingQuery($template, $onlyone_query, intval($highlight), 1, 1); 
 		echo $this->getOption('srex_ads1');
 
 		$q_startpos++;
 		$q_amount--;
+		if ($q_amount < 0) {
+		    return;
+		}
 		$onlyone_query = $showQuery . ' LIMIT ' . intval($q_startpos) .', 1';
 		$b->showUsingQuery($template, $onlyone_query, intval($highlight), 1, 1); 
 		if (mysql_num_rows(sql_query($onlyone_query))) {
@@ -168,11 +216,14 @@ class NP_SearchResultsEX extends NucleusPlugin {
 
 		$q_startpos++;
 		$q_amount--;
-		$second_query = $showQuery . ' LIMIT ' . intval($q_startpos) . ',' . intval($q_amount);
+		if ($q_amount < 0) {
+		    return;
+		}		$second_query = $showQuery . ' LIMIT ' . intval($q_startpos) . ',' . intval($q_amount);
 		$b->showUsingQuery($template, $second_query, intval($highlight), 1, 1);
 	}
 
-	function PageSwitch($type, $pageamount, $offset, $entries, $b) {	// Orign NP_ShowBlogs by Taka + nakahara21
+	function PageSwitch($type, $pageamount, $offset, $entries, $b)
+	{	// Orign NP_ShowBlogs by Taka + nakahara21
 		global $CONF, $startpos;
 		$startpos = intval($startpos);
 		$pageamount = intval($pageamount);
@@ -308,7 +359,8 @@ class NP_SearchResultsEX extends NucleusPlugin {
 		}
 	}
 
-	function doTemplateVar(&$item, $maxLength = 250, $addHighlight = 1) {	// Orign NP_ChoppedDisc.php by nakahara21
+	function doTemplateVar(&$item, $maxLength = 250, $addHighlight = 1)
+	{	// Orign NP_ChoppedDisc.php by nakahara21
 		global $CONF, $manager, $member, $catid;
 
 		$item_id = intval($item->itemid);
@@ -388,7 +440,8 @@ class NP_SearchResultsEX extends NucleusPlugin {
 		}
 	}
 
-	function getQueryStrings() {
+	function getQueryStrings()
+	{
 		global $query;
 //		if (requestVar('query')) {
 			$q = 'query';
@@ -411,7 +464,8 @@ class NP_SearchResultsEX extends NucleusPlugin {
 //		}
 	}
 
-	function _rawdecode($str){
+	function _rawdecode($str)
+	{
 		$str = rawurldecode($str);
 		if(_CHERSET != 'UTF-8') {
 			$str = mb_convert_encoding($str, _CHARSET, "UTF-8");
