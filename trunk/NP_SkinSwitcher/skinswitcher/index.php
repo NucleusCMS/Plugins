@@ -1,4 +1,5 @@
 <?php
+/* NP_SkinSwitcher ver 0.7.2 */
 
 	$strRel = '../../../'; 
 	include($strRel . 'config.php');
@@ -57,7 +58,7 @@ class NpSkinSwitcher_ADMIN{
 ?>
 			<form method="post" action="<?php echo $this->url ?>index.php">
 				<input type="hidden" name="action" value="update" />
-				<input type="hidden" name="blogid" value="<?php echo $blogid ?>" />
+				<input type="hidden" name="blogid" value="<?php echo (int)$blogid ?>" />
 <?php		
 		echo '<table>'."\n";
 		echo '<thead><tr><th>'._SKIN_NAME.'</th><th>'._SKIN_TYPE.'</th><th>'._SKIN_DESC.'</th></tr></thead>'."\n";
@@ -71,7 +72,10 @@ class NpSkinSwitcher_ADMIN{
 			if($blogid && in_array($ob->sdnumber,$global_sdnums)) continue;
 			$chtxt = (in_array($ob->sdnumber,$sdnums))? ' checked="checked"': '';
 			$extxt = ($ob->sdnumber==$defskinid)? '<b> ('._EBLOG_DEFSKIN.')</b>': '';
-			echo '<tr'." onmouseover='focusRow(this);' onmouseout='blurRow(this);'".'><td><input type="checkbox" id="batch'.$i.'" name="sdnum['.$i.']" value="'.$ob->sdnumber.'"'.$chtxt.' /><label for="batch'.$i.'">'.$ob->sdname.$extxt.'</label></td><td>'.$ob->sdtype.'</td><td>'.$ob->sddesc.'</td></tr>'."\n";
+			echo '<tr'." onmouseover='focusRow(this);' onmouseout='blurRow(this);'".'>'.
+				'<td><input type="checkbox" id="batch'.$i.'" name="sdnum['.$i.']" value="'.(int)$ob->sdnumber.'"'.$chtxt.' />'.
+				'<label for="batch'.$i.'">'.htmlspecialchars($ob->sdname).$extxt.'</label></td>'.
+				'<td>'.htmlspecialchars($ob->sdtype).'</td><td>'.htmlspecialchars($ob->sddesc).'</td></tr>'."\n";
 			$i++;
 		}
 		echo '<tr><td colspan="3">
@@ -94,7 +98,7 @@ class NpSkinSwitcher_ADMIN{
 		} else {
 			$query =  'SELECT bnumber, bname, tadmin, burl, bshortname'
 				   . ' FROM ' . sql_table('blog') . ', ' . sql_table('team')
-				   . ' WHERE tblog=bnumber and tmember=' . $member->getID() . ' and tadmin=1'
+				   . ' WHERE tblog=bnumber and tmember=' . (int)$member->getID() . ' and tadmin=1'
 				   . ' ORDER BY bname';
 		}
 		$res = sql_query($query);
@@ -103,7 +107,10 @@ class NpSkinSwitcher_ADMIN{
 		echo '<table>'."\n";
 		echo '<tr><th>'._EBLOG_NAME.'</th><th>'._EBLOG_DESC.'</th><th>'._LISTS_ACTIONS.'</th></tr>'."\n";
 		while($ob = mysql_fetch_object($res)){
-			echo '<tr'." onmouseover='focusRow(this);' onmouseout='blurRow(this);'".'><td>' . $ob->bname . '</td><td>'.$ob->bdesc.'</td><td><a href="'.$this->url.'index.php?action=blogoverview&amp;blogid='.$ob->bnumber.'">'._PLUG_SKINSWITCHER_BLOGLINK.'</a></td></tr>';
+			echo '<tr'." onmouseover='focusRow(this);' onmouseout='blurRow(this);'".'>'.
+				'<td>' . htmlspecialchars($ob->bname) . '</td>'.
+				'<td>'.htmlspecialchars($ob->bdesc).'</td>'.
+				'<td><a href="'.$this->url.'index.php?action=blogoverview&amp;blogid='.(int)$ob->bnumber.'">'._PLUG_SKINSWITCHER_BLOGLINK.'</a></td></tr>';
 		}
 		echo '</table>'."\n";
 		
@@ -147,7 +154,7 @@ class NpSkinSwitcher_ADMIN{
 		$blogid = intRequestVar('blogid');
 		$sdnums = @join(',',requestVar('sdnum'));
 		
-		$dq = 'DELETE FROM '.sql_table('plug_skinswitcher').' WHERE sblogid='.$blogid;
+		$dq = 'DELETE FROM '.sql_table('plug_skinswitcher').' WHERE sblogid='.(int)$blogid;
 		$dres = sql_query($dq);
 		
 		if($sdnums){
@@ -155,12 +162,12 @@ class NpSkinSwitcher_ADMIN{
 				INSERT INTO 
 					".sql_table('plug_skinswitcher')." 
 				SET
-					sblogid = ".$blogid.", 
-					disskinid = '".$sdnums."'
+					sblogid = ".(int)$blogid.", 
+					disskinid = '".addslashes($sdnums)."'
 				";
 				$res = @mysql_query($iq);
 				if (!$res) {
-					$_SESSION['msg'] = $iq.'Could not save data: ' . mysql_error() . $query;
+					$_SESSION['msg'] = $iq.'Could not save data: ' . htmlspecialchars( mysql_error().$query );
 				}else{
 					$_SESSION['msg'] = 'Saved.';
 				}
