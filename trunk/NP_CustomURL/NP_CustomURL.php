@@ -95,6 +95,7 @@ class NP_CustomURL extends NucleusPlugin
 	{
 		return	array(
 			'QuickMenu',
+//			'AdminPrePageHead',
 			'ParseURL',
 			'GenerateURL',
 			'PostAddBlog',
@@ -116,7 +117,16 @@ class NP_CustomURL extends NucleusPlugin
 			'PostMoveItem',
 			'PreSendContentType',
 			'InitSkinParse',
+			'AdminPrePageHead'
 		);
+	}
+
+	function event_AdminPrePageHead($data)
+	{
+//		if ($data['action'] == 'pluginhelp' && intGetVar('plugid') == $this->getID()) {
+//			$data['extrahead'] = '<link rel="stylesheet" title="NP_CustomURL HELP" type="text/css"' . "\n";
+//			$data['extrahead'] .= "\t\t\t" . ' href="' . $this->getAdminURL() . 'helpstyle.css" />' . "\n";
+//		}
 	}
 
 	function install()
@@ -353,7 +363,7 @@ class NP_CustomURL extends NucleusPlugin
 
 // Sanitize 'PATH_INFO'
 		$info = trim($info, '/');
-		$v_path = explode("/", $info);
+		$v_path = explode('/', $info);
 		foreach($v_path as $key => $value) {
 			$value = urlencode($value);
 			$value = preg_replace('|[^a-zA-Z0-9-~+_.?#=&;,/:@%]|i', '', $value);
@@ -368,17 +378,19 @@ class NP_CustomURL extends NucleusPlugin
 		$HTTP_SERVER_VARS['PATH_INFO'] = implode('/', $v_path);
 
 // Admin area check
-		$uri = str_replace('/', '\/', sprintf("%s%s%s","http://",serverVar("HTTP_HOST"),serverVar("SCRIPT_NAME")));
+		$uri = str_replace('/', '\/', sprintf('%s%s%s', 'http://', serverVar('HTTP_HOST'), serverVar('SCRIPT_NAME')));
 		$plug_url = str_replace('/', '\/', $CONF['PluginURL']);
 		$u_plugAction = (getVar('action') == 'plugin' && getVar('name'));
 		if (strpos($uri, $plug_url) === 0 || $u_plugAction) $UsingPlugAdmin = TRUE;
 
 // redirect to other URL style
-		if ($this->getBlogOption(intval($blogid), 'use_customurl') == 'yes' && !$UsingPlugAdmin && !$CONF['UsingAdminArea']) {
+		$useCustomURL = ($this->getBlogOption(intval($blogid), 'use_customurl') == 'yes');
+		if ($useCustomURL && !$UsingPlugAdmin && !$CONF['UsingAdminArea']) {
 // Search query redirection
 // 301 permanent ? or 302 temporary ?
 			$search_q = (getVar('query') || strpos(serverVar('REQUEST_URI'), 'query=') !== FALSE);
-			if ($this->getBlogOption(intval($blogid), 'redirect_search') == 'yes') {
+			$redirectSerch = ($this->getBlogOption(intval($blogid), 'redirect_search') == 'yes');
+			if ($redirectSerch) {
 				if ($search_q) {
 					$que_str = getVar('query');
 					$que_str = htmlspecialchars($que_str);
@@ -393,16 +405,18 @@ class NP_CustomURL extends NucleusPlugin
 					exit;
 				}
 			}
-			if ($this->getBlogOption(intval($blogid), 'redirect_search') == 'no' && $search_q) {
+			if (!$redirectSerch && $search_q) {
 				$exLink = TRUE;
 			}
 
 // redirection nomal URL to FancyURL
 			$temp_req = explode('?', serverVar('REQUEST_URI'));
-			$request_path = reset($temp_req);
-			$feeds = ($request_path == '/xml-rss1.php' || $request_path == '/xml-rss2.php' || $request_path == '/atom.php');
-			if ($feeds) return;
-			if ($this->getBlogOption(intval($blogid), 'redirect_normal') == 'yes' && serverVar('QUERY_STRING') && !$feeds && !$exLink) {
+			$request_path = trim(reset($temp_req), '/');
+			$feeds = ($request_path == 'xml-rss1.php' || $request_path == 'xml-rss2.php' || $request_path == 'atom.php');
+//			if ($feeds) return;
+			$redirectNormal = ($this->getBlogOption(intval($blogid), 'redirect_normal') == 'yes');
+			if ($redirectNormal && serverVar('QUERY_STRING') && !$feeds && !$exLink) {
+//			if ($redirectNormal && serverVar('QUERY_STRING') && !$exLink) {
 				$temp = explode('&', serverVar('QUERY_STRING'));
 				foreach ($temp as $k => $val) {
 					if (preg_match('/^virtualpath/', $val)) {
@@ -457,7 +471,7 @@ class NP_CustomURL extends NucleusPlugin
 						exit;
 					}
 				}
-			} elseif ($this->getBlogOption(intval($blogid), 'redirect_normal') == 'yes' && $feeds) {
+			} elseif ($redirectNormal && $feeds) {
 				$b_url = rtrim(createBlogidLink($blogid), '/');
 				switch ($request_path) {
 					case 'xml-rss1.php':
@@ -923,7 +937,7 @@ class NP_CustomURL extends NucleusPlugin
 						$objPath = $ipath . '.html';
 					}
 				}
-				if ($params['extra']['catid'] && $subcatid) {
+				if ($params['extra']['catid'] && $subcatid && !$params['extra'][$subrequest]) {
 					$params['extra'][$subrequest] = intval($subcatid);
 				}
 				if ($bid != $blogid) {
@@ -970,7 +984,7 @@ class NP_CustomURL extends NucleusPlugin
 				if ($this->getBlogOption(intval($blogid), 'use_customurl') == 'no') return;
 				$objPath = $OP_ArchivesKey . '/';
 				$bid = $blogid;
-				if ($subcatid) {
+				if ($params['extra']['catid'] && $subcatid && !$params['extra'][$subrequest]) {
 					$params['extra'][$subrequest] = intval($subcatid);
 				}
 			break;
@@ -984,7 +998,7 @@ class NP_CustomURL extends NucleusPlugin
 				}
 				$objPath = $OP_ArchiveKey . '/' . $arc . '/';
 				$bid = $blogid;
-				if ($subcatid) {
+				if ($params['extra']['catid'] && $subcatid && !$params['extra'][$subrequest]) {
 					$params['extra'][$subrequest] = intval($subcatid);
 				}
 			break;
@@ -1038,26 +1052,28 @@ class NP_CustomURL extends NucleusPlugin
 		if ($objPath || $data['type'] == 'blog') {
 			$LinkURI = $this->_addLinkParams($objPath, $params['extra']);
 			if ($LinkURI) {
-				$data['url'] =  $burl . '/' . $LinkURI;
+				$data['url'] = $burl . '/' . $LinkURI;
 			} else {
 				$data['url'] = $burl;
 			}
 			$isArchives = ((preg_match('/' . $OP_ArchivesKey . '/', $data['url'])) || (preg_match('/' . $OP_ArchiveKey . '/', $data['url'])));
 			$isItem = (substr($data['url'], -5, 5) == '.html');
 			$isDirectory = (substr($data['url'], -1) == '/');
-			if ($isArchives && !$isItem && !$isDirectory) {
+			$puri = parse_url($data['url']);
+			if ($isArchives && !$isItem && !$isDirectory && !$puri['query']) {
 				$data['url'] .= '/';
 			}
-	if (requestVar('skinid')) {
-		if (is_numeric(requestVar('skinid'))) {
-			$skinid = intRequestVar('skinid');
-			$data['url'] .= '?skinid=' . $skinid;
-		} else {
-			$skinid = SKIN::getIdFromName(requestVar('skinid'));
-			$skinid = intval($skinid);
-			$data['url'] .= '?skinid=' . $skinid;
-		}
-	}
+			/*if (getVar('skinid')) {
+				if (strpos('?', $data['url'])) {
+					$data['url'] .= '&amp;skinid=' . htmlspecialchars(getVar('skinid'));
+				} else {
+					if (!$isDirectory) {
+						$data['url'] .= '/?skinid=' . htmlspecialchars(getVar('skinid'));
+					} else {
+						$data['url'] .= '?skinid=' . htmlspecialchars(getVar('skinid'));
+					}
+				}
+			}*/
 			$data['completed'] = TRUE;
 			if (strstr ($data['url'], '//')) $link = preg_replace("/([^:])\/\//", "$1/", $data['url']);
 			return $data;
@@ -1185,11 +1201,23 @@ class NP_CustomURL extends NucleusPlugin
 					break;
 				}
 			}
-			$tagparam = (preg_match('/^tag\//', $link));
-			if (substr($link, -5, 5) == '.html' || $tagparam || $isArchives) {
+//			$tagparam = (preg_match('/^tag\//', $link));
+			if (substr($link, -5, 5) == '.html' || $isArchives) {
 				$link = $catlink . $sublink . $link;
 			} else {
 				$link .= $catlink . $sublink;
+			}
+		}
+		if ($params['tag']) $link .= 'tag/' . $params['tag'] . '/';
+		if (requestVar('skinid')) {
+			if (strpos('?', $link)) {
+				$link .= '&amp;skinid=' . htmlspecialchars(requestVar('skinid'));
+			} else {
+				if (substr($link, -1) != '/' && !empty($link)) {
+					$link .= '/?skinid=' . htmlspecialchars(requestVar('skinid'));
+				} else {
+					$link .= '?skinid=' . htmlspecialchars(requestVar('skinid'));
+				}
 			}
 		}
 		if (strstr ($link, '//')) {
