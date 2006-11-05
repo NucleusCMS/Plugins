@@ -12,8 +12,8 @@
  *
  * @author		Original Author nakahara21
  * @copyright	2005-2006 nakahara21
- * @license	http://www.gnu.org/licenses/gpl.txt  GNU GENERAL PUBLIC LICENSE Version 2, June 1991
- * @version	2.65
+ * @license		http://www.gnu.org/licenses/gpl.txt  GNU GENERAL PUBLIC LICENSE Version 2, June 1991
+ * @version	2.62
  * @link		http://nakahara21.com
  *
  * 2.65 add AD code control
@@ -56,7 +56,7 @@ class NP_ShowBlogs extends NucleusPlugin
 
 	function getVersion()
 	{
-		return '2.65';
+		return '2.64';
 	}
 
 	function getDescription()
