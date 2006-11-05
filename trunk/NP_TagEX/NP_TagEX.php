@@ -17,7 +17,9 @@
  * @version    0.41
  * @link       http://nakahara21.com
  *
- * 0.41 security fix
+ * 0.43 fix URL generate
+ * 0.42 add URL selected tag check
+ * 0.41 security fix and add some trick
  * 0.4  fixed bug: numlic only
  * 0.3  fixed bug: delete action
  * 0.2  supports and/or query
@@ -56,7 +58,7 @@ class NP_TagEX extends NucleusPlugin
 
 	function getVersion()
 	{
-		return '0.42';
+		return '0.43';
 	}
 
 	function getDescription()
@@ -76,20 +78,20 @@ class NP_TagEX extends NucleusPlugin
 
 	function install()
 	{
-		$this->createOption('flg_erase',			'Erase data on uninstall.',				'yesno',	'no');
+		$this->createOption('flg_erase',		'Erase data on uninstall.',				'yesno',	'no');
 // <editable template mod by shizuki>
-		$this->createOption('editTagOrder',		'editform tag order',						'select',	'1',	'amount(desc)|1|amount(asc)|2|tag\'s order|3|random|4');
-		$this->createOption('and',					'template for \'and\'',					'textarea',	'<span style="font-family:tahoma;font-size:smaller;"> <a href="<%andurl%>" title="narrow">&amp;</a>.');
-		$this->createOption('or',					'template for \'or\'',					'textarea',	'<a href="<%orurl%>" title="expand">or</a> </span>');
-		$this->createOption('tagIndex',			'template for \'tagIndex\'',				'textarea',	'<%and%><%or%><span style="font-size:<%fontlevel%>em" title="<%tagamount%> post(s)! <%tagitems%>"><a href="<%taglinkurl%>"><%tag%></a></span>');
-		$this->createOption('tagItemHeader',		'template for \'tagItemHeader\'',		'textarea',	'');
-		$this->createOption('tagItem',				'template for \'tagItem\'',				'textarea',	'<%itemid%>:<%itemtitle%>');
-		$this->createOption('tagItemSeparator',	'template for \'tagItemSeparator\'',	'text',	' , ');
-		$this->createOption('tagItemFooter',		'template for \'tagItemFooter\'',		'textarea',	'');
-		$this->createOption('tagIndexSeparator',	'template for \'tagIndexSeparator\'',	'text',			' | ');
-		$this->createOption('tagsonlycurrent',	'show tags only current blog have',	'yesno',		'no');
-		$this->createOption('colorfulhighlight',	'colorful highlight mode ?',				'yesno',		'no');
-		$this->createOption('highlight',			'template for normal highlightmode',	'text',		'<span class="highlight">\0</span>');
+		$this->createOption('editTagOrder',		'editform tag order',					'select',	'1',	'amount(desc)|1|amount(asc)|2|tag\'s order|3|random|4');
+		$this->createOption('and',				'template for \'and\'',					'textarea',	'<span style="font-family:tahoma;font-size:smaller;"> <a href="<%andurl%>" title="narrow">&amp;</a>.');
+		$this->createOption('or',				'template for \'or\'',					'textarea',	'<a href="<%orurl%>" title="expand">or</a> </span>');
+		$this->createOption('tagIndex',			'template for \'tagIndex\'',			'textarea',	'<%and%><%or%><span style="font-size:<%fontlevel%>em" title="<%tagamount%> post(s)! <%tagitems%>"><a href="<%taglinkurl%>"><%tag%></a></span>');
+		$this->createOption('tagItemHeader',	'template for \'tagItemHeader\'',		'textarea',	'');
+		$this->createOption('tagItem',			'template for \'tagItem\'',				'textarea',	'<%itemid%>:<%itemtitle%>');
+		$this->createOption('tagItemSeparator',	'template for \'tagItemSeparator\'',	'text',     ' , ');
+		$this->createOption('tagItemFooter',	'template for \'tagItemFooter\'',		'textarea',	'');
+		$this->createOption('tagIndexSeparator','template for \'tagIndexSeparator\'',	'text',		' | ');
+		$this->createOption('tagsonlycurrent',	'show tags only current blog have',	    'yesno',	'no');
+		$this->createOption('colorfulhighlight','colorful highlight mode ?',			'yesno',	'no');
+		$this->createOption('highlight',		'template for normal highlightmode',	'text',		'<span class="highlight">\0</span>');
 //</mod by shizuki>*/
 		$table_q = 'CREATE TABLE IF NOT EXISTS ' . _TAGEX_TABLE . ' ('
 				 . ' `inum` INT(9) NOT NULL default "0" PRIMARY KEY, '
@@ -148,7 +150,7 @@ class NP_TagEX extends NucleusPlugin
 				$value = array_map("stripslashes", $value);
 			}
 			if (!array_map("is_numeric",$value)) {
-				if (version_compare(phpversion(),"4.3.0") == "-1") {
+				if (version_compare(phpversion(),"4.0.3") == "-1") {
 					$value = array_map("mysql_escape_string",$value);
 				} else {
 					$value = array_map("mysql_real_escape_string",$value);
@@ -161,7 +163,7 @@ class NP_TagEX extends NucleusPlugin
 				$value = stripslashes($value);
 			}
 			if (!is_numeric($value)) {
-				if (version_compare(phpversion(),"4.3.0") == "-1") {
+				if (version_compare(phpversion(),"4.0.3") == "-1") {
 					$value = "'" . mysql_escape_string($value) . "'";
 				} else {
 					$value = "'" . mysql_real_escape_string($value) . "'";
@@ -215,7 +217,7 @@ class NP_TagEX extends NucleusPlugin
 		}
 //		$template['highlight'] = '<span class="highlight">\0</span>';	// original code
 		$template['highlight'] = $this->getOption('highlight');		// <editable template mod by shizuki />
-		$curItem =  &$data["item"];
+		$curItem =& $data['item'];
 		if ($this->getOption('colorfulhighlight') == 'no') {
 //			$curItem->title = highlight($curItem->title, $highlightKeys, $template['highlight']);
 			$curItem->body = highlight($curItem->body, $highlightKeys, $template['highlight']);		// original mode
@@ -230,7 +232,7 @@ class NP_TagEX extends NucleusPlugin
 //
 			$i = 0;
 			foreach($highlightKeys as $qValue) {
-				$pattern = '<span class=\'highlight_' . $i . '\'>\0</span>';
+				$pattern = '<span class=\'highlight_'.$i.'\'>\0</span>';
 				$curItem->body = highlight($curItem->body, $qValue, $pattern);
 				$i++;
 				if ($i == 10) $i = 0;
@@ -238,7 +240,7 @@ class NP_TagEX extends NucleusPlugin
 			if ($curItem->more) {
 				$i = 0;
 				foreach($highlightKeys as $qValue) {
-					$pattern = '<span class=\'highlight_' . $i . '\'>\0</span>';
+					$pattern = '<span class=\'highlight_'.$i.'\'>\0</span>';
 					$curItem->more = highlight($curItem->more, $qValue, $pattern);
 					$i++;
 					if ($i == 10) $i = 0;
@@ -272,7 +274,7 @@ class NP_TagEX extends NucleusPlugin
 		<p style="float:left">
 			<label for="tagex">Tag(s):</label>
 			<a href="javascript:resetOlder('<?php echo $oldforj ?>')">[Reset]</a><br />
-			<textarea id="tagex" name="itags" rows="<?php echo intval($tagrows) ?>" cols="<?php echo intval($tagcols) ?>" style="width:60%;"><?php echo htmlspecialchars($itags) ?></textarea>
+			<textarea id="tagex" name="itags" rows="<?php echo intval($tagrows)?>" cols="<?php echo intval($tagcols)?>" style="width:60%;"><?php echo htmlspecialchars($itags) ?></textarea>
 		</p>
 <script language="JavaScript" type="text/javascript"> 
 <!--
@@ -386,7 +388,7 @@ function resetOlder(old){
 		if (empty($oldTags)) {
 			return;
 		} else {
-			sql_query(sprintf('DELETE FROM %s WHERE inum = %d', sql_table('plug_tagex'), $inum));
+			sql_query('DELETE FROM %s WHERE inum = %d', sql_table('plug_tagex'), $inum);
 			$deleteTags = $this->getTags($oldTags);
 			for ($i=0;$i<count($deleteTags);$i++) {
 				$this->deleteTags($deleteTags[$i], $inum);
@@ -812,8 +814,8 @@ function resetOlder(old){
 							$taglist[$i] = htmlspecialchars($tag);
 						}
 					}
-					if (!empty($taglist)) {
-						$tag_str = @join($sep, $taglist);
+					if ($taglist) {
+						echo @join(' ', $taglist);
 					}
 				} else {
 					if ($tags = $this->scanExistTags($type[1], $amount, $type[2])) {
@@ -823,17 +825,15 @@ function resetOlder(old){
 							$eachTag[$t] = htmlspecialchars($tag);
 							$t++;
 						}
-						if (!empty($eachTag)) {
-//						if ($type[3] != 'ad') {
-//							echo @join($sep, $eachTag);
-//						} elseif ($type[3] == 'ad') {
+						if ($type[3] != 'ad') {
+							echo @join($sep, $eachTag);
+						} elseif ($type[3] == 'ad') {
 							$tag_str = @join($sep, $eachTag);
-//						}
 						}
 					}
 				}
 				if ($type[3] != 'ad') {
-					echo $tag_str . '" />';
+					echo '" />';
 				} elseif ($type[3] == 'ad') {
 //					$tag_str = mb_convert_encoding($tag_str, 'UTF-8', 'UTF-8');
 					$tag_str = urlencode($tag_str);
@@ -1089,19 +1089,35 @@ tagIndexSeparator
 
 	function creatTagLink($tag, $narrowMode = 0, $ready = '', $sep = '')
 	{
-		global $manager, $CONF, $blogid, $catid, $subcatid;
+		global $manager, $CONF, $blogid, $catid;	//, $subcatid;
 		$linkparams = array();
+		if (is_numeric($blogid)) {
+			$blogid = intval($blogid);
+		} else {
+			$blogid = intval(getBlogIDFromName($blogid));
+		}
+		if (!$blogid) {
+			$blogid = $CONF['DefaultBlog'];
+		}
 		if ($narrowMode == 2) {
-			if ($blogid) {
-				$linkparams['blogid'] = intval($blogid);
-			}
+//			if ($blogid) {
+//				$linkparams['blogid'] = intval($blogid);
+//			}
 			if ($catid) {
 				$linkparams['catid'] = intval($catid);
 			}
-			if ($subcatid) {
-				$mplugin = $manager->getPlugin('NP_MultipleCategories');
-				$subrequest = $mplugin->getRequestName(array());
-				$linkparams[$subrequest] = intval($subcatid);
+			if ($manager->pluginInstalled('NP_MultipleCategories')) {
+				$mcategories =& $manager->getPlugin('NP_MultipleCategories');
+				if (method_exists($mcategories, "getRequestName")) {
+					$subrequest = $mcategories->getRequestName();
+				} else {
+					$subrequest = 'subcatid';
+				}
+				$mcategories->event_PreSkinParse(array());
+				global $subcatid;
+				if ($subcatid) {
+					$linkparams[$subrequest] = intval($subcatid);
+				}
 			}
 		}
 
@@ -1127,16 +1143,28 @@ tagIndexSeparator
 // </mod by shizuki>*/
 
 		if (!$ready) $sep = '';
-		if ($CONF['URLMode'] == 'pathinfo')
-			$link = $CONF['BlogURL'] . '/tag/' . $ready . $sep . $this->_rawencode($tag);
-		else
-			$link = $CONF['BlogURL'] . '?tag=' . $ready . $sep . $this->_rawencode($tag);
+//	<mod by shizuki>
+		$link = $CONF['BlogURL'];
+		if (substr($CONF['BlogURL'], -1) != '/') {
+			if (substr($CONF['BlogURL'], -4) != '.php') {
+				$link .= '/';
+			}
+		}
+		if ($CONF['URLMode'] == 'pathinfo') {
+			$link .= 'tag/' . $ready . $sep . $this->_rawencode($tag);
+		} else {
+			$link .= '?tag=' . $ready . $sep . $this->_rawencode($tag);
+		}
+//		if ($CONF['URLMode'] == 'pathinfo')
+//			$link = $CONF['IndexURL'] . '/tag/' . $ready . $sep . $this->_rawencode($tag);
+//		else
+//			$link = $CONF['IndexURL'] . '?tag=' . $ready . $sep . $this->_rawencode($tag);
+// </mod by shizuki>*/
 
-// <add for NP_CustomURL mod by shizuki>
+//	<mod by shizuki>
 		if ($manager->pluginInstalled('NP_CustomURL')) {
-			$urlplugin = $manager->getPlugin('NP_CustomURL');
-			$link = 'tag/' . $ready . $sep . $this->_rawencode($tag);
-			$uri = $CONF['BlogURL'] . '/' . $urlplugin->_addLinkParams($link, $linkparams) . '/';
+			$linkparams['tag'] = $ready . $sep . $this->_rawencode($tag);
+			$uri = createBlogidLink($blogid, $linkparams);
 			if (strstr ($uri, '//')) {
 				$uri = preg_replace("/([^:])\/\//", "$1/", $uri);
 			}
