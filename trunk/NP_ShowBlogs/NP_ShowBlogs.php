@@ -12,10 +12,14 @@
  *
  * @author		Original Author nakahara21
  * @copyright	2005-2006 nakahara21
- * @license		http://www.gnu.org/licenses/gpl.txt  GNU GENERAL PUBLIC LICENSE Version 2, June 1991
- * @version	2.62
+ * @license	http://www.gnu.org/licenses/gpl.txt  GNU GENERAL PUBLIC LICENSE Version 2, June 1991
+ * @version	2.65
  * @link		http://nakahara21.com
  *
+ * 2.65 add AD code control
+ *      add Category mode
+ *      fix stickies bug
+ * 2.64 fix page switch URL generate
  * 2.62 security fix and tag related
  * 2.61 security fix
  * 2.6 security fix
@@ -52,7 +56,7 @@ class NP_ShowBlogs extends NucleusPlugin
 
 	function getVersion()
 	{
-		return '2.641';
+		return '2.65';
 	}
 
 	function getDescription()
@@ -120,9 +124,20 @@ class NP_ShowBlogs extends NucleusPlugin
 // </mod by shizuki>
 	}
 
-	function doSkinVar($skinType, $template = 'default/index', $amount = 10, $bmode = '', $type = 1, $sort = 'DESC', $sticky = '', $sticktemplate = '')
+	function doSkinVar($skinType,
+					   $template      = 'default/index',
+					   $amount        = 10,
+					   $bmode         = '',
+					   $type          = 1,
+					   $sort          = 'DESC',
+					   $sticky        = '',
+					   $sticktemplate = '',
+					   $catmode       = 'all',
+					   $showAdCode    = 1,
+					   $catStick      = 0
+					  )
 	{
-		global $manager, $CONF, $blog, $blogid, $catid, $itemid, $archive;
+		global $manager, $CONF, $blog, $blogid, $catid, $itemid, $archive, $subcatid;
 
 //***************************************
 //	extra setting
@@ -146,6 +161,7 @@ $monthlimit = 0;
 
 		$type = (float) $type;
 		$typeExp = intval(($type - floor($type))*10); //0 or 1 or 9
+		$this->showAdCode = $showAdCode;
 
 		list ($pageamount, $offset) = sscanf($amount, '%d(%d)');
 		if (!$pageamount) {
@@ -169,6 +185,17 @@ $monthlimit = 0;
 				$show = explode("/", $matches[2]);
 			}
 			$bmode = 'all';
+		}
+
+		if (preg_match("/^(<>)?([0-9\/]+)$/", $catmode, $matches)) {
+			if ($matches[1]) {
+				$hideCat = explode("/", $matches[2]);
+				$showCat = array();
+			} else {
+				$hideCat = array();
+				$showCat = explode("/", $matches[2]);
+			}
+			$catmode = 'all';
 		}
 
 		if ($blog) {
@@ -199,8 +226,28 @@ $monthlimit = 0;
 				$w[] = intval($val);
 			}
 			$catblogname = (count($w) > 1) ? 1 : 0;
-			$where .= ' AND i.iblog in (' . implode(",", $w) . ')';
+			$where .= ' AND i.iblog in (' . implode(',', $w) . ')';
 		}
+
+		if (isset($hidecat[0]) && $catmode == 'all') {
+			foreach($hideCat as $val){
+				if(!is_numeric($val)){
+					$val = getCatIDFromName(intval($val));
+				}
+				$where .= ' AND i.icat != ' . intval($val);
+			}
+			$catblogname = 1;
+		} elseif (isset($showCat[0]) && $catmode == 'all') {
+			foreach ($showCat as $val) {
+				if (!is_numeric($val)) {
+					$val = getBlogIDFromName(intval($val));
+				}
+				$w[] = intval($val);
+			}
+			$catblogname = (count($w) > 1) ? 1 : 0;
+			$where .= ' AND i.icat in (' . implode(',', $w) . ')';
+		}
+		$stickWhere = $where;
 
 		if ($skinType == 'item' || $skinType == 'index' || $skinType == 'archive') {
 			$catformat = '"' . addslashes($catformat) . '"';
@@ -215,7 +262,9 @@ $monthlimit = 0;
 				$where .= ' and i.inumber != ' . intval($itemid);
 			} else {
 
-				if (!$catid && $sticky != '') {
+				$sticCatFlag = (!$catid || (!empty($catStick) && $sticktemplate != ''));
+//				if (!$catid && $sticky != '') {
+				if ($sticCatFlag && $sticky != '') {
 					$stickys = explode('/',  $sticky);
 					foreach ($stickys as $stickynumber) {
 						$where .= ' AND i.inumber <> ' . intval($stickynumber);
@@ -274,12 +323,12 @@ $monthlimit = 0;
 			} else {
 				$sh_query .= ' concat(' . $catformat . ') as category,';
 			}
-			$sh_query .= ' i.icat as catid, i.iclosed as closed';
-			$sh_query .= ' FROM '
-						. sql_table('member') . ' as m, '
-						. sql_table('category') . ' as c, '
-						. sql_table('item') . ' as i'
-						. $mtable;
+			$sh_query .= ' i.icat as catid, i.iclosed as closed'
+					   . ' FROM '
+					   . sql_table('member') . ' as m, '
+					   . sql_table('category') . ' as c, '
+					   . sql_table('item') . ' as i'
+					   . $mtable;
 			if ($bmode == 'all') {
 				$sh_query .= ', ' . sql_table('blog') . ' as b ';
 			}
@@ -288,28 +337,41 @@ $monthlimit = 0;
 				$sh_query .= ' AND b.bnumber = c.cblog';
 			}
 
-			if ($page_switch['startpos'] == 0 && !$catid && $sticky != '' && $skinType != 'item' && !$this->tagSelected) {
-				$ads = 1;
-				$sticky_query = $sh_query;
+//			if ($page_switch['startpos'] == 0 && !$catid && $sticky != '' && $skinType != 'item' && !$this->tagSelected) {
+			$ads = 0;
+			$sticCatFlag = ($page_switch['startpos'] == 0 && (!$catid || (!empty($catStick) && $sticktemplate != '')));
+			if ($sticCatFlag && $sticky != '' && $skinType != 'item' && !$this->tagSelected) {
 				foreach ($stickys as $stickynumber) {
+					$sticky_query = $sh_query;
 					$tempblogid = getBlogIDFromItemID($stickynumber);
 					if ($bmode != 'all') {
 						$sticky_query .= ' AND i.iblog = ' . $nowbid;
 					}
-					$sticky_query .= ' AND i.inumber = ' . intval($stickynumber);
-					$sticky_query .= ' AND i.itime <= ' . mysqldate($b->getCorrectTime());
-					$sticky_query .= ' AND i.idraft = 0';
+					$sticky_query .= ' AND i.inumber = ' . intval($stickynumber)
+								   . ' AND i.itime <= ' . mysqldate($b->getCorrectTime())
+								   . ' AND i.idraft = 0';
+					if ($catid) {
+						$sticky_query .= ' AND i.icat = ' . intval($catid);
+					}
+					if ($subcatid) {
+						$sticky_query .= ' AND p.subcategories = ' . intval($subcatid);
+					}
+					$sticky_query .= $stickWhere;
 					if ($this->getOption('stickmode') == 1 && intval($nowbid) == $tempblogid) {
 						$b->showUsingQuery($sticktemplate, $sticky_query, 0, 1, 0); 
 					} elseif (!$this->getOption('stickmode')) {
 						$b->showUsingQuery($sticktemplate, $sticky_query, 0, 1, 0); 
 					}
-					if ($ads == 1) {
-						echo $this->getOption('ads');
-					} elseif ($ads ==2) {
-						echo $this->getOption('ads2');
+					//echo $stickynumber;
+					if ($showAdCode > 0 && mysql_num_rows(sql_query($sticky_query))) {
+						if ($ads == 0) {
+							echo $this->getOption('ads');
+						} elseif ($ads == 1) {
+							echo $this->getOption('ads2');
+						} elseif ($ads >= 2) {
+						}
+						$ads++;
 					}
-					$ads++;
 				}
 			}
 
@@ -322,7 +384,7 @@ $monthlimit = 0;
 			}
 
 			if ($skinType != 'item') {
-				$this->_showUsingQuery($template, $sh_query, $page_switch['startpos'], $pageamount, $b, $sticky);
+				$this->_showUsingQuery($template, $sh_query, $page_switch['startpos'], $pageamount, $b, $ads);
 				if ($type >= 1 && $typeExp != 1) echo $page_switch['buf'];
 			} elseif ($skinType == 'item') {
 				$sh_query .= ' LIMIT 0, ' . $pageamount;
@@ -331,34 +393,30 @@ $monthlimit = 0;
 		}
 	}
 
-	function _showUsingQuery($template, $showQuery, $q_startpos, $q_amount, $b, $sticky = '')
+	function _showUsingQuery($template, $showQuery, $q_startpos, $q_amount, $b, $ads)
 	{
 		global $catid;
-		$ads = 0;
-		$stickys = count(explode('/', $sticky));
 		$onlyone_query = $showQuery . ' LIMIT ' . intval($q_startpos) .', 1';
 		$b->showUsingQuery($template, $onlyone_query, 0, 1, 1);
-		if ($q_startpos == 0 && !$catid && $sticky != '') {
-			$ads = 1;
-			if ($stickys == 1) {
-				echo $this->getOption('ads2');
-			}
-//------------SECOND AD CODE-------------
-		} else {
+		if (intval($ads) == 0 && $this->showAdCode > 0) {
 			echo $this->getOption('ads');
+//		}
+//------------SECOND AD CODE-------------
+		} elseif (intval($ads) == 1 && $this->showAdCode > 0) {
+			echo $this->getOption('ads2');
 		}
 		$q_startpos++;
 		$q_amount--;
 		if ($q_amount < 0) return;
 		$onlyone_query = $showQuery . ' LIMIT ' . intval($q_startpos) . ', 1';
 		$b->showUsingQuery($template, $onlyone_query, 0, 1, 1); 
-		if (mysql_num_rows(sql_query($onlyone_query)) && empty($ads)) {
+		if (mysql_num_rows(sql_query($onlyone_query)) && empty($ads) && $this->showAdCode > 0) {
 			echo $this->getOption('ads2');
 		}
 //------------SECOND AD CODE END-------------
 		$q_startpos++;
 		$q_amount--;
-		if ($q_amount < 0) return;
+		if ($q_amount <= 0) return;
 		$second_query = $showQuery . ' LIMIT ' . intval($q_startpos) . ',' . intval($q_amount);
 		$b->showUsingQuery($template, $second_query, 0, 1, 1);
 	}
@@ -374,10 +432,13 @@ $monthlimit = 0;
 			$uri = serverVar('REQUEST_URI');
 		}
 		$page_str = ($usePathInfo) ? 'page/' : 'page=';
-		if ($manager->pluginInstalled('NP_CustomURL')) {
+		if ($manager->pluginInstalled('NP_CustomURL') || $manager->pluginInstalled('NP_Magical')) {
 			$page_str = 'page_';
 		}
 		list($org_uri, $currPage) = explode($page_str, $uri, 2);
+		if (getVar('page')) {
+			$currPage = intGetVar('page');
+		}
 		$_GET['page'] = intval($currPage);
 		$this->currPage = intval($currPage);
 		$this->pagestr = $page_str;
@@ -455,6 +516,9 @@ $monthlimit = 0;
 			}
 		}
 
+		if (strstr ($pagelink, '//')) {
+			$pagelink = preg_replace("/([^:])\/\//", "$1/", $pagelink);
+		}
 		$uri = parse_url($pagelink);
 		if (!$usePathInfo) {
 			if ($pagelink == $CONF['BlogURL']) { // add
@@ -464,8 +528,13 @@ $monthlimit = 0;
 			}
 			$pagelink = str_replace('&amp;&amp;', '&amp;', $pagelink);
 		} elseif ($usePathInfo && substr($pagelink, -1) != '/') {
-			$pagelink .= '/';
-			if (strstr ($pagelink, '//')) $link = preg_replace("/([^:])\/\//", "$1/", $pagelink);
+			if ($uri['query']) {
+				$pagelink .= '&amp;';
+				$page_str = 'page=';
+			} else {
+				$pagelink .= '/';
+				if (strstr ($pagelink, '//')) $link = preg_replace("/([^:])\/\//", "$1/", $pagelink);
+			}
 		}
 
 		if ($currentpage > 0) {
@@ -473,8 +542,6 @@ $monthlimit = 0;
 		} else {
 			$currentpage = 1;
 		}
-
-//		$pagelink = htmlspecialchars($pagelink);
 
 		$totalamount = 0;
 		if (is_numeric($where)) {
@@ -515,11 +582,11 @@ $monthlimit = 0;
 		$prevpage = ($currentpage > 1) ? $currentpage - 1 : 0;
 		$nextpage = $currentpage + 1;
 		$firstpagelink = $pagelink . $page_str . '1';
-		if ($manager->pluginInstalled('NP_CustomURL')) {
+		if ($page_str = 'page_') {
 			$firstpagelink .= '.html';
 		}
 		$lastpagelink = $pagelink . $page_str . $totalpages;
-		if ($manager->pluginInstalled('NP_CustomURL')) {
+		if ($page_str = 'page_') {
 			$lastpagelink .= '.html';
 		}
 
@@ -528,10 +595,10 @@ $monthlimit = 0;
 //			$buf .= "<a rel=\"first\" title=\"first page\" href=\"{$firstpagelink}\">&lt;TOP&gt;</a> |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n";
 			if (!empty($prevpage)) {
 				$prevpagelink = $pagelink . $page_str . $prevpage;
-				if ($manager->pluginInstalled('NP_CustomURL')) {
+				if ($page_str = 'page_') {
 					$prevpagelink .= '.html';
 				}
-				$buf .= "\n<a href=\"{$prevpagelink}\" title=\"Previous page\" rel=\"Prev\">&laquo;Prev</a> |";
+				$buf .= "\n" . '<a href="' . $prevpagelink . '" title="Previous page" rel="Prev">&laquo;Prev</a> |';
 			} elseif ($type >= 2) {
 				$buf .= "\n&laquo;Prev |";
 			}
@@ -540,55 +607,55 @@ $monthlimit = 0;
 				$buf .= "|";
 				for ($i=1; $i<=$totalpages; $i++) {
 					$i_pagelink = $pagelink . $page_str . $i;
-					if ($manager->pluginInstalled('NP_CustomURL')) {
+					if ($page_str = 'page_') {
 						$i_pagelink .= '.html';
 					}
 					if ($i == $currentpage) {
-						$buf .= " <strong>{$i}</strong> |\n";
+						$buf .= ' <strong>' . $i . '</strong> |' . "\n";
 					} elseif ($totalpages<10 || $i<4 || $i>$totalpages-3) {
-						$buf .= " <a href=\"{$i_pagelink}\" title=\"Page No.{$i}\">{$i}</a> |\n";
+						$buf .= ' <a href="' . $i_pagelink . '" title="Page No.' . $i . '">' . $i . '</a> |' . "\n";
 					} else {
 						if ($i<$currentpage-1 || $i>$currentpage+1) {
-							if (($i==4 && ($currentpage>5 || $currentpage==1)) || $i==$currentpage+2) {
+							if (($i == 4 && ($currentpage > 5 || $currentpage == 1)) || $i == $currentpage + 2) {
 								$buf = rtrim($buf);
 								$buf .= "...|\n";
 							}
 						} else {
-							$buf .= " <a href=\"{$i_pagelink}\" title=\"Page No.{$i}\">{$i}</a> |";
+							$buf .= ' <a href="' . $i_pagelink . '" title=\"Page No.' . $i . '">' . $i . '</a> |' . "\n";
 						}
 					}
 				}
 				$buf = rtrim($buf);
 			}
 			if (intval($type) == 3) {
-				$buf .= "|";
+				$buf .= '|';
 				$sepstr = '&middot;';
-				for ($i=1; $i<=$totalpages; $i++) {
+				for ($i = 1; $i <= $totalpages; $i++) {
 					$i_pagelink = $pagelink . $page_str . $i;
-					if ($manager->pluginInstalled('NP_CustomURL')) {
+					if ($page_str = 'page_') {
 						$i_pagelink .= '.html';
 					}
 					$paging = 5;
 					if ($i == $currentpage) {
-						$buf .= " <strong>{$i}</strong> {$sepstr}\n";
+						$buf .= ' <strong>' . $i . '</strong> ' . $sepstr . "\n";
 					} elseif ($totalpages < 10 || (($i < ($currentpage + $paging)) && (($currentpage - $paging) < $i))) {
-						$buf .= " <a href=\"{$i_pagelink}\" title=\"Page No.{$i}\">{$i}</a> {$sepstr}\n";
+						$buf .= ' <a href="' . $i_pagelink . '" title="Page No.' . $i . '">' . $i . '</a> ' . $sepstr . "\n";
 					} elseif ($currentpage - $paging == $i) {
 						$buf = rtrim($buf);
 						$buf .= ' ...'."\n";
 					} elseif ($currentpage + $paging == $i) {
 						$buf = rtrim($buf);
-						$buf = preg_replace("/$sepstr$/","",$buf);
+						$buf = preg_replace('/$sepstr$/', '', $buf);
 						$buf .= "... |\n";
 					}
 				}
 			}
 			if ($totalpages >= $nextpage) {
 				$nextpagelink = $pagelink . $page_str . $nextpage;
-				if ($manager->pluginInstalled('NP_CustomURL')) {
+				if ($page_str = 'page_') {
 					$nextpagelink .= '.html';
 				}
-				$buf .= "| <a href=\"{$nextpagelink}\" title=\"Next page\" rel=\"Next\">Next&raquo;</a>\n";
+				$buf .= '| <a href="' . $nextpagelink . '" title="Next page" rel="Next">Next&raquo;</a>' . "\n";
 			} elseif ($type >= 2) {
 				$buf .= "| Next&raquo;\n";
 			}
@@ -602,11 +669,11 @@ $monthlimit = 0;
 	{
 		global $manager;
 		$mwhere = '';
-		$mwhere = ' AND ((i.inumber = p.item_id' .
-				' AND (p.categories REGEXP "(^|,)' . intval($catid) . '(,|$)" OR i.icat = ' . intval($catid) . '))' .
-				' OR (i.icat = ' . intval($catid) . ' AND p.item_id IS NULL))';
-		$mtable = ' LEFT JOIN ' . sql_table('plug_multiple_categories') . ' as p' .
-				' ON i.inumber = p.item_id';
+		$mwhere = ' AND ((i.inumber = p.item_id'
+				. ' AND (p.categories REGEXP "(^|,)' . intval($catid) . '(,|$)" OR i.icat = ' . intval($catid) . '))'
+				. ' OR (i.icat = ' . intval($catid) . ' AND p.item_id IS NULL))';
+		$mtable = ' LEFT JOIN ' . sql_table('plug_multiple_categories') . ' as p'
+				. ' ON i.inumber = p.item_id';
 		$mplugin =& $manager->getPlugin('NP_MultipleCategories');
 		if (method_exists($mplugin, 'getRequestName')) {
 			$mplugin->event_PreSkinParse(array());
