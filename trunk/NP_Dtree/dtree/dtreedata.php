@@ -91,14 +91,16 @@ global $CONF, $manager;
         $catFilter = '=' . $catFilter;
     }
     
-    $query = 'SELECT * FROM %s WHERE catid %s ORDER BY scatid';
+    $query = 'SELECT * FROM %s WHERE catid %s ORDER BY ordid ASC';
+//    $query = 'SELECT * FROM %s WHERE catid %s ORDER BY scatid';
     $res = sql_query(sprintf($query, sql_table('plug_multiple_categories_sub'), $catFilter));
     while ($o = mysql_fetch_object($res)) {
         $scatid = intval($o->scatid);
         $nodeArray['subcat'][$scatid] = $n;
         $n++;
     }
-    $query = 'SELECT * FROM %s WHERE catid %s ORDER BY scatid';
+    $query = 'SELECT * FROM %s WHERE catid %s ORDER BY ordid ASC';
+//    $query = 'SELECT * FROM %s WHERE catid %s ORDER BY scatid';
     $res = sql_query(sprintf($query, sql_table('plug_multiple_categories_sub'), $catFilter));
     $mcategories =& $manager->getPlugin('NP_MultipleCategories');
     if (method_exists($mcategories, "getRequestName")) {
