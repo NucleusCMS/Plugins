@@ -595,7 +595,7 @@ $monthlimit = 0;
 //			$buf .= "<a rel=\"first\" title=\"first page\" href=\"{$firstpagelink}\">&lt;TOP&gt;</a> |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n";
 			if (!empty($prevpage)) {
 				$prevpagelink = $pagelink . $page_str . $prevpage;
-				if ($page_str = 'page_') {
+				if ($page_str == 'page_') {
 					$prevpagelink .= '.html';
 				}
 				$buf .= "\n" . '<a href="' . $prevpagelink . '" title="Previous page" rel="Prev">&laquo;Prev</a> |';
@@ -607,7 +607,7 @@ $monthlimit = 0;
 				$buf .= "|";
 				for ($i=1; $i<=$totalpages; $i++) {
 					$i_pagelink = $pagelink . $page_str . $i;
-					if ($page_str = 'page_') {
+					if ($page_str == 'page_') {
 						$i_pagelink .= '.html';
 					}
 					if ($i == $currentpage) {
@@ -632,7 +632,7 @@ $monthlimit = 0;
 				$sepstr = '&middot;';
 				for ($i = 1; $i <= $totalpages; $i++) {
 					$i_pagelink = $pagelink . $page_str . $i;
-					if ($page_str = 'page_') {
+					if ($page_str == 'page_') {
 						$i_pagelink .= '.html';
 					}
 					$paging = 5;
@@ -652,7 +652,7 @@ $monthlimit = 0;
 			}
 			if ($totalpages >= $nextpage) {
 				$nextpagelink = $pagelink . $page_str . $nextpage;
-				if ($page_str = 'page_') {
+				if ($page_str == 'page_') {
 					$nextpagelink .= '.html';
 				}
 				$buf .= '| <a href="' . $nextpagelink . '" title="Next page" rel="Next">Next&raquo;</a>' . "\n";
