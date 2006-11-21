@@ -1,29 +1,25 @@
 <?php 
-/* 
-NP_FootNote 
-はてなダイアリーなどで使用される脚注を作成するプラグイン。 
-本文中に(())で囲まれたフレーズがあると、脚注として表示します。 
-もとのデータ自体は変更せず、パースする際に変換しています。 
-
-変更履歴 
-0.3:SecurityFix and XHTML Valid.
-0.3:注釈がない記事にも無駄なコードを追加していたバグ修正。
-0.2:拡張領域に入力がない場合無駄なコードを追加していたバグ修正。
-0.1+:本文と拡張文とで注解を分ける指定をオプションに追加。
-0.1：本文注の部分に入ったAタグのtitle属性から不要な文字を削除するようにした。またこの部分の表示/非表示を切り替えるオプションを追加。 
-0.06：同じ行に(())があると一つの注としてまとめられるバグを修正。注内部での改行をサポート。 
-0.05：拡張領域のみに注がある場合に注が表示されないバグを修正。 
-0.04：拡張領域への注に対応。注がある場合には拡張領域に注を表示するようにした。 
-0.03：とりあえず版リリース。 
-
-*/ 
+/**
+  *
+  * FOOT NOTE PLUG-IN FOR NucleusCMS
+  * PHP versions 4 and 5
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License
+  * as published by the Free Software Foundation; either version 2
+  * of the License, or (at your option) any later version.
+  * (see nucleus/documentation/index.html#license for more info)
+  *
+  * @author	Original Author nakahara21
+  * @copyright	2005-2006 nakahara21
+  * @license	http://www.gnu.org/licenses/gpl.txt
+  *             GNU GENERAL PUBLIC LICENSE Version 2, June 1991
+  * @version	0.32
+  * @link		http://nakahara21.com
+  *
+  **/
 class NP_FootNote extends NucleusPlugin
 {
-
-	var $bsname;
-	var $item_id;
-	var $note_id;
-	var $notelist;
 
     function getName()
     {
@@ -32,22 +28,28 @@ class NP_FootNote extends NucleusPlugin
 
     function getAuthor()
     {
-        return 'charlie + nakahara21 + shizuki';
+        $author = 'charlie, '
+        		. 'nakahara21, '
+        		. 'shizuki';
+        return $author;
     }
 
     function getURL()
     {
-        return 'http://xx.nakahara21.net/';
+        $original = 'http://nakahara21.com/';
+        $wikiPage = 'http://japan.nucleuscms.org/wiki/plugins:footnote';
+        return $wikiPage;
     }
 
     function getVersion()
     {
-        return '0.31';
+        return '0.32';
     }
 
     function getDescription()
     {
-        return 'はてな、Wikiで使用される脚注を生成するプラグインです。本文中に((と))で囲まれたフレーズがあると、脚注として表示します。';
+        $description = _FNOTE_DESC;
+        return $description;
     }
 
 	function supportsFeature($what)
@@ -63,16 +65,27 @@ class NP_FootNote extends NucleusPlugin
 
 	function install()
 	{
-		$this->createOption('CreateTitle', '本文注のリンクにTitle属性を付加しますか？', 'yesno', 'yes');
-		$this->createOption('Split', '本文と拡張文で注解を分けますか？(アイテムページは常にまとめて最下部になります)', 'yesno', 'no');
+		$this->createOption('CreateTitle', _CLT_TITLE, 'yesno', 'yes');
+		$this->createOption('Split',       _NOTE_SPLT, 'yesno', 'no');
 	}
 
 	function getEventList()
 	{
-		return array(
-			'PreItem',
-			'PreSkinParse'
-		);
+		$events = array (
+						 'PreItem',
+						 'PreSkinParse'
+						);
+		return $events;
+	}
+
+	function init()
+	{
+		$language = ereg_replace( '[\\|/]', '', getLanguageName());
+		if (file_exists($this->getDirectory()  . $language . '.php')) {
+			include_once($this->getDirectory() . $language . '.php');
+		}else {
+			include_once($this->getDirectory() . 'english.php');
+		}
 	}
 
 	function event_PreSkinParse($data)
@@ -82,48 +95,73 @@ class NP_FootNote extends NucleusPlugin
 
 	function event_PreItem($data)
 	{
-//		global $i, $id, $notelist;
-		global $blogid, $manager;
-//		$this->currentItem =& $data['item'];
-		$this->node_id = 0;
-		$b =& $manager->getBlog($blogid);
-		$this->bsname = $b->getShortName();
-		$this->notelist = array();
-		$this->item_id = intval($data['item']->itemid);
-		$data['item']->body = preg_replace_callback("/\(\((.*)\)\)/Us", array(&$this, 'footnote'), $data['item']->body);
-		if ($this->getOption('Split') == 'yes' && $this->skinType != 'item') {
-			if ($footnote = @join('', $this->notelist)) {
-				$data['item']->body .= '<ul class="footnote">' . $footnote . '</ul>';
+		$skinType       =  $this->skinType;
+		$this->nodeId   =  0;
+		$this->noteList =  array();
+		$this->itemId   =  $data['item']->itemid;
+		$cData          =  array(
+							     &$this,
+							     'footnote'
+							    );
+		$iBody          =& $data['item']->body;
+		$iMore          =& $data['item']->more;
+		$iBody          =  preg_replace_callback("/\(\((.*)\)\)/Us",
+												 $cData,
+												 $iBody);
+		$nsplit         =  $this->getOption('Split');
+		if ($nsplit == 'yes' && $skinType != 'item') {
+			if ($footNote = implode('', $this->noteList)) {
+				$iBody .= '<ul class="footnote">' . $footNote . '</ul>';
 			}
-			$this->notelist = array();
+			$this->noteList = array();
 		}
-		if ($data['item']->more) {
-			$data['item']->more = preg_replace_callback("/\(\((.*)\)\)/Us", array(&$this, 'footnote'), $data['item']->more);
-			if ($footnote = @join('', $this->notelist)) {
-				$data['item']->more .= '<ul class="footnote">' . $footnote . '</ul>';
+		if ($iMore) {
+			$iMore = preg_replace_callback("/\(\((.*)\)\)/Us",
+										   $cData,
+										   $iMore);
+			if ($footNote = implode('', $this->noteList)) {
+				$iMore .= '<ul class="footnote">' . $footNote . '</ul>';
 			}
-		} elseif ($footnote = @join('', $this->notelist)) {
-			$data['item']->body .= '<ul class="footnote">' . $footnote . '</ul>';
+		} elseif ($footNote = implode('', $this->noteList)) {
+			$iBody .= '<ul class="footnote">' . $footNote . '</ul>';
 		}
 	}
 
 	function footnote($matches){
-//		global $i, $id, $notelist;
-		$this->node_id++;
+		global $manager;
+		$this->nodeId++;
+		$iid    =  intval($this->itemId);
+		$bid    =  getBlogIDFromItemID($iid);
+		$b      =& $manager->getBlog($bid);
+		$bsname =  $b->getShortName();
 		if ($this->getOption('CreateTitle') == 'yes') {
-			$fnote2 = htmlspecialchars(strip_tags($matches[1]));
-			$fnote2 = preg_replace('/\r\n/s', '', $fnote2);
-			$fnote2 = ' title="' . $fnote2 . '"';
+			$fNote = htmlspecialchars(strip_tags($matches[1]));
+			$fNote = preg_replace('/\r\n/s', '', $fNote);
+			$fNote = ' title="' . $fNote . '"';
 		}else{
-			$fnote2 = '';
+			$fNote = '';
 		}
-		$note = '<span class="footnote"><a href="#' .
-				$this->bsname . $this->item_id . '-' . $this->node_id . '"' . $fnote2 . '>*' . $this->node_id .
-				'</a><a name="' . $this->bsname . $this->item_id . '-' . $this->node_id . 'f"></a></span>';
-		$this->notelist[] = '<a name="' . $this->bsname . $this->item_id . '-' . $this->node_id . '"></a><li><a href="#' .
-							$this->bsname . $this->item_id . '-' . $this->node_id . 'f">注' . $this->node_id . '</a>' . $matches[1] . '</li>';
+		$footNoteID       = $bsname . $iid . '-' . $this->nodeId;
+		$note             = '<span class="footnote">'
+					      . '<a'
+					      . ' href="#' . $footNoteID . '"'
+					      . $fNote
+					      . ' name="' . $footNoteID . 'f"'
+					      . ' id="'   . $footNoteID . 'f"'
+					      . '>'
+					      . '*' . $this->nodeid
+					      . '</a>'
+					      . '</span>';
+		$this->noteList[] = '<li>'
+					      . '<a '
+					      . 'href="#' . $footNoteID . 'f" '
+					      . 'name="' . $footNoteID . '"'
+					      . 'id="'   . $footNoteID . '"'
+					      . '>'
+					      . _NOTE_WORD . $this->nodeId
+					      . '</a>'
+					      . $matches[1]
+					      . '</li>';
 		return $note;
 	}
 }
-
-?>
