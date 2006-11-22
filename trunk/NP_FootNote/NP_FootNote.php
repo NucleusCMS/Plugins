@@ -153,10 +153,10 @@ class NP_FootNote extends NucleusPlugin
 					      . '</a>'
 					      . '</span>';
 		$this->noteList[] = '<li>'
-					      . '<a '
-					      . 'href="#' . $footNoteID . 'f" '
-					      . 'name="' . $footNoteID . '"'
-					      . 'id="'   . $footNoteID . '"'
+					      . '<a'
+					      . ' href="#' . $footNoteID . 'f"'
+					      . ' name="' . $footNoteID . '"'
+					      . ' id="'   . $footNoteID . '"'
 					      . '>'
 					      . _NOTE_WORD . $this->nodeId
 					      . '</a>'
