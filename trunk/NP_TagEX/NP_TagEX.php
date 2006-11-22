@@ -78,7 +78,7 @@ class NP_TagEX extends NucleusPlugin
 		$this->createOption('editTagOrder',      'editform tag order',                 'select',
 							'1', 'amount(desc)|1|amount(asc)|2|tag\'s order|3|random|4');
 		$this->createOption('and',               'template for \'and\'',               'textarea',
-		                    '<span style="font-family:tahoma;font-size:smaller;"> 
+		                    '<span style="font-family:tahoma;font-size:smaller;"> '
 		                  . ' <a href="<%andurl%>" title="narrow">&amp;</a>.');
 		$this->createOption('or',                'template for \'or\'',                'textarea',
 							'<a href="<%orurl%>" title="expand">or</a> </span>');

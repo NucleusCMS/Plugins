@@ -56,7 +56,7 @@ class NP_ShowBlogs extends NucleusPlugin
 
 	function getVersion()
 	{
-		return '2.64';
+		return '2.65';
 	}
 
 	function getDescription()
@@ -527,9 +527,13 @@ $monthlimit = 0;
 				if (!empty($requestTarray['or'])) {
 					$requestTor = implode(':', $requestTarray['or']);
 				}
-				if (!empty($requestT) && !empty($requestTor)) {
-					$tags     = $requestT . ':' . $requestTor;
-					$pagelink = $tplugin->creatTagLink($tag, $this->getOption('tagMode'), $tags, '+');
+				if (!empty($requestT)) {
+					if (!empty($requestTor)) {
+						$reqtags  = $requestT . ':' . $requestTor;
+						$pagelink = $tplugin->creatTagLink($tag, $this->getOption('tagMode'), $reqtags, '+');
+					} else {
+						$pagelink = $tplugin->creatTagLink($tag, $this->getOption('tagMode'), $requestT, '+');
+					}
 				} elseif (empty($requestT) && !empty($requestTor)) {
 					$pagelink = $tplugin->creatTagLink($tag, $this->getOption('tagMode'), $requestTor, ':');
 				} else {
@@ -771,7 +775,7 @@ $monthlimit = 0;
 		$requestTag =  $tplugin->getNoDecodeQuery('tag');
 		if (!empty($requestTag) || $skin_type == 'item') {
 			$this->tagSelected = TRUE;
-			if ($bmode == 'all') {
+			if ($bmode=='all') {
 				$allTags = $tplugin->scanExistTags(0);
 			} else {
 				$allTags = $tplugin->scanExistTags(2);
@@ -780,8 +784,7 @@ $monthlimit = 0;
 			if ($skin_type == 'item') {
 				$item =& $manager->getItem(intval($itemid), 0, 0);
 				$q    =  'SELECT * FROM %s WHERE inum = %d';
-				$q    =  sprintf($q, $tagTable, intval($itemid));
-				$res  =  sql_query($q);
+				$res  =  sql_query(sprintf($q, $tagTable, intval($itemid)));
 				while ($o = mysql_fetch_object($res)) {
 					$temp_tags_array = preg_split('/[\n,]+/', trim($o->itags));
 					for ($i=0; $i < count($temp_tags_array); $i++) {
@@ -811,11 +814,12 @@ $monthlimit = 0;
 				}
 			}
 			$inumsor = array();
-			for ($i=0;$i<count($arr['or']);$i++) {
+			for ($i=0; $i < count($arr['or']); $i++) {
 				if ($skin_type == 'item') {
 					$deTag = $arr['or'][$i];
 				} else {
 					$deTag = $tplugin->_rawdecode($arr['or'][$i]);
+				}
 				if ($allTags[$deTag]) {
 					$inumsor = array_merge($inumsor, $allTags[$deTag]);
 				}
@@ -830,9 +834,9 @@ $monthlimit = 0;
 				if ($skin_type == 'item') {
 					foreach ($inumsres as $resinum) {
 						$iTags = array();
-						$q   = 'SELECT itags FROM %s WHERE inum = %d';
-						$q   = sprintf($q, $tagTable, intval($resinum));
-						$res = sql_query($q);
+						$q     = 'SELECT itags FROM %s WHERE inum = %d';
+						$q     = sprintf($q, $tagTable, intval($resinum));
+						$res   = sql_query($q);
 						while ($o = mysql_fetch_object($res)) {
 							$resTags = preg_split("/[\n,]+/", trim($o->itags));
 							for ($i=0; $i < count($resTags); $i++) {
@@ -847,7 +851,7 @@ $monthlimit = 0;
 					foreach ($tagCount as $resinum => $val) {
 						$relatedInums[] = intval($resinum);
 					}
-					for ($i=0; $i < =$p_amount; $i++) {
+					for ($i=0; $i <= $p_amount; $i++) {
 						$inumsres[$i] = array_pop($relatedInums);
 					}
 				}
@@ -856,11 +860,11 @@ $monthlimit = 0;
 				$where .= ' and i.inumber=0';
 			}
 		}
-		$retArr = array(
-						'where' => $where,
-						'inumsres' => $inumsres
-					   );
-		return $retArr;
+		$retArray = array(
+						  'where'    => $where,
+						  'inumsres' => $inumsres
+						 );
+		return $retArray;
 	}
 
 }
