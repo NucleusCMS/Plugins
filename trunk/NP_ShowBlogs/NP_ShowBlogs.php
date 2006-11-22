@@ -251,7 +251,17 @@ $monthlimit = 0;
 
 		if ($skinType == 'item' || $skinType == 'index' || $skinType == 'archive') {
 			$catformat = '"' . addslashes($catformat) . '"';
-			$catformat = preg_replace(array('/<%category%>/', '/<%blogname%>/', '/<%catdesc%>/'), array('",c.cname,"', '",b.bname,"', '",c.cdesc,"'), $catformat);
+			$nArr      = array(
+							   '",c.cname,"',
+							   '",b.bname,"',
+							   '",c.cdesc,"'
+							  );
+			$fArr      = array(
+							   '/<%category%>/',
+							   '/<%blogname%>/',
+							   '/<%catdesc%>/'
+							  );
+			$catformat = preg_replace($fArr, $nArr, $catformat);
 			$mtable = "";
 			if ($manager->pluginInstalled('NP_TagEX')) {
 				$t_where = $this->_getTagsInum($where, $skinType, $bmode, $amount);
@@ -290,7 +300,8 @@ $monthlimit = 0;
 					$timestamp_end = mysqldate($b->getCorrectTime());
 					sscanf($timestamp_end, '"%d-%d-%d %s"', $y, $m, $d, $temp);
 					$timestamp_start = mktime(0, 0, 0, $m-$monthlimit, $d, $y);
-					$where .= ' AND i.itime >= ' . mysqldate($timestamp_start) . ' AND i.itime <= ' . $timestamp_end;
+					$where .= ' AND i.itime >= ' . mysqldate($timestamp_start)
+							. ' AND i.itime <= ' . $timestamp_end;
 				} else {
 					$where .= ' AND i.itime <= ' . mysqldate($b->getCorrectTime());
 				}
@@ -475,13 +486,23 @@ $monthlimit = 0;
 				$mplugin =& $manager->getPlugin('NP_MultipleCategories');
 				$subrequest = $mplugin->getRequestName(array());
 				if (!empty($archive)) {
-					$pagelink = createArchiveLink($archive, array($catrequest => $catid, $subrequest => $subcatid));
+					$linkParam = array(
+									   $catrequest => $catid,
+									   $subrequest => $subcatid
+									  );
+					$pagelink  = createArchiveLink($archive, $linkParam);
 				} else {
-					$pagelink = createCategoryLink($catid, array($subrequest => $subcatid));
+					$linkParam = array(
+									   $subrequest => $subcatid
+									  );
+					$pagelink = createCategoryLink($catid, $linkParam);
 				}
 			} else {
 				if (!empty($archive)) {
-					$pagelink = createArchiveLink($archive, array($catrequest => $catid));
+					$linkParam = array(
+									   $catrequest => $catid,
+									  );
+					$pagelink  = createArchiveLink($archive, $linkParam);
 				} else {
 					$pagelink = createCategoryLink($catid);
 				}
@@ -507,7 +528,8 @@ $monthlimit = 0;
 					$requestTor = implode(':', $requestTarray['or']);
 				}
 				if (!empty($requestT) && !empty($requestTor)) {
-					$pagelink = $tplugin->creatTagLink($tag, $this->getOption('tagMode'), $requestT . ':' . $requestTor, '+');
+					$tags     = $requestT . ':' . $requestTor;
+					$pagelink = $tplugin->creatTagLink($tag, $this->getOption('tagMode'), $tags, '+');
 				} elseif (empty($requestT) && !empty($requestTor)) {
 					$pagelink = $tplugin->creatTagLink($tag, $this->getOption('tagMode'), $requestTor, ':');
 				} else {
@@ -549,7 +571,9 @@ $monthlimit = 0;
 		} elseif (is_array($where)) {
 			$totalamount = count($where);
 		} else {
-			$p_query = 'SELECT COUNT(i.inumber) FROM ' . sql_table('item') . ' as i' . $mtable . ' WHERE i.idraft=0' . $where;
+			$p_query = 'SELECT COUNT(i.inumber) FROM %s as i%s WHERE i.idraft = 0%s';
+			$p_query = sprintf($p_query, sql_table('item'), $mtable, $where);
+//			$p_query = 'SELECT COUNT(i.inumber) FROM ' . sql_table('item') . ' as i' . $mtable . ' WHERE i.idraft=0' . $where;
 			$entries = sql_query($p_query);
 			if ($row = mysql_fetch_row($entries)) {
 				$totalamount = $row[0];
@@ -563,7 +587,9 @@ $monthlimit = 0;
 			$startpos += $offset;
 			$totalamount -= $offset;
 		}
-		if ($this->maxamount && $this->maxamount < $totalamount) $totalamount = intval($this->maxamount);
+		if ($this->maxamount && $this->maxamount < $totalamount) {
+			$totalamount = intval($this->maxamount);
+		}
 		$totalpages = ceil($totalamount/$pageamount);
 		$totalpages = intval($totalpages);
 		if ($startpos > $totalamount) {
@@ -582,29 +608,30 @@ $monthlimit = 0;
 		$prevpage = ($currentpage > 1) ? $currentpage - 1 : 0;
 		$nextpage = $currentpage + 1;
 		$firstpagelink = $pagelink . $page_str . '1';
-		if ($page_str = 'page_') {
+		if ($page_str == 'page_') {
 			$firstpagelink .= '.html';
 		}
 		$lastpagelink = $pagelink . $page_str . $totalpages;
-		if ($page_str = 'page_') {
+		if ($page_str == 'page_') {
 			$lastpagelink .= '.html';
 		}
 
 		if ($type >= 1) {
 			$buf .= '<div class="pageswitch">' . "\n";
-//			$buf .= "<a rel=\"first\" title=\"first page\" href=\"{$firstpagelink}\">&lt;TOP&gt;</a> |&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;\n";
+//			$buf .= "<a rel=\"first\" title=\"first page\" href=\"{$firstpagelink}\">&lt;TOP&gt;</a> | \n";
 			if (!empty($prevpage)) {
 				$prevpagelink = $pagelink . $page_str . $prevpage;
 				if ($page_str == 'page_') {
 					$prevpagelink .= '.html';
 				}
-				$buf .= "\n" . '<a href="' . $prevpagelink . '" title="Previous page" rel="Prev">&laquo;Prev</a> |';
+				$buf .= '<a href="' . $prevpagelink . '" title="Previous page" rel="Prev">&laquo;Prev</a> |';
 			} elseif ($type >= 2) {
-				$buf .= "\n&laquo;Prev |";
+				$buf .= "&laquo;Prev |";
 			}
+			$buf .= "\n";
 			if (intval($type) == 2) {
 				$sepstr = '&middot;';
-				$buf .= "|";
+				$buf   .= "|";
 				for ($i=1; $i<=$totalpages; $i++) {
 					$i_pagelink = $pagelink . $page_str . $i;
 					if ($page_str == 'page_') {
@@ -613,7 +640,8 @@ $monthlimit = 0;
 					if ($i == $currentpage) {
 						$buf .= ' <strong>' . $i . '</strong> |' . "\n";
 					} elseif ($totalpages<10 || $i<4 || $i>$totalpages-3) {
-						$buf .= ' <a href="' . $i_pagelink . '" title="Page No.' . $i . '">' . $i . '</a> |' . "\n";
+						$buf .= ' <a href="' . $i_pagelink . '" title="Page No.' . $i . '">'
+							  . $i . '</a> |' . "\n";
 					} else {
 						if ($i<$currentpage-1 || $i>$currentpage+1) {
 							if (($i == 4 && ($currentpage > 5 || $currentpage == 1)) || $i == $currentpage + 2) {
@@ -621,7 +649,8 @@ $monthlimit = 0;
 								$buf .= "...|\n";
 							}
 						} else {
-							$buf .= ' <a href="' . $i_pagelink . '" title=\"Page No.' . $i . '">' . $i . '</a> |' . "\n";
+							$buf .= ' <a href="' . $i_pagelink . '" title=\"Page No.' . $i . '">'
+								  . $i . '</a> |' . "\n";
 						}
 					}
 				}
@@ -638,8 +667,9 @@ $monthlimit = 0;
 					$paging = 5;
 					if ($i == $currentpage) {
 						$buf .= ' <strong>' . $i . '</strong> ' . $sepstr . "\n";
-					} elseif ($totalpages < 10 || (($i < ($currentpage + $paging)) && (($currentpage - $paging) < $i))) {
-						$buf .= ' <a href="' . $i_pagelink . '" title="Page No.' . $i . '">' . $i . '</a> ' . $sepstr . "\n";
+					} elseif ($totalpages < 10 || ($i < ($currentpage + $paging) && ($currentpage - $paging) < $i)) {
+						$buf .= ' <a href="' . $i_pagelink . '" title="Page No.' . $i . '">'
+							  . $i . '</a> ' . $sepstr . "\n";
 					} elseif ($currentpage - $paging == $i) {
 						$buf = rtrim($buf);
 						$buf .= ' ...'."\n";
@@ -659,7 +689,7 @@ $monthlimit = 0;
 			} elseif ($type >= 2) {
 				$buf .= "| Next&raquo;\n";
 			}
-//			$buf .= "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| <a rel=\"last\" title=\"Last page\" href=\"{$lastpagelink}\">&lt;LAST&gt;</a>\n";
+//			$buf .= " | <a rel=\"last\" title=\"Last page\" href=\"{$lastpagelink}\">&lt;LAST&gt;</a>\n";
 			$buf .= "</div>\n";
 			return array('buf' => $buf, 'startpos' => intval($startpos));
 		}
@@ -670,8 +700,10 @@ $monthlimit = 0;
 		global $manager;
 		$mwhere = '';
 		$mwhere = ' AND ((i.inumber = p.item_id'
-				. ' AND (p.categories REGEXP "(^|,)' . intval($catid) . '(,|$)" OR i.icat = ' . intval($catid) . '))'
-				. ' OR (i.icat = ' . intval($catid) . ' AND p.item_id IS NULL))';
+				. ' AND (p.categories REGEXP "(^|,)' . intval($catid) . '(,|$)"'
+				. ' OR i.icat = ' . intval($catid) . '))'
+				. ' OR (i.icat = ' . intval($catid)
+				. ' AND p.item_id IS NULL))';
 		$mtable = ' LEFT JOIN ' . sql_table('plug_multiple_categories') . ' as p'
 				. ' ON i.inumber = p.item_id';
 		$mplugin =& $manager->getPlugin('NP_MultipleCategories');
@@ -694,7 +726,7 @@ $monthlimit = 0;
 						$temp_whr[] = ' p.subcategories REGEXP "(^|,)' . intval($Children[$i]) . '(,|$)" ';
 					}
 					$mwhere .= ' AND ( ';
-					$mwhere .= join(' OR ', $temp_whr);
+					$mwhere .= implode(' OR ', $temp_whr);
 					$mwhere .= ' )';
 				} else {
 					$mwhere .= ' AND p.subcategories REGEXP "(^|,)' . intval($subcatid) . '(,|$)"';
@@ -706,8 +738,10 @@ $monthlimit = 0;
 
 	function getParents($subcat_id)
 	{
-		$que = 'SELECT scatid, parentid, sname FROM %s WHERE scatid = %d';
-		$res = sql_query(sprintf($que, sql_table('plug_multiple_categories_sub'), intval($subcat_id)));
+		$subcatTable = sql_table('plug_multiple_categories_sub');
+		$que         = 'SELECT scatid, parentid, sname FROM %s WHERE scatid = %d';
+		$que         = sprintf($que, $subcatTable, intval($subcat_id));
+		$res         = sql_query($que);
 		list($sid, $parent, $sname) = mysql_fetch_row($res);
 		if ($parent != 0) {
 			$r = $this->getParent(intval($parent)) . '/' . intval($sid);
@@ -719,8 +753,10 @@ $monthlimit = 0;
 
 	function getChildren($subcat_id)
 	{
-		$que = 'SELECT scatid, parentid, sname FROM %s WHERE parentid = %d';
-		$res = sql_query(sprintf($que, sql_table('plug_multiple_categories_sub'), intval($subcat_id)));
+		$subcatTable = sql_table('plug_multiple_categories_sub');
+		$que         = 'SELECT scatid, parentid, sname FROM %s WHERE parentid = %d';
+		$que         = sprintf($que, $subcatTable, intval($subcat_id));
+		$res         = sql_query();
 		while ($so =  mysql_fetch_object($res)) {
 			$r .= $this->getChildren(intval($so->scatid)) . '/' . intval($so->scatid);
 		}
@@ -730,28 +766,38 @@ $monthlimit = 0;
 	function _getTagsInum($where, $skin_type, $bmode, $p_amount)
 	{
 		global $manager, $itemid;
-		$tplugin =& $manager->getPlugin('NP_TagEX');
-		$requestTag = $tplugin->getNoDecodeQuery('tag');
+		$tagTable   =  sql_table('plug_tagex');
+		$tplugin    =& $manager->getPlugin('NP_TagEX');
+		$requestTag =  $tplugin->getNoDecodeQuery('tag');
 		if (!empty($requestTag) || $skin_type == 'item') {
 			$this->tagSelected = TRUE;
-			$allTags = ($bmode=='all') ? $tplugin->scanExistTags(0) : $tplugin->scanExistTags(2);
+			if ($bmode == 'all') {
+				$allTags = $tplugin->scanExistTags(0);
+			} else {
+				$allTags = $tplugin->scanExistTags(2);
+			}
 			$arr = $tplugin->splitRequestTags($requestTag);
 			if ($skin_type == 'item') {
 				$item =& $manager->getItem(intval($itemid), 0, 0);
-				$q = 'SELECT * FROM %s WHERE inum = %d';
-				$res = sql_query(sprintf($q, sql_table("plug_tagex"), intval($itemid)));
+				$q    =  'SELECT * FROM %s WHERE inum = %d';
+				$q    =  sprintf($q, $tagTable, intval($itemid));
+				$res  =  sql_query($q);
 				while ($o = mysql_fetch_object($res)) {
 					$temp_tags_array = preg_split('/[\n,]+/', trim($o->itags));
-					for ($i=0;$i<count($temp_tags_array);$i++) {
+					for ($i=0; $i < count($temp_tags_array); $i++) {
 						$arr['or'][] = trim($temp_tags_array[$i]);
 					}
 				}
 			}
 			if ($skin_type != 'item') {
-				for ($i=0;$i<count($arr['and']);$i++) {
+				for ($i=0; $i < count($arr['and']); $i++) {
 					$deTag = $tplugin->_rawdecode($arr['and'][$i]);
 					if ($allTags[$deTag]) {
-						$inumsand = (empty($inumsand)) ? $allTags[$deTag] : array_intersect($inumsand, $allTags[$deTag]);
+						if (empty($inumsand)) {
+							$inumsand = $allTags[$deTag];
+						} else {
+							$inumsand = array_intersect($inumsand, $allTags[$deTag]);
+						}
 					} else {
 						$inumsand = array();
 					}
@@ -766,7 +812,10 @@ $monthlimit = 0;
 			}
 			$inumsor = array();
 			for ($i=0;$i<count($arr['or']);$i++) {
-				$deTag = ($skin_type == 'item') ? $arr['or'][$i] : $tplugin->_rawdecode($arr['or'][$i]);
+				if ($skin_type == 'item') {
+					$deTag = $arr['or'][$i];
+				} else {
+					$deTag = $tplugin->_rawdecode($arr['or'][$i]);
 				if ($allTags[$deTag]) {
 					$inumsor = array_merge($inumsor, $allTags[$deTag]);
 				}
@@ -781,15 +830,16 @@ $monthlimit = 0;
 				if ($skin_type == 'item') {
 					foreach ($inumsres as $resinum) {
 						$iTags = array();
-						$q = 'SELECT itags FROM %s WHERE inum = %d';
-						$res = sql_query(sprintf($q, sql_table('plug_tagex'), intval($resinum)));
+						$q   = 'SELECT itags FROM %s WHERE inum = %d';
+						$q   = sprintf($q, $tagTable, intval($resinum));
+						$res = sql_query($q);
 						while ($o = mysql_fetch_object($res)) {
 							$resTags = preg_split("/[\n,]+/", trim($o->itags));
-							for ($i=0;$i<count($resTags);$i++) {
+							for ($i=0; $i < count($resTags); $i++) {
 								$iTags[] = trim($resTags[$i]);
 							}
 						}
-							$relatedTags = array_intersect($arr['or'], $iTags);
+							$relatedTags        = array_intersect($arr['or'], $iTags);
 							$tagCount[$resinum] = count($relatedTags);
 					}
 					asort($tagCount);
@@ -797,7 +847,7 @@ $monthlimit = 0;
 					foreach ($tagCount as $resinum => $val) {
 						$relatedInums[] = intval($resinum);
 					}
-					for ($i=0;$i<=$p_amount;$i++) {
+					for ($i=0; $i < =$p_amount; $i++) {
 						$inumsres[$i] = array_pop($relatedInums);
 					}
 				}
@@ -806,7 +856,11 @@ $monthlimit = 0;
 				$where .= ' and i.inumber=0';
 			}
 		}
-		return array('where' => $where, 'inumsres' => $inumsres);
+		$retArr = array(
+						'where' => $where,
+						'inumsres' => $inumsres
+					   );
+		return $retArr;
 	}
 
 }
