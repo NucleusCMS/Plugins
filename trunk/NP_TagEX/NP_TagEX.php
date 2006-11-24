@@ -655,9 +655,10 @@ class NP_TagEX extends NucleusPlugin
 				break;
 // <for sortmode = 3 or 4 mod by shizuki>
 			case 3:
-/*				$idx = 0;
+/*// <http://blog.uribou.net/>
+				$idx = 0;
 				foreach ($tagCount as $tag => $cnt) {
-					$tagtbl[$idx] = $tag;
+					$tagtbl[$idx]  = $tag;
 					$tmpcnts[$idx] = $cnt;
 					$tmptags[$idx] = strtolower($tag);
 					$idx++;
@@ -667,12 +668,12 @@ class NP_TagEX extends NucleusPlugin
 				$tagCount = array();
 				foreach ($tmptags as $idx => $tag) {
 					$tagCount[$tagtbl[$idx]] = $tmpcnts[$idx];
-				}*/
-				array_flip($tagCount);
-				natcasesort($tagCount);
-				array_flip($tagCount);
+				}
+// </ http://blog.uribou.net/>*/
+				uksort($tagCount, array(&$this, 'sortTagOrder'));
 				break;
 			case 4:
+/// <http://blog.uribou.net/>
 				srand ((float) microtime() * 10000000);
 				$tmp_key = array_rand($tagCount, count($tagCount));
 				unset($tagCount);
@@ -680,6 +681,7 @@ class NP_TagEX extends NucleusPlugin
 				foreach ($tmp_key as $k => $v) {
 					$tagCount[$v] = 0;
 				}
+// </ http://blog.uribou.net/>*/
 				break;
 // </mod by shizuki>*/
 			default:
@@ -690,6 +692,11 @@ class NP_TagEX extends NucleusPlugin
 			$r[$k] = $tags[$k];
 		}
 		return $r;
+	}
+
+	function sortTagOrder($a, $b)
+	{
+		return strcasecmp($a, $b);
 	}
 
 	function scanExistTags($narrowMode = 0, $amount = 99999999, $sortmode = 0, $blogid = 0)
