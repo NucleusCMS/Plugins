@@ -95,7 +95,7 @@ ADD `ordid` INT( 11 ) DEFAULT '100' NOT NULL AFTER `parentid` ;
 		}
 		if (!in_array("subcategories",$names)) {
 			sql_query ('ALTER TABLE '.sql_table('plug_multiple_categories').' ADD subcategories varchar(255) not null');
-			sql_query('ALTER TABLE ' . sql_table('plug_multiple_categories'). ' MODIFY categories varchar(255) not null');
+			sql_query('ALTER TABLE ' .sql_table('plug_multiple_categories').' MODIFY categories varchar(255) not null');
 		}
 		$query =  'CREATE TABLE IF NOT EXISTS '. sql_table('plug_multiple_categories_sub'). '('
 		. 'scatid int(11) not null auto_increment,'
@@ -172,13 +172,13 @@ ADD `ordid` INT( 11 ) DEFAULT '100' NOT NULL AFTER `parentid` ;
 			$subcatid = intRequestVar($this->getRequestName());
 		}
 		if ($subcatid && !$catid) {
-			$catid = intval($this->_getParentCatID($subcatid));
+			$catid = intval($this->_getParentCatID($subcatid));//Intval is not needed. ($subcatid) <sato(na)0.5j />
 			if (!$catid) {
 				$subcatid = null;
 				$catid = null;
 			}
 		} elseif ($subcatid) {
-			$pcatid = intval($this->_getParentCatID($subcatid));
+			$pcatid = intval($this->_getParentCatID($subcatid));//Intval is not needed. ($subcatid) <sato(na)0.5j />
 			if ($pcatid != $catid) $subcatid = null;
 		}
 		
@@ -223,7 +223,7 @@ ADD `ordid` INT( 11 ) DEFAULT '100' NOT NULL AFTER `parentid` ;
 		$query = 'SELECT scatid FROM '.sql_table('plug_multiple_categories_sub').' WHERE catid=' . intval($id);
 		$res = sql_query($query);	
 		while ($row = mysql_fetch_row($res)){
-			$aResult[] = $row[0];
+			$aResult[] = intval($row[0]); //<sato(na)0.5j />ultrarich
 		} 
 		return $aResult;
 	}
@@ -286,11 +286,11 @@ ADD `ordid` INT( 11 ) DEFAULT '100' NOT NULL AFTER `parentid` ;
 		return explode(",", $subOrderString);
 	}
 	function _getSubOrder($pid){
-		$sql_str  = 'SELECT scatid FROM '.sql_table('plug_multiple_categories_sub').' WHERE parentid='.$pid.' ORDER BY ordid';
+		$sql_str  = 'SELECT scatid FROM '.sql_table('plug_multiple_categories_sub').' WHERE parentid='.intval($pid).' ORDER BY ordid'; //<sato(na)0.5j />
 		$qid_scat = mysql_query($sql_str);
 		if ($qid_scat === FALSE) return ''; //<sato(na)0.403j />
 		$scat_str = '';
-		while ($row_scat = mysql_fetch_object($qid_scat)) $scat_str .= ',' . $row_scat->scatid . $this->_getSubOrder($row_scat->scatid);
+		while ($row_scat = mysql_fetch_object($qid_scat)) $scat_str .= ',' . intval($row_scat->scatid) . $this->_getSubOrder($row_scat->scatid); //<sato(na)0.5j />
 		return $scat_str;
 	}
 	function permuteSubcategories($subcategories){
@@ -313,11 +313,11 @@ function orderKey(key, sequence) {
 		while($row = mysql_fetch_array($res)) {
 			//<sato(na)0.5j>
 			echo 'scatDat['.($i++).'] = new setScatDat('.
-			$row['scatid'].
+			intval($row['scatid']).
 			' , "'.
-			addslashes($row['sname']).
+			htmlspecialchars($row['sname'], ENT_QUOTES).
 			'", "'.
-			addslashes($row['sdesc']).
+			htmlspecialchars($row['sdesc'], ENT_QUOTES).
 			'");'."\n";
 			//</sato(na)0.5j>
 		}
@@ -335,7 +335,7 @@ function orderKey(key, sequence) {
 		}
 	}
 	
-	function event_AddItemFormExtras($data) { 
+	function event_AddItemFormExtras($data) {
 		$aCategories = $this->_getCategories($data['blog']->blogid);
 		if(count($aCategories) > 1) {
 			$this->showForm($aCategories,$data['itemid']);
@@ -358,20 +358,20 @@ function orderKey(key, sequence) {
 		if (!count($aDefinedScats)) return;
 
 		$itemScats = array();
-		if($subcatlist = $this->_getSubCategories($itemid))
+		if($subcatlist = $this->_getSubCategories($itemid))//Intval is not needed. ($itemid) <sato(na)0.5j />
 			$itemScats = explode(",",$subcatlist);
 		
 		//<sato(na)>$snum = 0;</sato(na)>
 		echo '<h3>Multiple Categories</h3>'; 
 		echo "<fieldset><legend>Sub Categories</legend>";
 		//<sato(na)>
-		$sql_str = 'SELECT * FROM '.sql_table('plug_multiple_categories_sub').' WHERE catid='.$aCategories[0]['catid'].' AND  parentid=0';
+		$sql_str = 'SELECT * FROM '.sql_table('plug_multiple_categories_sub').' WHERE catid='.intval($aCategories[0]['catid']).' AND  parentid=0'; //<sato(na)0.5j />
 		$qid = sql_query($sql_str);
 		while ($aSub = mysql_fetch_assoc($qid)) {
 			$schecked = (in_array($aSub['scatid'], $itemScats)) ? " checked=checked" : "";
 			echo '<input type="checkbox" id="npmc_scat'.$aSub['scatid'].'" name="npmc_scat['.$aSub['scatid'].']"'.$schecked.' value="'.$aSub['scatid'].'" />'; 
-			echo '<label for="npmc_scat'.$aSub['scatid'].'">'.htmlspecialchars($aSub['sname']).'</label><br />';
-			echo $this->showFormHierarchical($aSub['scatid'], $itemScats);
+			echo '<label for="npmc_scat'.$aSub['scatid'].'">'.htmlspecialchars($aSub['sname'], ENT_QUOTES).'</label><br />'; //<sato(na)0.5j />
+			$this->showFormHierarchical($aSub['scatid'], $itemScats); //<sato(na)0.5j />
 		}
 		//</sato(na)>
 		echo "</fieldset>";
@@ -380,9 +380,9 @@ function orderKey(key, sequence) {
 	function showForm($aCategories,$itemid) {
 		$itemcats = array();
 		$itemScats = array();
-		if($multicatlist = $this->_getMultiCategories($itemid))
+		if($multicatlist = $this->_getMultiCategories($itemid))//Intval is not needed. ($itemid) <sato(na)0.5j />
 			$itemcats = explode(",",$multicatlist);
-		if($subcatlist = $this->_getSubCategories($itemid))
+		if($subcatlist = $this->_getSubCategories($itemid))//Intval is not needed. ($itemid) <sato(na)0.5j />
 			$itemScats = explode(",",$subcatlist);
 
 		echo '<h3 style="margin-bottom:0px;">Multiple Categories</h3>'; 
@@ -396,20 +396,20 @@ function orderKey(key, sequence) {
 			if(in_array($aCategory['catid'],$itemcats)) $checked = " checked=checked";
 			echo '<tr><td>';
 			echo '<input type="checkbox" id="npmc_cat'.$num.'" name="npmc_cat['.$num.']"'.$checked.' value="'.$aCategory['catid'].'" />'; 
-			echo '<label for="npmc_cat'.$num.'">'.htmlspecialchars($aCategory['name']);
-			if ($aCategory['cdesc']) echo "(".$aCategory['cdesc'].")";
+			echo '<label for="npmc_cat'.$num.'">'.htmlspecialchars($aCategory['name'], ENT_QUOTES); //<sato(na)0.5j />
+			if ($aCategory['cdesc']) echo "(".htmlspecialchars($aCategory['cdesc'], ENT_QUOTES).")"; //<sato(na)0.5j />
 			echo '</label>';
 			$num ++;
 			//<sato(na)>
-			$sql_str = 'SELECT * FROM '.sql_table('plug_multiple_categories_sub').' WHERE catid='.$aCategory['catid'].' AND parentid=0';
+			$sql_str = 'SELECT * FROM '.sql_table('plug_multiple_categories_sub').' WHERE catid='.intval($aCategory['catid']).' AND parentid=0'; //<sato(na)0.5j />
 			$qid = sql_query($sql_str);
 			if (mysql_num_rows($qid)) {
 				echo "<fieldset style=\"margin-left:1.5em;border:none\">";
 				while ($aSub = mysql_fetch_assoc($qid)) {
 					$schecked = (in_array($aSub['scatid'], $itemScats)) ? " checked=checked" : "";
 					echo '<input type="checkbox" id="npmc_scat'.$aSub['scatid'].'" name="npmc_scat['.$aSub['scatid'].']"'.$schecked.' value="'.$aSub['scatid'].'" />'; 
-					echo '<label for="npmc_scat'.$aSub['scatid'].'">'.htmlspecialchars($aSub['sname']).'</label><br />';
-					echo $this->showFormHierarchical($aSub['scatid'], $itemScats);
+					echo '<label for="npmc_scat'.$aSub['scatid'].'">'.htmlspecialchars($aSub['sname'], ENT_QUOTES).'</label><br />'; //<sato(na)0.5j />
+					$this->showFormHierarchical($aSub['scatid'], $itemScats); //<sato(na)0.5j />
 				}
 				echo "</fieldset>";
 			}
@@ -426,8 +426,8 @@ function orderKey(key, sequence) {
 			while ($aSub = mysql_fetch_assoc($qid)) {
 				$schecked = (in_array($aSub['scatid'], $itemScats)) ? " checked=checked" : "";
 				echo '<input type="checkbox" id="npmc_scat'.$aSub['scatid'].'" name="npmc_scat['.$aSub['scatid'].']"'.$schecked.' value="'.$aSub['scatid'].'" />'; 
-				echo '<label for="npmc_scat'.$aSub['scatid'].'">'.htmlspecialchars($aSub['sname']).'</label><br />';
-				echo $this->showFormHierarchical($aSub['scatid'], $itemScats);
+				echo '<label for="npmc_scat'.$aSub['scatid'].'">'.htmlspecialchars($aSub['sname'], ENT_QUOTES).'</label><br />'; //<sato(na)0.5j />
+				$this->showFormHierarchical($aSub['scatid'], $itemScats); //<sato(na)0.5j />
 			}
 			echo "</div>";
 		}
@@ -494,7 +494,7 @@ function orderKey(key, sequence) {
 			$value .= ', ""';
 		}
 		
-		$query = 'REPLACE INTO '.sql_table('plug_multiple_categories').' (item_id,categories,subcategories) VALUES('.intval($itemid).$value.');'; 
+		$query = 'REPLACE INTO '.sql_table('plug_multiple_categories').' (item_id,categories,subcategories) VALUES('.intval($itemid).$value.');'; //$value : addslashes
 		sql_query($query);
 	}
 
@@ -522,11 +522,12 @@ function orderKey(key, sequence) {
 			$o->categories = preg_replace("/^(?:(.*),)?$catid(?:,(.*))?$/","$1,$2",$o->categories);
 			$o->subcategories = preg_replace("/^(?:(.*),)?$catid(?:,(.*))?$/","$1,$2",$o->subcategories);
 			if ((!$o->categories || $o->categories == ',') && (!$o->subcategories || $o->subcategories == ',')) {
-				$del[] = $o->item_id;
+				$del[] = intval($o->item_id); //<sato(na)0.5j />ultrarich
 			} else {
 				$o->categories = preg_replace("/(^,+|(?<=,),+|,+$)/","",$o->categories);
 				$o->subcategories = preg_replace("/(^,+|(?<=,),+|,+$)/","",$o->subcategories);
-				$up[] = "UPDATE ". sql_table("plug_multiple_categories") ." SET categories='".addslashes($o->categories)."', subcategories='".addslashes($o->subcategories)."' WHERE item_id=".$o->item_id;
+				$up[] = "UPDATE ". sql_table("plug_multiple_categories") ." SET categories='".addslashes($o->categories).
+					"', subcategories='".addslashes($o->subcategories)."' WHERE item_id=".intval($o->item_id); //<sato(na)0.5j />ultrarich
 			}
 		}
 		
@@ -546,7 +547,7 @@ function orderKey(key, sequence) {
 		$params = func_get_args();
 		// item skin
 		if ($params[0] == 'item' && $params[1] != "1") {
-			if ($itemid) $this->_parseItem($params[1], $itemid);
+			if ($itemid) $this->_parseItem($params[1], intval($itemid));//<sato(na)0.5j />
 			return;
 		}
 
@@ -554,17 +555,17 @@ function orderKey(key, sequence) {
 			switch ($params[2]) {
 				case 'id':
 					if (!$subcatid || !$catid) return;
-					echo $subcatid;
+					echo intval($subcatid);//<sato(na)0.5j />
 					return;
 					break;
 				case 'desc':
 					if (!$subcatid || !$catid) return;
-					echo htmlspecialchars($this->_getScatDescFromID($subcatid));
+					echo htmlspecialchars($this->_getScatDescFromID($subcatid), ENT_QUOTES);//Intval is not needed. ($subcatid) <sato(na)0.5j />
 					return;
 					break;
 				case 'name':
 					if (!$subcatid || !$catid) return;
-					echo htmlspecialchars($this->_getScatNameFromID($subcatid));
+					echo htmlspecialchars($this->_getScatNameFromID($subcatid), ENT_QUOTES);//Intval is not needed. ($subcatid) <sato(na)0.5j />
 					return;
 					break;
 				case 'url':
@@ -575,18 +576,19 @@ function orderKey(key, sequence) {
 						$b =& $manager->getBlog($CONF['DefaultBlog']);
 					}
 					$this->_setCommonData($b->getID());
-					$sparams = array_merge($this->param,array($this->getRequestName() => $subcatid));
-					$url = createCategoryLink($catid, $sparams);
+					$sparams = array_merge($this->param, array($this->getRequestName() => intval($subcatid)));//<sato(na)0.5j />
+					$url = createCategoryLink(intval($catid), $sparams);//<sato(na)0.5j />
 					if ($CONF['URLMode'] != 'pathinfo') {
 						list(,$temp_param) = explode("?",$url);
 						$url = $this->url. "?" . $temp_param;
 					}
-					echo $url;
+					$url = preg_replace(array("/</", "/>/"), array("&lt;", "&gt;"), $url); //<sato(na)0.5j />
+					echo $url; //$sparams escape OK <sato(na)0.5j />
 					return;
 					break;
 				case 'link':
 					if ($params[0] != 'item') return;
-					$item = $this->_getItemObject($itemid);
+					$item = $this->_getItemObject(intval($itemid));//<sato(na)0.5j />
 					if ($item) {
 						$this->doTemplateVar(&$item);
 					}
@@ -601,17 +603,18 @@ function orderKey(key, sequence) {
 					$bid = $b->getID();
 					$this->_setCommonData($bid);
 					$cur_params = array();
-					if ($catid) $cur_params['catid'] = $catid;
+					if ($catid) $cur_params['catid'] = intval($catid);//<sato(na)0.5j />
 					if ($subcatid) {
 						$rname = $this->getRequestName();
-						$cur_params[$rname] = $subcatid;
+						$cur_params[$rname] = intval($subcatid);//<sato(na)0.5j />
 					}
 					$url = createArchiveListLink($bid, $cur_params);
 					if ($CONF['URLMode'] != 'pathinfo') {
 						list(,$temp_param) = explode("?",$url);
 						$url = $this->url. "?" . $temp_param;
 					}
-					echo $url;
+					$url = preg_replace(array("/</", "/>/"), array("&lt;", "&gt;"), $url); //<sato(na)0.5j />
+					echo $url; //$cur_params escape OK <sato(na)0.5j />
 					return;
 					break;
 				case 'categorylist':
@@ -639,13 +642,12 @@ function orderKey(key, sequence) {
 			$b =& $manager->getBlog($CONF['DefaultBlog']);
 		}
 		
-		$mycatid = 0;
-		if ($catid) $mycatid = $catid;
-		$mysubcatid = 0;
-		if ($subcatid) $mysubcatid = $subcatid;
+		$mycatid    = ($catid)    ? intval($catid)    : 0;//<sato(na)0.5j />
+		$mysubcatid = ($subcatid) ? intval($subcatid) : 0;//<sato(na)0.5j />
 		$templateName = $params[1];
 		$amountEntries = 0;
 		$offset = 0;
+		$startpos = intval($startpos);//<sato(na)0.5j />
 		if (isset($params[2])) {
 			list($amountEntries, $offset) = sscanf($params[2], '%d(%d)');
 			if ($offset) {
@@ -675,7 +677,7 @@ function orderKey(key, sequence) {
 		}
 		
 		$query .=  ' WHERE i.iauthor=m.mnumber' 
-			 . ' and i.iblog='.$b->getID() 
+			 . ' and i.iblog='.intval($b->getID()) //<sato(na)0.5j />
 			 . ' and i.icat=c.catid' 
 			 . ' and i.idraft=0';
 		if ($params[0] == 'archive' && $archive) {
@@ -726,9 +728,9 @@ function orderKey(key, sequence) {
 		if ($what == 'itemlink') {
 			$sparams = array();
 			if ($catid) {
-				$sparams['catid'] = $catid;
+				$sparams['catid'] = intval($catid);//<sato(na)0.5j />
 				if ($subcatid) {
-					$sparams[$this->getRequestName()] = $subcatid;
+					$sparams[$this->getRequestName()] = intval($subcatid);//<sato(na)0.5j />
 				}
 			}
 			$url = createItemLink($item->itemid, $sparams);
@@ -736,7 +738,8 @@ function orderKey(key, sequence) {
 				list(,$temp_param) = explode("?",$url);
 				$url = $this->url. "?" . $temp_param;
 			}
-			echo $url;
+			$url = preg_replace(array("/</", "/>/"), array("&lt;", "&gt;"), $url); //<sato(na)0.5j />
+			echo $url; //$cur_params escape OK <sato(na)0.5j />
 			return;
 		}
 		
@@ -745,7 +748,7 @@ function orderKey(key, sequence) {
 			list(,$temp_param) = explode("?",$url);
 			$url = $this->url. "?" . $temp_param;
 		}
-		$mcat_string = '<a href="'.$url.'">'.htmlspecialchars($this->_getCatNameFromID($item->catid)).'</a>';
+		$mcat_string = '<a href="'.$this->cnvHtmlUrlAttribute($url).'">'.htmlspecialchars($this->_getCatNameFromID($item->catid), ENT_QUOTES).'</a>'; //<sato(na)0.5j />
 		
 		$itemScats = array();
 		if ($itemscatstr = $this->_getSubCategories($item->itemid)) {
@@ -761,7 +764,7 @@ function orderKey(key, sequence) {
 				} else {
 					$surl = addLinkParams($url,array($this->getRequestName() => $id));
 				}
-				$extra_scat_string[] = '<a href="'.$surl.'">'.htmlspecialchars($name).'</a>';
+				$extra_scat_string[] = '<a href="'.$this->cnvHtmlUrlAttribute($surl).'">'.htmlspecialchars($name, ENT_QUOTES).'</a>'; //<sato(na)0.5j />
 			}
 			$scat_string = implode($this->ssep,$extra_scat_string);
 			$cat_string = str_replace(array("<%category%>","<%subcategory%>"), array($mcat_string,$scat_string), $this->sform);
@@ -779,7 +782,7 @@ function orderKey(key, sequence) {
 						list(,$temp_param) = explode("?",$url);
 						$url = $this->url. "?" . $temp_param;
 					}
-					$mcat_string = '<a href="'.$url.'">'.htmlspecialchars($this->_getCatNameFromID($icat)).'</a>';
+					$mcat_string = '<a href="'.$this->cnvHtmlUrlAttribute($url).'">'.htmlspecialchars($this->_getCatNameFromID($icat), ENT_QUOTES).'</a>'; //<sato(na)0.5j />
 					
 					if (count($itemScats) > 0 && array_key_exists($icat,$scatMaps)) {
 						$extra_scat_string = array();
@@ -790,7 +793,7 @@ function orderKey(key, sequence) {
 							} else {
 								$surl = addLinkParams($url,array($this->getRequestName() => $id));
 							}
-							$extra_scat_string[] = '<a href="'.$surl.'">'.htmlspecialchars($name).'</a>';
+							$extra_scat_string[] = '<a href="'.$this->cnvHtmlUrlAttribute($surl).'">'.htmlspecialchars($name, ENT_QUOTES).'</a>'; //<sato(na)0.5j />
 						}
 						$scat_string = implode($this->ssep,$extra_scat_string);
 						$extra_cat_string[] = str_replace(array("<%category%>","<%subcategory%>"), array($mcat_string,$scat_string), $this->sform);
@@ -800,11 +803,23 @@ function orderKey(key, sequence) {
 				}
 			}
 			if (count($extra_cat_string) > 0) {
-				$cat_string .= $this->msep . join($this->ssep,$extra_cat_string);
+				$cat_string .= $this->msep . implode($this->ssep,$extra_cat_string);
 			}
 		}
-		echo $cat_string;
+		echo $cat_string;//$mcat_string, $scat_string escape OK <sato(na)0.5j />
 	}
+		//<sato(na)0.5j>
+	function cnvHtmlUrlAttribute($forHtmlAtt__str)
+	{
+		//onEvent
+		$forHtmlAtt__str = preg_replace('/[\'"]/', '', $forHtmlAtt__str);
+		
+		//href="javascript:"
+		$forHtmlAtt__str = preg_replace('/javascript/i', '', preg_replace('/[\x00-\x20\x22\x27]/', '', $forHtmlAtt__str));
+		
+		return $forHtmlAtt__str;
+	}
+		//</sato(na)0.5j>
 	
 	function _setCommonData($bid) {
 		global $CONF;
@@ -814,7 +829,7 @@ function orderKey(key, sequence) {
 		$this->addindex = ($this->getOption('addindex') == 'yes');
 		$this->addbiddef = ($this->getOption('addblogid_def') == 'yes');
 		$this->addbid = ($this->getOption('addblogid') == 'yes');
-		$this->defurl = quickQuery("SELECT burl as result from ".sql_table('blog')." WHERE bnumber=".$CONF['DefaultBlog']);
+		$this->defurl = quickQuery("SELECT burl as result from ".sql_table('blog')." WHERE bnumber=".addslashes($CONF['DefaultBlog'])); //<sato(na)0.5j />
 		if (!$this->defurl) $this->defurl = $CONF['Self'];
 		$this->_setBlogData($bid);
 	}
@@ -833,16 +848,16 @@ function orderKey(key, sequence) {
 			$this->url .= "index.php";
 		}
 		if ($this->bid == $CONF['DefaultBlog'] && $this->addbiddef) {
-			$this->param['blogid'] = $this->bid;
+			$this->param['blogid'] = $this->bid; //$this->bid intval OK
 		} elseif ($this->bid != $CONF['DefaultBlog'] && ($this->url == $this->defurl || $this->addbid)){
-			$this->param['blogid'] = $this->bid;
+			$this->param['blogid'] = $this->bid; //$this->bid intval OK
 		}
 	}
 	
 	function _parseItem($template, $itemid) {
 		global $manager;
 		
-		$b =& $manager->getBlog(getBlogIDFromItemID($itemid));
+		$b =& $manager->getBlog(getBlogIDFromItemID($itemid));//Intval is not needed. ($itemid) <sato(na)0.5j />
 		
 		$query = 'SELECT i.inumber as itemid, i.ititle as title, i.ibody as body, m.mname as author, m.mrealname as authorname, i.itime, i.imore as more, m.mnumber as authorid, m.memail as authormail, m.murl as authorurl, c.cname as category, i.icat as catid, i.iclosed as closed';
 		
@@ -850,7 +865,7 @@ function orderKey(key, sequence) {
 		//$query .= ' FROM '.sql_table('item').' as i, '.sql_table('member').' as m, '.sql_table('category').' as c'
 		$query .= ' FROM '.sql_table('category').' as c, '.sql_table('member').' as m, '.sql_table('item').' as i'
 		//</sato(na)0.5j>
-		       . ' WHERE i.iblog='.$b->getID()
+		       . ' WHERE i.iblog='.intval($b->getID()) //<sato(na)0.5j />
 		       . ' and i.iauthor=m.mnumber'
 		       . ' and i.icat=c.catid'
 		       . ' and i.idraft=0'	// exclude drafts
@@ -867,12 +882,26 @@ function orderKey(key, sequence) {
 		global $CONF, $manager, $blog, $catid, $subcatid;
 		global $archive, $archivelist;
 		
+		//<sato(na)0.5j>
+		if ($archive) {
+			sscanf ($archive,'%d-%d-%d', $y, $m, $d);
+			if ($d) {
+				$archive = sprintf ('%04d-%02d-%02d', $y, $m, $d);
+			} else {
+				$archive = sprintf ('%4d-%2d', $y, $m);
+			}
+		}
+		// check archivelist
+		if (! is_numeric($archivelist)) $archivelist = getBlogIDFromName($archivelist);
+		//</sato(na)0.5j>
+		
 		if ($blog) {
 			 $b =& $blog;
 		} else {
 			 $b =& $manager->getBlog($CONF['DefaultBlog']);
 		}
 		$blogid = $b->getID();
+		$blogid = (is_numeric($blogid)) ? intval($blogid) : getBlogIDFromName($blogid); //<sato(na)0.5j />
 		
 		if (!isset($this->defurl)) $this->_setCommonData($blogid);
 		
@@ -905,7 +934,8 @@ function orderKey(key, sequence) {
 								'self' => $CONF['Self']
 							));
 
-		$query = 'SELECT c.catid, c.cdesc as catdesc, c.cname as catname FROM '.sql_table('category').' as c WHERE c.cblog=' . $blogid . ' GROUP BY c.cname ORDER BY c.cname ASC';
+		$query = 'SELECT c.catid, c.cdesc as catdesc, c.cname as catname FROM '.sql_table('category').
+			' as c WHERE c.cblog=' . intval($blogid) . ' GROUP BY c.cname ORDER BY c.cname ASC'; //<sato(na)0.5j />
 		$res = sql_query($query);
 
 		$tp = array();
@@ -919,6 +949,7 @@ function orderKey(key, sequence) {
 		}
 		
 		while ($data = mysql_fetch_assoc($res)) {
+			$data['catid'] = intval($data['catid']); //<sato(na)0.5j />ultrarich
 			$data['blogid'] = $blogid;	
 			$data['blogurl'] = $blogurl;
 			$data['catlink'] = createCategoryLink($data['catid'], $linkparams);
@@ -927,7 +958,7 @@ function orderKey(key, sequence) {
 				$data['catlink'] = $this->url. "?" . $temp_param;
 			}
 			$data['self'] = $CONF['Self'];
-			if ($data['catid'] == $catid) {
+			if ($data['catid'] == intval($catid)) { //<sato(na)0.5j />
 				$data['catflag'] = $this->getOption('catflag');
 			}
 			$cq = 'SELECT count(*) as result FROM '.sql_table('item').' as i';
@@ -946,6 +977,7 @@ function orderKey(key, sequence) {
 				$subliststr = "";
 				
 				while ($sdata = mysql_fetch_assoc($sres)) {
+					$sdata['subcatid'] = intval($sdata['subcatid']); //<sato(na)0.5j />ultrarich
 					$ares = sql_query(
 						'SELECT count(i.inumber) FROM '
 						. sql_table('item').' as i, '
@@ -1004,8 +1036,8 @@ function orderKey(key, sequence) {
 			 $b =& $manager->getBlog($CONF['DefaultBlog']);
 		}
 		
-		if ($catid) $linkparams = array('catid' => $catid);
-		if ($subcatid) $linkparams['subcatid'] = $subcatid;
+		if ($catid) $linkparams = array('catid' => intval($catid)); //<sato(na)0.5j />
+		if ($subcatid) $linkparams['subcatid'] = intval($subcatid); //<sato(na)0.5j />
 		if ($lc = $this->getOption('locale')) {
 			setlocale(LC_TIME,$lc);
 		}
@@ -1020,7 +1052,7 @@ function orderKey(key, sequence) {
 		if ($catid) {
 			$query .= ' LEFT JOIN '.sql_table('plug_multiple_categories').' as p ON i.inumber=p.item_id';
 		}
-		$query .= ' WHERE i.iblog=' . $b->getID()
+		$query .= ' WHERE i.iblog=' . intval($b->getID()) //<sato(na)0.5j />
 		. ' and i.itime <=' . mysqldate($b->getCorrectTime())	// don't show future items!
 		. ' and i.idraft=0'; // don't show draft items
 		
