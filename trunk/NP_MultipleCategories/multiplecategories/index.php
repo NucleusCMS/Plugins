@@ -80,9 +80,7 @@ class NpMCategories_ADMIN {
 		
 		$res = sql_query('SELECT bnumber, bname FROM '.sql_table('blog'));
 		while ($o = mysql_fetch_object($res)) {
-?>
-<?php
-		echo '<h3 style="padding-left: 0px">' . htmlspecialchars($o->bname) . '</h3>';
+			echo '<h3 style="padding-left: 0px">' . htmlspecialchars($o->bname) . '</h3>';
 ?>
 <table>
 	<thead>
@@ -92,7 +90,7 @@ class NpMCategories_ADMIN {
 <?php
 			$cats = $this->plug->_getCategories($o->bnumber);
 			foreach ($cats as $cat) {
-				$snum = quickQuery("SELECT count(*) as result FROM ".$this->table." WHERE catid=".$cat['catid']);
+				$snum = quickQuery("SELECT count(*) as result FROM ".$this->table." WHERE catid=".intval($cat['catid']));//<sato(na)0.5j />
 				$snum = intval($snum);
 ?>
 		<tr onmouseover='focusRow(this);' onmouseout='blurRow(this);'>
@@ -100,7 +98,7 @@ class NpMCategories_ADMIN {
 				<?php echo htmlspecialchars($cat['name']) ?></td>
 			<td><?php echo htmlspecialchars($cat['cdesc']) ?></td>
 			<td><?php echo $snum ?></td>
-			<td><a href="<?php echo $this->url ?>index.php?action=scatoverview&amp;catid=<?php echo $cat['catid'] ?>" tabindex="50"><?php echo _MC_EDIT_SUB_CATEGORIES ?></a></td>
+			<td><a href="<?php echo $this->url ?>index.php?action=scatoverview&amp;catid=<?php echo intval($cat['catid']) ?>" tabindex="50"><?php echo _MC_EDIT_SUB_CATEGORIES ?></a></td>
 		</tr>
 <?php
 			}
@@ -362,7 +360,7 @@ class NpMCategories_ADMIN {
 		$x=1;
 		foreach($order as $o){
 			$o = trim(rtrim($o));
-			$query = 'UPDATE '.$this->table.' SET ordid='.$x.' WHERE scatid='.$o;
+			$query = 'UPDATE '.$this->table.' SET ordid='.intval($x).' WHERE scatid='.intval($o); //<sato(na)0.5j />ultrarich
 			sql_query($query);
 			$x++;
 		}
@@ -392,7 +390,8 @@ class NpMCategories_ADMIN {
 
 		
 			$modChildren = $this->_getDefinedScatsFromScat($scatid);
-			$pid = quickQuery('SELECT parentid as result FROM '.$this->table.' WHERE scatid='.$scatid);
+			$pid = quickQuery('SELECT parentid as result FROM '.$this->table.' WHERE scatid='.intval($scatid)); //<sato(na)0.5j />ultrarich
+			$pid = intval($pid); //<sato(na)0.5j />ultrarich
 			$pname = ($pid)? 
 				$this->plug->_getScatNameFromID($pid).' ('._MC_SUB_CATEGORIES.')':
 				quickQuery('SELECT cname as result FROM '.sql_table('category').' WHERE catid='.intval($catid)).' (' . _EBLOG_CAT_TITLE . ')';
@@ -403,24 +402,28 @@ class NpMCategories_ADMIN {
 		?>
 			<h2><?php echo _DELETE_CONFIRM?></h2>
 			
-			<p><?php echo _MC_CONFIRMTXT_SCAT ?><b><?php echo $sname.$sdesc ?></b></p>
+			<p><?php echo _MC_CONFIRMTXT_SCAT ?><b>
+<?php
+			echo htmlspecialchars($sname.$sdesc, ENT_QUOTES); //<sato(na)0.5j />
+?>
+			</b></p>
 			
-	<?php
+<?php
 		if($modChildren){
 			$modList = $pid.'-';
 			echo '<blockquote style="color: red;border:1px solid red;padding:1em;"><b>Note:</b><br />';
 			echo _MC_SCAT_DELETE_NOTE_LIST;
 			echo '<ul>';
 			for($i=0;$i<count($modChildren);$i++){
-				echo '<li>'.$modChildren[$i]['sname']."</li>\n";
-				$modList .= $modChildren[$i]['scatid'].'/';
+				echo '<li>'.htmlspecialchars($modChildren[$i]['sname'], ENT_QUOTES)."</li>\n"; //<sato(na)0.5j />
+				$modList .= intval($modChildren[$i]['scatid']).'/'; //<sato(na)0.5j />ultrarich
 			}
 			echo '</ul>';
-			echo _MC_SCAT_DELETE_NOTE_PARENT.'<ul><li>'.$pname.'</li></ul>';
+			echo _MC_SCAT_DELETE_NOTE_PARENT.'<ul><li>'.htmlspecialchars($pname, ENT_QUOTES).'</li></ul>'; //<sato(na)0.5j />
 			echo '</blockquote>';
 			$extraInput = '<input type="hidden" name="modlist" value="'.substr($modList, 0, -1).'" />'."\n";
 		}
-	?>
+?>
 	
 			
 			<form method="post" action="<?php echo $this->url ?>index.php"><div>
@@ -455,7 +458,7 @@ class NpMCategories_ADMIN {
 			$children = explode("/", $children);
 			for($i=0;$i<count($children);$i++){
 				$c = trim(rtrim($children[$i]));
-				$query = 'UPDATE '.$this->table.' SET parentid='.intval($parent).' WHERE scatid='.$c;
+				$query = 'UPDATE '.$this->table.' SET parentid='.intval($parent).' WHERE scatid='.intval($c); //<sato(na)0.5j />ultrarich
 				sql_query($query);
 			}
 		}
@@ -487,9 +490,10 @@ class NpMCategories_ADMIN {
 	//printCategoryList for update
 	function printCategoryListUD($catid, $parentid) {
 		$catName = quickQuery('SELECT cname as result FROM '.sql_table('category').' WHERE catid='.intval($catid));
+		$catName = htmlspecialchars($catName, ENT_QUOTES); //<sato(na)0.5j />
 		$text .= "<select size='10' name='parentid'>\n";
 		$text    .= "<option value='0'>&nbsp;$catName&nbsp;</option>\n";
-		foreach ($this->plug->_setSubOrder() as $val) {
+		foreach ($this->plug->_setSubOrder() as $val) { //$val : _getSubOrder intval($row_scat->scatid)
 			$query = 'SELECT * FROM '.$this->table.' WHERE scatid=' . intval($val);
 			$res   = sql_query($query);
 			$row   = mysql_fetch_array($res);
@@ -498,7 +502,12 @@ class NpMCategories_ADMIN {
 				for ($i=0; $i<$this->getDepth($val, 0); $i++) $levelstr .= "&hellip;&hellip;";
 				$selected = ($parentid == $val) ? " selected='selected'" : '';
 				$text    .= "<option value='".$val."'".$selected.">&nbsp;".$levelstr."&hellip;&nbsp;".
-				            $row['sname']." <sup>".$row['sdesc']."</sup>&nbsp;</option>\n";
+				            //<sato(na)0.5j>
+				            htmlspecialchars($row['sname'], ENT_QUOTES).
+				            " <sup>".
+				            htmlspecialchars($row['sdesc'], ENT_QUOTES).
+				            "</sup>&nbsp;</option>\n";
+				            //</sato(na)0.5j>
 			}
 		}
 		$text .= "</select>\n";
@@ -509,7 +518,7 @@ class NpMCategories_ADMIN {
 		return ($parentid == 0) ? $level : $this->getDepth($parentid, $level + 1);
 	}
 	function descendantCheck($parentid, $checkid){
-		$res = sql_query("SELECT scatid FROM ".$this->table." WHERE parentid=".$parentid);
+		$res = sql_query("SELECT scatid FROM ".$this->table." WHERE parentid=".intval($parentid)); //<sato(na)0.5j />
 		while ($o = mysql_fetch_object($res)) {
 			if ($o->scatid == $checkid) {
 				return TRUE;
@@ -536,7 +545,7 @@ class NpMCategories_ADMIN {
 			case 'Descendant':
 				//Succession
 				//echo '----------------------------------------Descendant';
-				$query = 'UPDATE '.$this->table.' SET parentid='.$old_parentid.' WHERE parentid='.$id;
+				$query = 'UPDATE '.$this->table.' SET parentid='.intval($old_parentid).' WHERE parentid='.intval($id); //<sato(na)0.5j />
 				sql_query($query);
 			break;
 			case 'Other':
@@ -550,11 +559,12 @@ class NpMCategories_ADMIN {
 			$query .= $k.'="'.addslashes($v).'",';
 		}
 		$query = substr($query,0,-1);
-		$query .= ' WHERE scatid='.$id;
+		$query .= ' WHERE scatid='.intval($id); //<sato(na)0.5j />
 		sql_query($query);
 	}
 	
 	function deleteSubcat($id) {
+		$id = intval($id); //<sato(na)0.5j />
 		sql_query('DELETE FROM '.$this->table.' WHERE scatid=' . $id);
 
 		$res = sql_query("SELECT categories, subcategories, item_id FROM ". sql_table("plug_multiple_categories") ." WHERE subcategories REGEXP '(^|,)$id(,|$)'");
@@ -564,7 +574,7 @@ class NpMCategories_ADMIN {
 		while ($o = mysql_fetch_object($res)) {
 			$o->subcategories = preg_replace("/^(?:(.*),)?$catid(?:,(.*))?$/","$1,$2",$o->subcategories);
 			if (!$o->categories && (!$o->subcategories || $o->subcategories == ',')) {
-				$del[] = $o->item_id;
+				$del[] = intval($o->item_id); //<sato(na)0.5j />ultrarich
 			} else {
 				$o->subcategories = preg_replace("/(^,+|(?<=,),+|,+$)/","",$o->subcategories);
 				$up[] = "UPDATE ". sql_table("plug_multiple_categories") ." SET categories='".addslashes($o->categories)."', subcategories='".addslashes($o->subcategories)."' WHERE item_id=".$o->item_id;
@@ -587,7 +597,7 @@ class NpMCategories_ADMIN {
 		global $manager;
 		$methodName         = 'action_' . $action;
 		$this->action       = strtolower($action);
-		$aActionsNotToCheck = array( //チケット確認が必要ない、安全なアクションのリスト
+		$aActionsNotToCheck = array(
 			'overview',
 			'scatoverview',
 			'scatedit',
@@ -607,9 +617,7 @@ class NpMCategories_ADMIN {
 
 	function disallow() {
 		global $HTTP_SERVER_VARS;
-		
 		ACTIONLOG::add(WARNING, _ACTIONLOG_DISALLOWED . $HTTP_SERVER_VARS['REQUEST_URI']);
-		
 		$this->error(_ERROR_DISALLOWED);
 	}
 
@@ -634,9 +642,8 @@ class NpMCategories_ADMIN {
     function listupSubcategories($catid, $subcatid){
         $cat .= "<table style='width:auto;'><tr><td>\n";
         $cat .= "<table border='0' cellpadding='0' cellspacing='0' style='width:auto;'>\n";
-
-		$subcategoryList = $this->getCategoryList($catid);
-//		print_r($subcategoryList);
+        $subcategoryList = $this->getCategoryList($catid);
+//print_r($subcategoryList);
         $subcategories   = $this->printCategoryList($catid, $subcategoryList, 2, 0);
         if ($subcategories == "") {
             $cat .= "No subcategories currently exist in this category.\n";
@@ -661,10 +668,11 @@ class NpMCategories_ADMIN {
 			$text .= "<input type='hidden' name='redirect' value='".getVar('action')."'>\n";
 			$text .= "<input type=hidden name=orderList value=''>\n";
 			//<sato(na)0.402j>
-				global $CONF;
-				$actionUrl = $CONF['ActionURL'].'?action=plugin&amp;name=MultipleCategories&amp;catid='.$catid.'&amp;subcatid='.$subcatid;
-				echo '<script language="javascript" src="'.$actionUrl.'"></script>';
-				$text .= '
+			global $CONF;
+			$actionUrl = htmlspecialchars($CONF['ActionURL'], ENT_QUOTES).
+				'?action=plugin&amp;name=MultipleCategories&amp;catid='.intval($catid).'&amp;subcatid='.intval($subcatid); //<sato(na)0.5j />
+			echo '<script language="javascript" src="'.$actionUrl.'"></script>';
+			$text .= '
 <tr><td class="main" style="border:0px;padding:0px;">
 <table style="width:auto; margin:0; padding:0;">
 	<tr><td style="border:0px;padding:0px;" colspan="6">'._MC_SHOW_ORDER_MENU_KEY.'</td>
@@ -703,7 +711,7 @@ class NpMCategories_ADMIN {
     function getCategoryList($catid, $selected = 0) {//$selected : parentid
         /** Returns a list of the gallery categories **/
         $queryString  = "SELECT * FROM ".$this->table;
-        $queryString .= " WHERE catid=".$catid;
+        $queryString .= " WHERE catid=".intval($catid); //<sato(na)0.5j />
         $queryString .= ($this->version >= 4)? " ORDER BY parentid ASC, ordid ASC, scatid ASC" : " ORDER BY scatid ASC";
         $resultSet    = sql_query($queryString);
 
@@ -714,11 +722,13 @@ class NpMCategories_ADMIN {
         while ($row = mysql_fetch_array($resultSet)) {
             $isSelected = ($row["scatid"] == $selected)?1:0;
             $flatList[] = array(
-                            "id"          => $row["scatid"],
-                            "title"       => $row["sname"],
-                            "description" => $row["sdesc"],
+                            //<sato(na)0.5j>
+                            "id"          => intval($row["scatid"]),
+                            "title"       => htmlspecialchars($row['sname'], ENT_QUOTES),
+                            "description" => htmlspecialchars($row['sdesc'], ENT_QUOTES),
                             "children"    => array(),
-                            "parent"      => $row["parentid"],
+                            "parent"      => intval($row["parentid"]),
+                            //</sato(na)0.5j>
                             "selected"    => $isSelected
                         );
         }
@@ -762,6 +772,7 @@ class NpMCategories_ADMIN {
     function printCategoryList($catid, $categoryList, $type=1, $selectedCategory=0, $def='') {
         $text = "";
         $catName = quickQuery('SELECT cname as result FROM '.sql_table('category').' WHERE catid='.intval($catid));
+        $catName = htmlspecialchars($catName, ENT_QUOTES); //<sato(na)0.5j />
         if ($type == 1) {
             // Select box
             $text .= "<select size='10' name='parentid'>\n";
@@ -797,7 +808,8 @@ class NpMCategories_ADMIN {
                 for ($i=0;$i<$level;$i++) {
                     $text .= "&hellip;&hellip;";
                 }
-                $text .= "&hellip;&nbsp;".$category["title"]." <sup>".$category["description"]."</sup>&nbsp;</option>\n";
+                $text .= "&hellip;&nbsp;".htmlspecialchars($category["title"], ENT_QUOTES).
+                	" <sup>".htmlspecialchars($category["description"], ENT_QUOTES)."</sup>&nbsp;</option>\n"; //<sato(na)0.5j />
                 $text .= $this->walkCategoryList($category["children"], $catid, $type, $selectedCategory, $level+1);
             }
         } elseif ($type == 2) {
@@ -845,9 +857,11 @@ class NpMCategories_ADMIN {
                 if ($row[group] != 0){ $group = "(Private)"; }
                 else { $group = ''; }
                 if ($selectedCategory == $category["id"]) {
-                    $text .= "<strong>".$category["title"]." <sup>".$category["description"]."</sup>"."</strong> $group</td>\n";
+                    $text .= "<strong>".htmlspecialchars($category["title"], ENT_QUOTES).
+                    	" <sup>".htmlspecialchars($category["description"], ENT_QUOTES)."</sup>"."</strong> $group</td>\n";
                 } else {
-                    $text .= $category["title"]." <sup>".$category["description"]."</sup>"." $group</td>\n";
+                    $text .= htmlspecialchars($category["title"], ENT_QUOTES).
+                    	" <sup>".htmlspecialchars($category["description"], ENT_QUOTES)."</sup>"." $group</td>\n";
                 }
                 $subcatid = $category["id"];
                 if ($type == 2) {
@@ -868,7 +882,7 @@ class NpMCategories_ADMIN {
                 for ($i=0;$i<$level;$i++) {
                     $text .= "&nbsp;&nbsp;";
                 }
-                $text .= $category["title"]."</option>\n";
+                $text .= htmlspecialchars($category["title"], ENT_QUOTES)."</option>\n";
                 $text .= $this->walkCategoryList($category["children"], $catid, $type, $selectedCategory, $level+1);
             }
         }
@@ -877,6 +891,10 @@ class NpMCategories_ADMIN {
 
 
     function subcatOrd($catid, $subcatid=0){
+         //<sato(na)0.5j>
+         $catid    = intval($catid);
+         $subcatid = intval($subcatid);
+         //</sato(na)0.5j>
         $q = "select scatid, sname, sdesc from ".$this->table." where parentid = '$subcatid' and catid=$catid";//<sato(na)0.402j />
         $q .= ($this->version >= 4) ? ' order by ordid, scatid ASC': ' order by scatid ASC';
         $result = sql_query($q);
@@ -886,7 +904,13 @@ class NpMCategories_ADMIN {
         $text .= "<tr><td class=main style='border:0px;padding:0px;'><select name=order multiple size=15>";
         //<sato(na)0.402j>
         while($row = mysql_fetch_array($result)){
-            $text .= "<option value=".$row['scatid'].">".$row['scatid']."&nbsp;[&nbsp;".$row['sname']."&nbsp;]&nbsp;".$row['sdesc']."</option>";
+            //<sato(na)0.5j>
+            $text .= "<option value=".$row['scatid'].">".$row['scatid']."&nbsp;[&nbsp;".
+                     htmlspecialchars($row['sname'], ENT_QUOTES).
+                     "&nbsp;]&nbsp;".
+                     htmlspecialchars($row['sdesc'], ENT_QUOTES).
+                     "</option>";
+            //</sato(na)0.5j>
         }
         $text .= "</select>"._MC_SHOW_ORDER_MENU_INDIVIDUAL."&nbsp;";
         //</sato(na)0.402j>
