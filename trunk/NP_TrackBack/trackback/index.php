@@ -48,12 +48,13 @@
 
 	$mTemplate = new Trackback_Template();
 	$mTemplate->set ('CONF', $CONF);
-	$mTemplate->set ('plugid', $plug->getID());
+	$mTemplate->set ('plugid', $plug->getID());	$mTemplate->set ('plugindirurl', $oPluginAdmin->plugin->getAdminURL());
 	$mTemplate->template('templates/menu.html');
 	echo $mTemplate->fetch();
 
 	$oTemplate = new Trackback_Template();
 	$oTemplate->set ('CONF', $CONF);
+	$oTemplate->set ('plugindirurl', $oPluginAdmin->plugin->getAdminURL());
 
 	switch($action) {
 
@@ -509,6 +510,8 @@
 
 	// Create the admin area page
 	echo $oTemplate->fetch();
+	
+	echo '<hr noshade="noshade" size="1" /><div align="right">Powered by <a href="http://www.famfamfam.com/lab/icons/silk/">Silk icon</a></div>';
 	$oPluginAdmin->end();	
 
 ?>
