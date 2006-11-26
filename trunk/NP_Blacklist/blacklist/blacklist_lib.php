@@ -25,8 +25,8 @@ define('NP_BLACKLIST_CACHE_LIFE', 86400);
 define('NP_BLACKLIST_CACHE_GC_INTERVAL', NP_BLACKLIST_CACHE_LIFE/8);
 define('NP_BLACKLIST_CACHE_GC_TIMESTAMP', 'gctime');
 define('NP_BLACKLIST_CACHE_GC_TIMESTAMP_LIFE', NP_BLACKLIST_CACHE_LIFE*3);
-//require_once(dirname(__FILE__).'/cache_file.php');
-require_once(dirname(__FILE__).'/cache_eaccelerator.php');
+require_once(dirname(__FILE__).'/cache_file.php');
+//require_once(dirname(__FILE__).'/cache_eaccelerator.php');
 
 function pbl_getconfig()  {
     global $pbl_config;
@@ -489,7 +489,7 @@ function check_for_surbl ( $comment_text ) {
 		if (strlen($domain_to_test) > 3)
 		{
 			$domain_to_test = $domain_to_test . ".multi.surbl.org";
-			if( strstr(gethostbyname($domain_to_test),'127.0.0')) {
+			if( strpos(gethostbyname($domain_to_test),'127.0.0') !== false) {
 				return true;
 			}
 		}
@@ -502,14 +502,16 @@ function check_for_surbl ( $comment_text ) {
 function check_for_iprbl () {
 	if( pbl_ipcache_read() ) return false;
 	
-	//$iprbl = array('sc.surbl.org', 'bsb.spamlookup.net', 'opm.blitzed.org', 'list.dsbl.org');
-	$iprbl = array('niku.2ch.net', 'list.dsbl.org', 'bsb.spamlookup.net');
-
 	$spammer_ip = serverVar('REMOTE_ADDR');
+	if( strpos( $spammer_ip,'127.0.0') !== false ){
+		return false;
+	}
+	
+	$iprbl = array('niku.2ch.net', 'list.dsbl.org', 'bsb.spamlookup.net');
 	list($a, $b, $c, $d) = explode('.', $spammer_ip);
 		
 	foreach($iprbl as $rbl ){
-		if( strstr( gethostbyname( "$d.$c.$b.$a.$rbl" ),'127.0.0') ) {
+		if( strpos( gethostbyname( "$d.$c.$b.$a.$rbl" ),'127.0.0') !== false ) {
 			return array($rbl, $spammer_ip);
 		}
 	}
@@ -533,7 +535,7 @@ function check_for_domainrbl ( $comment_text ) {
 		foreach($domainrbl as $rbl ){
 			if (strlen($domain_to_test) > 3)
 			{
-				if( strstr(gethostbyname($domain_to_test.'.'.$rbl),'127.0.0')) {
+				if( strpos(gethostbyname($domain_to_test.'.'.$rbl),'127.0.0') ==! false) {
 					return array($rbl, $domain_to_test);
 				}
 			}
@@ -729,7 +731,7 @@ function pbl_htaccess($type) {
         }
     }
     if ($type != "ip") {
-        $htaccess .= "\nRewriteRule .* ?¿½ [F,L]\n";
+        $htaccess .= "\nRewriteRule .* ï¿½ [F,L]\n";
     }
     return $htaccess;
 }
@@ -741,7 +743,7 @@ function pbl_htaccesspage() {
 	}
 
     if (isset($_POST["type"])) {
-        if (strstr(postVar("type"),"blocked")) {
+        if ( strpos(postVar("type"),"blocked") !== false ) {
             $type = 'ip';
         } else {
             $type = 'rules';

@@ -1,19 +1,19 @@
 <?php
 
 /**
-* cache_eaccelerator.php ($Revision: 1.3 $)
+* cache_eaccelerator.php ($Revision: 1.4 $)
 * 
 * by hsur ( http://blog.cles.jp/np_cles )
-* $Id: cache_eaccelerator.php,v 1.3 2006-10-17 15:37:58 hsur Exp $
+* $Id: cache_eaccelerator.php,v 1.4 2006-11-26 05:52:33 hsur Exp $
 */
 
 function pbl_ipcache_write(){
 	$key = sprintf("BL%u", ip2long(serverVar('REMOTE_ADDR')));
-	if( ! rand(0,19) ) pbl_ipcache_gc();
+	if( ! rand(0,100) ) pbl_ipcache_gc();
 	
 	// eAccelerator Cache
 	eaccelerator_lock($key);
-	eaccelerator_put($key, true, NP_BLACKLIST_CACHE_LIFE);
+	eaccelerator_put($key, '1', NP_BLACKLIST_CACHE_LIFE);
 	eaccelerator_unlock($key);
 }
 

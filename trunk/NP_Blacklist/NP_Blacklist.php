@@ -110,7 +110,7 @@ class NP_Blacklist extends NucleusPlugin {
 
 	function getEventList() {
 		$this->_initSettings();
-		return array('QuickMenu','PreAddComment','PreSkinParse','ValidateForm', 'SpamCheck');
+		return array('QuickMenu','PreAddComment','ValidateForm', 'SpamCheck');
 	}
 
 	function hasAdminArea() {
@@ -234,9 +234,13 @@ class NP_Blacklist extends NucleusPlugin {
 	}
 
 	function blacklist($type, $testString, $ipblock = true) {
-        global $DIR_PLUGINS;
+        global $DIR_PLUGINS, $member;
 		if( $this->resultCache )
 			return $this->resultCache . '[Cached]';
+		
+		if( $member->isLoggedIn() ){
+			return '';
+		}
 		
 	    if ($this->getOption('enabled') == 'yes') {
             // update the blacklist first file
