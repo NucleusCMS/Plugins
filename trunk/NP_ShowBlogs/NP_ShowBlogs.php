@@ -760,7 +760,7 @@ $monthlimit = 0;
 		$subcatTable = sql_table('plug_multiple_categories_sub');
 		$que         = 'SELECT scatid, parentid, sname FROM %s WHERE parentid = %d';
 		$que         = sprintf($que, $subcatTable, intval($subcat_id));
-		$res         = sql_query();
+		$res         = sql_query($que);
 		while ($so =  mysql_fetch_object($res)) {
 			$r .= $this->getChildren(intval($so->scatid)) . '/' . intval($so->scatid);
 		}
