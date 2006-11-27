@@ -18,6 +18,8 @@
  * @version    0.41
  * @link       http://nakahara21.com
  *
+ * 0.51 typo fix
+ * 0.5  TAG sort modified
  * 0.43 fix URL generate
  * 0.42 add URL selected tag check
  * 0.41 security fix and add some trick
@@ -159,7 +161,7 @@ class NP_TagEX extends NucleusPlugin
 				$value = array_map("stripslashes", $value);
 			}
 			if (!array_map("is_numeric",$value)) {
-				if (version_compare(phpversion(),"4.0.3") == "-1") {
+				if (version_compare(phpversion(),"4.3.0") == "-1") {
 					$value = array_map("mysql_escape_string", $value);
 				} else {
 					$value = array_map("mysql_real_escape_string", $value);
@@ -172,7 +174,7 @@ class NP_TagEX extends NucleusPlugin
 				$value = stripslashes($value);
 			}
 			if (!is_numeric($value)) {
-				if (version_compare(phpversion(), "4.0.3") == "-1") {
+				if (version_compare(phpversion(), "4.3.0") == "-1") {
 					$value = "'" . mysql_escape_string($value) . "'";
 				} else {
 					$value = "'" . mysql_real_escape_string($value) . "'";
@@ -193,7 +195,7 @@ class NP_TagEX extends NucleusPlugin
 		$q_query             = 'SELECT tddesc as result '
 							 . 'FROM %s '
 							 . 'WHERE tdname = %s';
-		$q_query = sprintf($q_query, $templateDescTable, $currentTemplateName);
+		$q_query             = sprintf($q_query, $templateDescTable, $currentTemplateName);
 		$currentTemplateDesc = quickQuery($q_query);
 		if (eregi('<highlightTagsAll>', $currentTemplateDesc)) {
 			$tags = $this->scanExistTags(0, 99999999);
@@ -406,9 +408,9 @@ class NP_TagEX extends NucleusPlugin
 	function event_PreUpdateItem($data)
 	{
 // Add tags when it add for Item
-		$itags = trim(requestVar('itags'));
-		$inum  = intval($data['itemid']);
-		$query = 'SELECT itags as result FROM %s WHERE inum = %d';
+		$itags   = trim(requestVar('itags'));
+		$inum    = intval($data['itemid']);
+		$query   = 'SELECT itags as result FROM %s WHERE inum = %d';
 		$oldTags = quickQuery(sprintf($query, _TAGEX_TABLE, $inum));
 		if ($itags == $oldTags) {
 			return;
@@ -416,7 +418,7 @@ class NP_TagEX extends NucleusPlugin
 		$query = 'DELETE FROM %s WHERE inum = %d';
 		sql_query(sprintf($query, _TAGEX_TABLE, $inum));
 		if (isset($itags)) {
-			$query = 'INSERT INTO %s (inum, itags) VALUES (%d, %s)';
+			$query  = 'INSERT INTO %s (inum, itags) VALUES (%d, %s)';
 			$query  = sprintf($query, _TAGEX_TABLE, $inum, $this->quote_smart($itags));
 			sql_query($query);
 		}
@@ -457,7 +459,7 @@ class NP_TagEX extends NucleusPlugin
 	function getTags($str)
 	{
 // extract Item's TAG for array
-		$tempArray = preg_split("/[\r\n,]+/", $str);
+		$tempArray   = preg_split("/[\r\n,]+/", $str);
 		$returnArray = array_map('trim', $tempArray);
 		return array_unique($returnArray);
 	}
@@ -473,8 +475,8 @@ class NP_TagEX extends NucleusPlugin
 	function deleteTags($tag, $inum)
 	{
 // Delete TAGs and TAG's Item
-		$inum = intval($inum);
-		$tag = $this->quote_smart($tag);
+		$inum    = intval($inum);
+		$tag     = $this->quote_smart($tag);
 		$f_query = "SELECT inums FROM " . _TAGEX_KLIST_TABLE
 				 . " WHERE tag = " . $tag
 				 . '       AND inums REGEXP "(^|,)' . $inum . '(,|$)"'
@@ -490,16 +492,16 @@ class NP_TagEX extends NucleusPlugin
 			return;
 		}
 		$inums_array = explode(',', $temp_inums);
-		$trans = array_flip($inums_array);
+		$trans       = array_flip($inums_array);
 		unset($trans[$inum]);
 		$inums_array = array_flip($trans);
 		$inums_count = count($inums_array);
-		$inums = @join(",", $inums_array);
+		$inums       = @implode(",", $inums_array);
 		if (!empty($inums)) {
 			$update_query = 'UPDATE %s '
-						  . 'SET inums = %s, '
+						  . 'SET inums   = %s, '
 						  . 'inums_count = %d '
-						  . 'WHERE tag = %s';
+						  . 'WHERE tag   = %s';
 			$iCount       = intval($inums_count);
 			$quoteInums   = $this->quote_smart($inums);
 			sql_query(sprintf($update_query, _TAGEX_KLIST_TABLE, $quoteInums, $iCount, $tag));
@@ -512,8 +514,8 @@ class NP_TagEX extends NucleusPlugin
 		if (empty($tag)) {
 			return;
 		}
-		$inum = intval($inum);
-		$tag = $this->quote_smart($tag);
+		$inum    = intval($inum);
+		$tag     = $this->quote_smart($tag);
 		$f_query = 'SELECT inums'
 				 . ' FROM ' . _TAGEX_KLIST_TABLE
 				 . ' WHERE tag = ' . $tag
@@ -527,14 +529,16 @@ class NP_TagEX extends NucleusPlugin
 				$inums_count = count($inums_array) + 1;
 			}
 		} else {
-			$q_query = 'INSERT INTO %s (tag, inums, inums_count) VALUES (%s, %d, 1)';
+			$q_query = 'INSERT INTO %s '
+					 . '(tag, inums, inums_count) '
+					 . 'VALUES (%s, %d, 1)';
 			sql_query(sprintf($q_query, _TAGEX_KLIST_TABLE, $tag, intval($inum)));
 		}
 		
 		if (isset($inums)) {
-			$q_query = 'UPDATE %s SET inums = %s, inums_count = %d WHERE tag = %s';
-			$iCount       = intval($inums_count);
-			$quoteInums   = $this->quote_smart($inums);
+			$q_query    = 'UPDATE %s SET inums = %s, inums_count = %d WHERE tag = %s';
+			$iCount     = intval($inums_count);
+			$quoteInums = $this->quote_smart($inums);
 			sql_query(sprintf($q_query, _TAGEX_KLIST_TABLE, $quoteInums, $iCount, $tag));
 		}
 	}
@@ -616,8 +620,12 @@ class NP_TagEX extends NucleusPlugin
 			$where .= ' and i.itime <= ' . mysqldate($b->getCorrectTime());
 		}
 
-		$iquery = 'SELECT i.inumber FROM %s as i' . $mtable . ' WHERE i.idraft = 0' . $where;
-		$res = sql_query(sprintf($iquery, sql_table('item')));
+		$iquery = 'SELECT i.inumber '
+				. 'FROM %s as i'
+				. $mtable
+				. ' WHERE i.idraft = 0'
+				. $where;
+		$res    = sql_query(sprintf($iquery, sql_table('item')));
 		while ($row = mysql_fetch_row($res)) {
 			$existInums[] = $row[0];
 		}
@@ -675,7 +683,7 @@ class NP_TagEX extends NucleusPlugin
 			case 4:
 /// <http://blog.uribou.net/>
 				srand ((float) microtime() * 10000000);
-				$tmp_key = array_rand($tagCount, count($tagCount));
+				$tmp_key  = array_rand($tagCount, count($tagCount));
 				unset($tagCount);
 				$tagCount = array();
 				foreach ($tmp_key as $k => $v) {
@@ -715,10 +723,11 @@ class NP_TagEX extends NucleusPlugin
 			$blogid = intval(getBlogIDFromName($blogid));
 		}
 // </mod by shizuki>
-//		$existInumsIn = ($existInums = $this->scanExistItem($narrowMode, $blogid)) ? ' WHERE inum in (' . @join(',', $existInums) . ')' : '';
+//		$existInumsIn = ($existInums = $this->scanExistItem($narrowMode, $blogid)) ?
+//						 ' WHERE inum in (' . @implode(',', $existInums) . ')' : '';
 		$existInumsIn = '';
 		if ($existInums = $this->scanExistItem($narrowMode, $blogid)) {
-			$existInumsIn = ' WHERE inum in (' . @join(',', $existInums) . ')';
+			$existInumsIn = ' WHERE inum in (' . @implode(',', $existInums) . ')';
 		}
 		$q   = 'SELECT * FROM ' . _TAGEX_TABLE . $existInumsIn;
 		$res = sql_query($q);
@@ -803,7 +812,8 @@ class NP_TagEX extends NucleusPlugin
 			$urlq = serverVar('QUERY_STRING');
 			$urlq = str_replace('?', '', $urlq);
 			$urlq = explode('&', $urlq);
-			for ($i=0;$i<count($urlq);$i++) {
+			$qCnt = count($urlq);
+			for ($i=0; $i<$qCnt; $i++) {
 				$tempq = explode('=', $urlq[$i]);
 				if ($tempq[0] == $q) {
 					$str = preg_replace('|[^a-z0-9-~+_.#;,:@%]|i', '', $tempq[1]);
@@ -823,7 +833,8 @@ class NP_TagEX extends NucleusPlugin
 		}
 		$res     = array('and'=>array(), 'or'=>array());
 		$tempAnd = explode('+', $q);
-		for ($i=0; $i<count($tempAnd); $i++) {
+		$andCnt  = count($tempAnd);
+		for ($i=0; $i<$andCnt; $i++) {
 			$temp         = explode(':', $tempAnd[$i]);
 			$res['and'][] = array_shift($temp);
 			if ($temp != array()) {
@@ -837,7 +848,7 @@ class NP_TagEX extends NucleusPlugin
 	{
 		// type[0]: type ( + amount (int))
 		// type[1]: $narrowMode (0/1/2)
-		// type[2]: sort 
+		// type[2]: sortMode (1/2/3/4)
 		// type[3]: Minimum font-sizem(em) 0.5/1/1.5/2...
 		// type[4]: Maximum font-sizem(em)
 // default
@@ -846,19 +857,25 @@ class NP_TagEX extends NucleusPlugin
 		}
 		$type = explode('/',$type);
 		if (eregi('list', $type[0])) {
-			$amount = eregi_replace("list", "", $type[0]);
+			$amount  = eregi_replace("list", "", $type[0]);
 			$type[0] = 'list';
 // < meta keywords="TAG" mod by shizuki>
 		} elseif (eregi('meta', $type[0])) {
-			$amount = eregi_replace("meta", "", $type[0]);
+			$amount  = eregi_replace("meta", "", $type[0]);
 			$type[0] = 'meta';
 // </mod by shizuki>*/
 		}
 // default amount
-		$amount  = ($amount) ?  $amount:  99999999;
+		$amount = ($amount) ?  $amount:  99999999;
+		$amount = intval($amount);
 
 		$defaultType = array('list', '1', '0', '1', '4');
-		$type = $type + $defaultType;
+		$type        = $type + $defaultType;
+		$type[0]     = htmlspecialchars($type[0], ENT_QUOTES, _CHARSET);
+		$type[1]     = intval($type[1]);
+		$type[2]     = intval($type[2]);
+		$type[3]     = (float)$type[3];
+		$type[4]     = (float)$type[4];
 // <for FancyURL mod by shizuki>
 //		if (requestVar('tag')) {
 		$requestT = $this->getNoDecodeQuery('tag');
@@ -881,7 +898,7 @@ class NP_TagEX extends NucleusPlugin
 									  . '" title="' . $val . '">'
 									  . $val . '</a>';
 					}
-					$reqANDp = @join('" + "', $reqAndLink);
+					$reqANDp = @implode('" + "', $reqAndLink);
 					if ($reqOR) {
 						foreach ($reqOR as $val) {
 							$reqOrLink[] = '<a href="'
@@ -912,9 +929,10 @@ class NP_TagEX extends NucleusPlugin
 					$res = sql_query(sprintf($q, _TAGEX_TABLE, $itemid));
 					while ($o = mysql_fetch_object($res)) {
 						$temp_tags_array = preg_split("/[\n,]+/", trim($o->itags));
-						for ($i=0; $i < count($temp_tags_array); $i++) {
+						$temp_tags_count = count($temp_tags_array);
+						for ($i=0; $i < $temp_tags_count; $i++) {
 							$tag         = trim($temp_tags_array[$i]);
-							$taglist[$i] = htmlspecialchars($tag);
+							$taglist[$i] = htmlspecialchars($tag, ENT_QUOTES, _CHARSET);
 						}
 					}
 					if ($taglist)
@@ -924,7 +942,7 @@ class NP_TagEX extends NucleusPlugin
 						$eachTag = array();
 						$t       = 0;
 						foreach ($tags as $tag => $inums) {
-							$eachTag[$t] = htmlspecialchars($tag);
+							$eachTag[$t] = htmlspecialchars($tag, ENT_QUOTES, _CHARSET);
 							$t++;
 						}
 						if ($type[3] != 'ad') {
@@ -961,26 +979,34 @@ tagIndexSeparator
 
 
 /*
-		$template['tagIndex'] = '<h3><a href="<%taglinkurl%>"><%tag%>(<%tagamount%>)</a></h3>';
-		$template['tagItemHeader'] = '<ul>';
-		$template['tagItem'] = '<li><%itemid%></li>';
-		$template['tagItemSeparator'] = '';
-		$template['tagItemFooter'] = '</ul>';
+		$template['tagIndex']          = '<h3><a href="<%taglinkurl%>"><%tag%>'
+									   . '(<%tagamount%>)</a></h3>';
+		$template['tagItemHeader']     = '<ul>';
+		$template['tagItem']           = '<li><%itemid%></li>';
+		$template['tagItemSeparator']  = '';
+		$template['tagItemFooter']     = '</ul>';
 *//*
-		$template['and'] = '<span style="font-family:tahoma;font-size:smaller;"> <a href="<%andurl%>" title="narrow">&amp;</a>.';
-		$template['or'] = '<a href="<%orurl%>" title="expand">or</a> </span>';
-		$template['tagIndex'] = '<%and%><%or%><span style="font-size:<%fontlevel%>em" title="<%tagamount%> post(s)! <%tagitems%>"><a href="<%taglinkurl%>"><%tag%></a></span>';
-		$template['tagItemHeader'] = '';
-		$template['tagItem'] = "<%itemid%>:<%itemtitle%>";
-		$template['tagItemSeparator'] = ' , ';
-		$template['tagItemFooter'] = '';
+		$template['and']               = '<span style="font-family:tahoma;font-size:smaller;">'
+									   . ' <a href="<%andurl%>" title="narrow">&amp;</a>.';
+		$template['or']                = '<a href="<%orurl%>" title="expand">or</a> </span>';
+		$template['tagIndex']          = '<%and%><%or%>'
+									   . '<span style="font-size:<%fontlevel%>em" '
+									   . 'title="<%tagamount%> post(s)! <%tagitems%>">'
+									   . '<a href="<%taglinkurl%>"><%tag%></a></span>';
+		$template['tagItemHeader']     = '';
+		$template['tagItem']           = "<%itemid%>:<%itemtitle%>";
+		$template['tagItemSeparator']  = ' , ';
+		$template['tagItemFooter']     = '';
 		$template['tagIndexSeparator'] = ' | ';
 *//*
-		$template['tagIndex'] = '<span style="font-size:<%fontlevel%>em" title="<%tagamount%> post(s)!"><a href="<%taglinkurl%>"><%tag%>(<%tagamount%>)</a></span>';
-		$template['tagItemHeader'] = '';
-		$template['tagItem'] = "\n<%itemid%>:<%itemtitle%>";
-		$template['tagItemSeparator'] = ' / ';
-		$template['tagItemFooter'] = '';
+		$template['tagIndex']          = '<span style="font-size:<%fontlevel%>em"'
+									   . ' title="<%tagamount%> post(s)!">'
+									   . '<a href="<%taglinkurl%>"><%tag%>'
+									   . '(<%tagamount%>)</a></span>';
+		$template['tagItemHeader']     = '';
+		$template['tagItem']           = "\n<%itemid%>:<%itemtitle%>";
+		$template['tagItemSeparator']  = ' / ';
+		$template['tagItemFooter']     = '';
 		$template['tagIndexSeparator'] = ' | ';
 */
 //		print_r($tags);
@@ -997,11 +1023,11 @@ tagIndexSeparator
 //				if($tags = $this->scanExistTags($type[1], $amount, $type[2])){// original mode
 				if ($tags = $this->scanExistTags($type[1])) {// <nodisplay selected TAGs mod by shizuki />
 					if ($type[3] != $type[4]) {
-						$minFontSize = min($type[3], $type[4]) - 0.5;
-						$maxFontSize = max($type[3], $type[4]);
-						$levelsum    = ($maxFontSize - $minFontSize) / 0.5;
+						$minFontSize               = min($type[3], $type[4]) - 0.5;
+						$maxFontSize               = max($type[3], $type[4]);
+						$levelsum                  = ($maxFontSize - $minFontSize) / 0.5;
 						list($maxCount, $minCount) = $this->scanCount($tags);
-						$eachCount   = ceil(($maxCount - $minCount) / $levelsum);
+						$eachCount                 = ceil(($maxCount - $minCount) / $levelsum);
 					}
 // <nodisplay selected TAGs mod by shizuki>
 					$select = array();
@@ -1044,7 +1070,7 @@ tagIndexSeparator
 					}
 // </mod by shizuki>*/
 					$eachTag = array();
-					$t = 0;
+					$t       = 0;
 					foreach ($tags as $tag => $inums) {
 						$tagitems  = array();
 						$tagAmount = count($inums);
@@ -1057,13 +1083,16 @@ tagIndexSeparator
 
 // Item's name had TAGs 
 						for ($i=0;$i<$tagAmount;$i++) {
-							$qQuery     = 'SELECT ititle as result FROM %s WHERE inumber = %d';
-							$qQuery     = sprintf($qQuery, sql_table('item'), intval($inums[$i]));
-							$itemtitle  = quickQuery($qQuery);
-							$shortTitle = shorten(strip_tags($itemtitle), 10, '..');
+							$qQuery               = 'SELECT ititle as result '
+												  . 'FROM %s WHERE inumber = %d';
+							$qQuery               = sprintf($qQuery, sql_table('item'), intval($inums[$i]));
+							$itemtitle            = quickQuery($qQuery);
+							$itemtitle            = htmlspecialchars($itemtitle, ENT_QUOTES, _CHARSET);
+							$shortTitle           = shorten(strip_tags($itemtitle), 10, '...');
+							$shortTitle           = htmlspecialchars($shortTitle, ENT_QUOTES, _CHARSET);
 							$printData['tagItem'] = array(
-											'itemid'    => intval($inums[$i]),
-											'itemtitle' => $shortTitle,
+														  'itemid'    => intval($inums[$i]),
+														  'itemtitle' => $shortTitle,
 														 );
 							$tagitems[] = TEMPLATE::fill($template['tagItem'], $printData['tagItem']);
 						}
@@ -1090,12 +1119,12 @@ tagIndexSeparator
 						$printData['tagIndex'] = array(
 							'and'        => $and,
 							'or'         => $or,
-							'tag'        => htmlspecialchars($tag),
+							'tag'        => htmlspecialchars($tag, ENT_QUOTES, _CHARSET),
 							'tagamount'  => $tagAmount,
 							'fontlevel'  => $fontlevel,
 							'taglinkurl' => $this->creatTagLink($tag, $type[1]),
 							'tagitems'   => $tagitem
-						);
+													  );
 						$eachTag[$t] = TEMPLATE::fill($template['tagIndex'], $printData['tagIndex']);
 
 // format outputdata and data output
@@ -1145,10 +1174,10 @@ tagIndexSeparator
 		while ($o = mysql_fetch_object($res)) {
 			$temp_tags_array = preg_split("/[\n,]+/", trim($o->itags));
 			for ($i=0; $i < count($temp_tags_array); $i++) {
-				$tag = trim($temp_tags_array[$i]);
+				$tag     = trim($temp_tags_array[$i]);
 				$taglink = $this->creatTagLink($tag, 0);
 // <highlight selected TAGs mod by shizuki>
-				$key = array_search($tag, $words);
+				$key     = array_search($tag, $words);
 				if ($key >= 10) {
 					$key = $key - 10;
 				}
@@ -1156,13 +1185,13 @@ tagIndexSeparator
 					$taglist[$i] = '<a href="'
 								 . $this->creatTagLink($tag, 0)
 								 . '" class="highlight_0" rel="tag">'
-								 . htmlspecialchars($tag) . '</a>';
+								 . htmlspecialchars($tag, ENT_QUOTES, _CHARSET) . '</a>';
 				} else {
 // </mod by shizuki>*/
 					$taglist[$i] = '<a href="'
 								 . $this->creatTagLink($tag, 0)
 								 . '" rel="tag">'
-								 . htmlspecialchars($tag) . '</a>';
+								 . htmlspecialchars($tag, ENT_QUOTES, _CHARSET) . '</a>';
 				}	// <highlight selected TAGs mod by shizuki />
 			}
 		}
@@ -1198,11 +1227,21 @@ tagIndexSeparator
 	function getChildren($subcat_id)
 	{
 		$subcat_id = intval($subcat_id);	// <mod by shizuki />
-		$que       = 'SELECT scatid, parentid, sname FROM %s WHERE parentid = %d';
+		$que       = 'SELECT'
+				   . ' scatid,'
+				   . ' parentid,'
+				   . ' sname '
+				   . 'FROM'
+				   . ' %s '
+				   . 'WHERE'
+				   . ' parentid = %d';
 		$mcatTable = sql_table('plug_multiple_categories_sub');
-		$res       = sql_query(sprintf($que, $mcatTable, $subcat_id));
+		$que       = sprintf($que, $mcatTable, $subcat_id);
+		$res       = sql_query($que);
 		while ($so =  mysql_fetch_object($res)) {
-			$r .= $this->getChildren($so->scatid) . '/' . $so->scatid;
+			$r .= $this->getChildren($so->scatid)
+				. '/'
+				. $so->scatid;
 		}
 		return $r;
 	}
@@ -1219,6 +1258,7 @@ tagIndexSeparator
 		if (!$blogid) {
 			$blogid = $CONF['DefaultBlog'];
 		}
+		$b =& $manager->getBlog($blogid);
 		if ($narrowMode == 2) {
 //			if ($blogid) {
 //				$linkparams['blogid'] = intval($blogid);
@@ -1228,7 +1268,7 @@ tagIndexSeparator
 			}
 			if ($manager->pluginInstalled('NP_MultipleCategories')) {
 				$mcategories =& $manager->getPlugin('NP_MultipleCategories');
-				if (method_exists($mcategories, "getRequestName")) {
+				if (method_exists($mcategories, 'getRequestName')) {
 					$subrequest = $mcategories->getRequestName();
 				} else {
 					$subrequest = 'subcatid';
@@ -1266,27 +1306,40 @@ tagIndexSeparator
 			$sep = '';
 		}
 //	<mod by shizuki>
-		$link = $CONF['BlogURL'];
-		if (substr($CONF['BlogURL'], -1) != '/') {
-			if (substr($CONF['BlogURL'], -4) != '.php') {
-				$link .= '/';
-			}
-		}
-		if ($CONF['URLMode'] == 'pathinfo') {
-			$link .= 'tag/'  . $ready . $sep . $this->_rawencode($tag);
-		} else {
-			$link .= '?tag=' . $ready . $sep . $this->_rawencode($tag);
-		}
+/// <Original URL Generate code>
 //		if ($CONF['URLMode'] == 'pathinfo')
 //			$link = $CONF['IndexURL'] . '/tag/' . $ready . $sep . $this->_rawencode($tag);
 //		else
 //			$link = $CONF['IndexURL'] . '?tag=' . $ready . $sep . $this->_rawencode($tag);
+		$link = $b->getURL();
+		if (substr($link, -1) != '/') {
+			if (substr($link, -4) != '.php') {
+				$link .= '/';
+			}
+		}
+		if ($CONF['URLMode'] == 'pathinfo') {
+			$link .=  'tag/' . $ready . $sep . $this->_rawencode($tag);
+		} else {
+			$link .= '?tag=' . $ready . $sep . $this->_rawencode($tag);
+		}
+//  </ Original URL Generate code> */
+
+/*// <test code>
+        $CONF['BlogURL']   = $b->getURL();
+		$linkparams['tag'] = $ready . $sep . $this->_rawencode($tag);
+		$uri               = createBlogidLink($blogid, $linkparams);
+		if (strstr ($uri, '//')) {
+			$uri = preg_replace("/([^:])\/\//", "$1/", $uri);
+		}
+		return $uri;
+// </test code>*/
+
 // </mod by shizuki>*/
 
 //	<mod by shizuki>
 		if ($manager->pluginInstalled('NP_CustomURL')) {
 			$linkparams['tag'] = $ready . $sep . $this->_rawencode($tag);
-			$uri = createBlogidLink($blogid, $linkparams);
+			$uri               = createBlogidLink($blogid, $linkparams);
 			if (strstr ($uri, '//')) {
 				$uri = preg_replace("/([^:])\/\//", "$1/", $uri);
 			}
@@ -1318,4 +1371,3 @@ tagIndexSeparator
 	}
 
 }
-?>
