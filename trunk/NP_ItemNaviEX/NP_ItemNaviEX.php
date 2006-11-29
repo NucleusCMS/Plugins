@@ -1,4 +1,4 @@
-<?
+<?php
 /**
  *
  * BreadCrumbsList PLUG-IN FOR NucleusCMS
@@ -13,11 +13,12 @@
  * @author     Original Author nakahara21
  * @copyright  2005-2006 nakahara21
  * @license     http://www.gnu.org/licenses/gpl.txt  GNU GENERAL PUBLIC LICENSE Version 2, June 1991
- * @version    0.41
- * @link       http://nakahara21.com
+ * @version    0.992
+ * @link       http://japan.nucleuscms.org/wiki/plugins:itemnaviex
  *
- * 0.991	add sub-blog home mode
- * 0.99		sec fix
+ * 0.992  display mode '0' fix
+ * 0.991  add sub-blog home mode
+ * 0.99   sec fix
  *
  **************************************************************************
  *
@@ -40,22 +41,25 @@ class NP_ItemNaviEX extends NucleusPlugin
 
 	function getURL()
 	{
-		return 'http://nakahara21.com/'; 
+		return 'http://japan.nucleuscms.org/wiki/plugins:itemnaviex'; 
 	}
 
 	function getVersion()
 	{
-		return '0.991'; 
+		return '0.992'; 
 	}
 
 	function getDescription()
-	{ 
-		return 'Add link to prev item and next item. Usage: &lt;%ItemNaviEX()%&gt; or &lt;%ItemNaviEX(0)%&gt;';
+	{
+		$description = 'Add link to prev item and next item. '
+					 . 'Usage: &lt;%ItemNaviEX%&gt; or &lt;%ItemNaviEX(0)%&gt;'
+					 . ' or &lt;%ItemNaviEX(1)%&gt; or  &lt;%ItemNaviEX(2)%&gt;';
+		return $description;
 	}
 
 	function supportsFeature($what)
 	{
-		switch($what){
+		switch ($what) {
 			case 'SqlTablePrefix':
 				return 1;
 			default:
@@ -73,9 +77,10 @@ class NP_ItemNaviEX extends NucleusPlugin
 	function createNaviLink($unitArray)
 	{
 		if ($unitArray[1]) {
-			$tempLink = '<a href="' . htmlspecialchars($unitArray[1]) . '">' . htmlspecialchars($unitArray[0]) . '</a>';
+			$tempLink = '<a href="' . htmlspecialchars($unitArray[1], ENT_QUOTES, _CHARSET) . '">'
+					  . htmlspecialchars($unitArray[0], ENT_QUOTES, _CHARSET) . '</a>';
 		} else {
-			$tempLink = htmlspecialchars($unitArray[0]);
+			$tempLink = htmlspecialchars($unitArray[0], ENT_QUOTES, _CHARSET);
 		}
 		return $tempLink;
 	}
@@ -86,7 +91,8 @@ class NP_ItemNaviEX extends NucleusPlugin
 //		if ($manager->pluginInstalled('NP_MultipleCategories')) {
 //			$mplugin =& $manager->getPlugin('NP_MultipleCategories');
 //			if (method_exists($mplugin,"getRequestName")) {
-				$res = sql_query('SHOW FIELDS FROM ' . sql_table('plug_multiple_categories_sub'));
+				$query = 'SHOW FIELDS FROM ' . sql_table('plug_multiple_categories_sub');
+				$res   = sql_query($query);
 				while ($co = mysql_fetch_assoc($res)) {
 					if ($co['Field'] == 'parentid') {
 						return TRUE;
@@ -103,9 +109,9 @@ class NP_ItemNaviEX extends NucleusPlugin
 
 // sanitize
 		$y = $m = $d = '';
-		$itemid = intval($itemid);
-		$catid = intval($catid);
-		$subcatid = intval($subcatid);
+		$itemid     = intval($itemid);
+		$catid      = intval($catid);
+		$subcatid   = intval($subcatid);
 		$itemidprev = intval($itemidprev);
 		$itemidnext = intval($itemidnext);
 		if (isset($archive)) {
@@ -113,7 +119,7 @@ class NP_ItemNaviEX extends NucleusPlugin
 			if ($y && $m && !empty($d)) {
 				$archive = sprintf('%04d-%02d-%02d', $y, $m, $d);
 			} elseif ($y && $m && empty($d)) {
-				$archive = sprintf('%04d-%02d', $y, $m);
+				$archive = sprintf('%04d-%02d',      $y, $m);
 			}			
 		}
 		if (isset($archiveprev)) {
@@ -121,7 +127,7 @@ class NP_ItemNaviEX extends NucleusPlugin
 			if ($y && $m && !empty($d)) {
 				$archiveprev = sprintf('%04d-%02d-%02d', $y, $m, $d);
 			} elseif ($y && $m && empty($d)) {
-				$archiveprev = sprintf('%04d-%02d', $y, $m);
+				$archiveprev = sprintf('%04d-%02d',      $y, $m);
 			}			
 		}
 		if (isset($archiveprev)) {
@@ -129,11 +135,13 @@ class NP_ItemNaviEX extends NucleusPlugin
 			if ($y && $m && !empty($d)) {
 				$archiveprev = sprintf('%04d-%02d-%02d', $y, $m, $d);
 			} elseif ($y && $m && empty($d)) {
-				$archiveprev = sprintf('%04d-%02d', $y, $m);
+				$archiveprev = sprintf('%04d-%02d',      $y, $m);
 			}			
 		}
 		if ($showHome == '') {
-			$showHome = '1';
+			$showHome = 1;
+		} else {
+			$showHome = intval($showHome);
 		}
 
 		if ($catid) { 
@@ -146,14 +154,18 @@ class NP_ItemNaviEX extends NucleusPlugin
 		} 
 		$blogid = intval($b->getID());
 
-		$abuf = '';
+		$abuf   = '';
 		$mtable = '';
 		$where .= ' and i.iblog=' . $blogid;
 		if (!empty($catid)) {
 			if ($manager->pluginInstalled('NP_MultipleCategories')) {
-				$where .= ' and ((i.inumber = p.item_id and (p.categories REGEXP "(^|,)' . $catid . '(,|$)"' .
-						' or i.icat = ' . $catid . ')) or (i.icat = ' . $catid . ' and p.item_id IS NULL))';
-				$mtable = ' LEFT JOIN ' . sql_table('plug_multiple_categories') . ' as p ON  i.inumber = p.item_id';
+				$where .= ' and ((i.inumber = p.item_id'
+						. ' and (p.categories REGEXP "(^|,)' . $catid . '(,|$)"'
+						. ' or i.icat = ' . $catid . '))'
+						. ' or (i.icat = ' . $catid
+						. ' and p.item_id IS NULL))';
+				$mtable = ' LEFT JOIN ' . sql_table('plug_multiple_categories') . ' as p'
+						. ' ON  i.inumber = p.item_id';
 				$mplugin =& $manager->getPlugin('NP_MultipleCategories');
 				if ($subcatid && method_exists($mplugin, 'getRequestName')) {
 //family
@@ -178,16 +190,16 @@ class NP_ItemNaviEX extends NucleusPlugin
 				$where .= ' and i.icat=' . $catid;
 			}
 		}
-
-		$naviUnit = array();
-		$subNaviUnit = array();
+		$naviUnit         = array();
+		$subNaviUnit      = array();
 		$this->linkparams = array();
 //store Home =====================================
 // comment out this block when HOME is sub-blog top
 		if ($showHome == 1) {
+			$defBlogid  =intval($CONF['DefaultBlog']);
 			$naviUnit[] = array(
 				0 => 'Home',
-				1 => $CONF['IndexURL'],
+				1 => createBlogidLink($defBlogid),
 				2 => createArchiveListLink($blogid)
 			);
 		}
@@ -199,10 +211,10 @@ class NP_ItemNaviEX extends NucleusPlugin
 				1 => createBlogidLink($blogid),
 				2 => createArchiveListLink($blogid)
 			);
-		} elseif ($showHome >= 2) {
+		} elseif ($showHome >= 2 || ($showHome == 0 && ($catid || $itemid))) {
 			$naviUnit[] = array(
-				0 => 'Home',		// when HOME is sub-blog top
-				1 => $CONF['BlogURL'] . '/',		// when HOME is sub-blog top
+				0 => 'Home',                          // when HOME is sub-blog top
+				1 => createBlogidLink($blogid),       // when HOME is sub-blog top
 				2 => createArchiveListLink($blogid)
 			);
 		}
@@ -227,7 +239,7 @@ class NP_ItemNaviEX extends NucleusPlugin
 					$this->linkparams[$subrequest] = $subcatid;
 					if ($this->checkParent()) {
 						$tog = $this->getParenta($subcatid, $blogid);
-						for ($i=0;$i<count($this->r);$i++) {
+						for ($i=0; $i<count($this->r); $i++) {
 							$naviUnit[] = $this->r[$i];
 						}
 						$naviUnit[] = $tog;
@@ -245,7 +257,7 @@ class NP_ItemNaviEX extends NucleusPlugin
 		}
 
 //store Page ===================================== todo How to get PageNo. ? ...cookie... 
-		if (requestVar('page')) {
+		if (intRequestVar('page') != 0) {
 			$naviUnit[] = array(
 				0 => 'Page.' . intRequestVar('page'),
 				2 => createArchiveListLink($blogid, $this->linkparams)
@@ -259,33 +271,35 @@ class NP_ItemNaviEX extends NucleusPlugin
 				0 => $item['title']
 			);
 
-
 			$query = 'SELECT i.ititle, i.inumber'
-					. ' FROM ' . sql_table('item') . ' as i' . $mtable
-					. ' WHERE i.idraft = 0'
-					. " and i.itime < '" . $item['itime'] . "' " . $where;
-			$query .= ' ORDER BY i.itime DESC'; 
-			$res = sql_query($query);
+				   . ' FROM ' . sql_table('item') . ' as i' . $mtable
+				   . ' WHERE i.idraft = 0'
+				   . " and i.itime < '" . $item['itime'] . "' " . $where
+				   . ' ORDER BY i.itime DESC'; 
+			$res   = sql_query($query);
 			if ($ares = mysql_fetch_row($res)) {
-				$alink = createItemLink($ares[1], $this->linkparams);
-				$subNaviUnit[1] = '<a href="' . htmlspecialchars($alink) . '" rel="prev"> &laquo; ' . 
-								shorten($ares[0], 14, '...') . '</a>';
+				$alink          = createItemLink($ares[1], $this->linkparams);
+				$subNaviUnit[1] = '<a href="'
+								. htmlspecialchars($alink, ENT_QUOTES, _CHARSET)
+								. '" rel="prev"> &laquo; '
+								. shorten($ares[0], 14, '...')
+								. '</a>';
 			}
 
-
-
 			$query = 'SELECT i.ititle, i.inumber'
-					. ' FROM ' . sql_table('item') . ' as i' . $mtable
-					. ' WHERE i.idraft = 0'
-					. " and i.itime > '" . $item['itime'] . "' " . $where;
-			$query .= ' ORDER BY i.itime ASC'; 
-			$res = sql_query($query);
+				   . ' FROM ' . sql_table('item') . ' as i' . $mtable
+				   . ' WHERE i.idraft = 0'
+				   . " and i.itime > '" . $item['itime'] . "' " . $where
+				   . ' ORDER BY i.itime ASC'; 
+			$res   = sql_query($query);
 			if ($ares = mysql_fetch_row($res)) {
-				$alink = createItemLink($ares[1], $this->linkparams);
-				$subNaviUnit[2] = '<a href="' . htmlspecialchars($alink) . '" rel="next"> ' .
-								shorten($ares[0], 14, '...') . ' &raquo;</a>';
+				$alink          = createItemLink($ares[1], $this->linkparams);
+				$subNaviUnit[2] = '<a href="'
+								. htmlspecialchars($alink, ENT_QUOTES, _CHARSET)
+								. '" rel="next"> '
+								. shorten($ares[0], 14, '...')
+								. ' &raquo;</a>';
 			}
-
 
 		}
 
@@ -306,13 +320,13 @@ class NP_ItemNaviEX extends NucleusPlugin
 					1 => createArchiveLink($blogid, $archiveMonth, $this->linkparams)
 				);
 			if (empty($d)) {
-				$timestamp_start = mktime(0, 0, 0, $m, 1, $y);
-				$timestamp_end = mktime(0, 0, 0, $m+1, 1, $y);
-				$date_str = 'SUBSTRING(i.itime, 1, 7)';
+				$timestamp_start = mktime(0, 0, 0, $m,   1, $y);
+				$timestamp_end   = mktime(0, 0, 0, $m+1, 1, $y);
+				$date_str        = 'SUBSTRING(i.itime, 1, 7)';
 			} else {
-				$timestamp_start = mktime(0, 0, 0, $m, $d, $y);
-				$timestamp_end = mktime(0, 0, 0, $m, $d+1, $y);
-				$date_str = 'SUBSTRING(i.itime, 1, 10)';
+				$timestamp_start = mktime(0, 0, 0, $m, $d,   $y);
+				$timestamp_end   = mktime(0, 0, 0, $m, $d+1, $y);
+				$date_str        = 'SUBSTRING(i.itime, 1, 10)';
 //store ArchiveDay
 				$naviUnit[] = array(
 					0 => $y . '-' . $m . '-' . $d,
@@ -322,49 +336,56 @@ class NP_ItemNaviEX extends NucleusPlugin
 
 //=============================
 			$query = 'SELECT ' . $date_str . ' as Date'
-					. ' FROM ' . sql_table('item') . ' as i' . $mtable
-					. ' WHERE i.idraft = 0'
-					. ' and i.itime < ' . mysqldate($timestamp_start) . $where;
-			$query .= ' GROUP BY Date';
-			$query .= ' ORDER BY i.itime DESC'; 
-			$res = sql_query($query);
+				   . ' FROM ' . sql_table('item') . ' as i' . $mtable
+				   . ' WHERE i.idraft = 0'
+				   . ' and i.itime < ' . mysqldate($timestamp_start) . $where
+				   . ' GROUP BY Date'
+				   . ' ORDER BY i.itime DESC'; 
+			$res   = sql_query($query);
 			if ($ares = mysql_fetch_row($res)) {
 //				$prev_date = $ares[0];
 				sscanf($ares[0], '%d-%d-%d', $y, $m, $d);
 				if (empty($d)) {
-					$prev_date = sprintf('%04d-%02d', $y, $m);
+					$prev_date = sprintf('%04d-%02d',      $y, $m);
 				} else {
 					$prev_date = sprintf('%04d-%02d-%02d', $y, $m, $d);
 				}
 				$prev_alink = createArchiveLink($blogid, $prev_date, $this->linkparams);
-				$subNaviUnit[1] = '<a href="' . htmlspecialchars($prev_alink) . '" class="prevlink" rel="prev">' .
-						' &laquo; ' . htmlspecialchars($prev_date) . '</a>';
+				$subNaviUnit[1] = '<a href="'
+								. htmlspecialchars($prev_alink, ENT_QUOTES, _CHARSET)
+								. '" class="prevlink" rel="prev">'
+								. ' &laquo; '
+								. htmlspecialchars($prev_date, ENT_QUOTES, _CHARSET)
+								. '</a>';
 //				$abuf .= '<a href="'.$prev_alink.'" class="prevlink" rel="prev">'.$prev_date.'</a>';
 //			} else {
 //				$today_link = createBlogidLink($b->getID(), $this->linkparams);
 //				$abuf .= '  ( <a href="'.$today_link.'">Today</a> )';
 			}
-			$abuf .= ' | <strong>' . htmlspecialchars($archive) . '</strong> ';
+			$abuf .= ' | <strong>' . htmlspecialchars($archive, ENT_QUOTES, _CHARSET) . '</strong> ';
 //=============================
 			$query = 'SELECT ' . $date_str . ' as Date'
-					. ' FROM ' . sql_table('item') . ' as i' . $mtable
-					. ' WHERE i.idraft = 0'
-					. ' and i.itime < ' . mysqldate($b->getCorrectTime())
-					. ' and i.itime >= ' . mysqldate($timestamp_end) . $where;
-			$query .= ' GROUP BY Date';
-			$query .= ' ORDER BY i.itime ASC'; 
-			$res = sql_query($query);
+				   . ' FROM ' . sql_table('item') . ' as i' . $mtable
+				   . ' WHERE i.idraft = 0'
+				   . ' and i.itime < ' . mysqldate($b->getCorrectTime())
+				   . ' and i.itime >= ' . mysqldate($timestamp_end) . $where
+				   . ' GROUP BY Date'
+				   . ' ORDER BY i.itime ASC'; 
+			$res   = sql_query($query);
 			if ($ares = mysql_fetch_row($res)) {
 //				$next_date = $ares[0];
 				sscanf($ares[0],'%d-%d-%d', $y, $m, $d);
 				if (empty($d)) {
-					$next_date = sprintf('%04d-%02d', $y, $m);
+					$next_date = sprintf('%04d-%02d',      $y, $m);
 				} else {
 					$next_date = sprintf('%04d-%02d-%02d', $y, $m, $d);
 				}
-				$next_alink = createArchiveLink($blogid, $next_date, $this->linkparams);
-				$subNaviUnit[2] = '<a href="' . htmlspecialchars($next_alink) . '" class="nextlink" rel="next">'
-								. htmlspecialchars($next_date) . ' &raquo;</a>';
+				$next_alink     = createArchiveLink($blogid, $next_date, $this->linkparams);
+				$subNaviUnit[2] = '<a href="'
+								. htmlspecialchars($next_alink, ENT_QUOTES, _CHARSET)
+								. '" class="nextlink" rel="next">'
+								. htmlspecialchars($next_date, ENT_QUOTES, _CHARSET)
+								. ' &raquo;</a>';
 //				$a2buf = ' | <a href="'.$next_alink.'" class="nextlink" rel="next">'.$next_date.'</a>';
 //			} else {
 //				$today_link = createBlogidLink($b->getID(), $this->linkparams);
@@ -384,7 +405,7 @@ class NP_ItemNaviEX extends NucleusPlugin
 		}
 		echo @join(' :: ', $subNaviUnit);
 //		echo '</div>';
-		echo '</span>';
+		echo '</span><br />';
 
 // Print mainNavi
 		unset($naviUnit[$endKey][1]);
@@ -396,10 +417,10 @@ class NP_ItemNaviEX extends NucleusPlugin
 		if ($manager->pluginInstalled('NP_TagEX')) {
 //			if (requestVar('tag')) {
 			$tagPlugin =& $manager->getPlugin('NP_TagEX');
-			$requestT = $tagPlugin->getNoDecodeQuery('tag');
+			$requestT  =  $tagPlugin->getNoDecodeQuery('tag');
 			if (!empty($requestT)) {
 				$requestTarray = $tagPlugin->splitRequestTags($requestT);
-				$reqAND = array_map(array(&$tagPlugin, "_rawdecode"), $requestTarray['and']);
+				$reqAND        = array_map(array(&$tagPlugin, "_rawdecode"), $requestTarray['and']);
 				if ($requestTarray['or']) {
 					$reqOR = array_map(array(&$tagPlugin, "_rawdecode"), $requestTarray['or']);
 				}
@@ -411,7 +432,7 @@ class NP_ItemNaviEX extends NucleusPlugin
 				for ($i=0;$i<count($reqTags);$i++) {
 					$tag = trim($reqTags[$i]);
 					$taglist[$i] = '<a href="' . $tagPlugin->creatTagLink($tag, 0) . '">'
-								. htmlspecialchars($tag) . '</a>';
+								 . htmlspecialchars($tag, ENT_QUOTES, _CHARSET) . '</a>';
 				}
 				echo ' <small style="font-family:Tahoma;">';
 //				echo ' (Tag for "'.$tagPlugin->_rawdecode(requestVar('tag')).'")';
@@ -427,26 +448,27 @@ class NP_ItemNaviEX extends NucleusPlugin
     function getParenta($subcat_id, $blogid=0)
     {
     	$subcat_id = intval($subcat_id);
-    	$blogid = intval($blogid);
-    	$r = array();
-    	$que = 'SELECT scatid, parentid, sname, catid FROM %s WHERE scatid = %d';
-    	$res = sql_query(sprintf($que, sql_table('plug_multiple_categories_sub'), $subcat_id));
+    	$blogid    = intval($blogid);
+    	$r         = array();
+    	$que       = 'SELECT scatid, parentid, sname, catid FROM %s WHERE scatid = %d';
+    	$que       = sprintf($que, sql_table('plug_multiple_categories_sub'), $subcat_id);
+    	$res       = sql_query($que);
         list ($sid, $parent, $sname, $cat_id) = mysql_fetch_row($res);
 		if (intval($parent) != 0) {
-			$this->r[] =  $this->getParenta(intval($parent), $blogid);
+			$this->r[]                  =  $this->getParenta(intval($parent), $blogid);
 			$this->linkparams[subcatid] = $sid;
 			$r =  array(
 				0 => $sname,
 				1 => createBlogidLink($blogid, $this->linkparams),
 				2 => createArchiveListLink($blogid, $this->linkparams)
-				);
+			);
 		}else{
 			$this->linkparams[subcatid] = $sid;
 			$r =  array(
 				0 => $sname,
 				1 => createBlogidLink($blogid, $this->linkparams),
 				2 => createArchiveListLink($blogid, $this->linkparams)
-				);
+			);
 		}
         return $r;
     }
@@ -454,8 +476,9 @@ class NP_ItemNaviEX extends NucleusPlugin
 	function getParent($subcat_id)
     {
     	$subcat_id = intval($subcat_id);
-    	$que = 'SELECT scatid, parentid, sname FROM %s WHERE scatid = %d';
-    	$res = sql_query(sprintf($que, sql_table('plug_multiple_categories_sub'), $subcat_id));
+    	$que       = 'SELECT scatid, parentid, sname FROM %s WHERE scatid = %d';
+    	$que       = sprintf($que, sql_table('plug_multiple_categories_sub'), $subcat_id);
+    	$res       = sql_query($que);
         list ($sid, $parent, $sname) = mysql_fetch_row($res);
         if (intval($parent) != 0) {
         	$r = $this->getParent(intval($parent)) . " -> <a href=$subcat_id>$sname</a>";
@@ -468,8 +491,9 @@ class NP_ItemNaviEX extends NucleusPlugin
     function getChildren($subcat_id)
     {
     	$subcat_id = intval($subcat_id);
-    	$que = 'SELECT scatid, parentid, sname FROM %s WHERE parentid = %d';
-    	$res = sql_query(sprintf($que, sql_table('plug_multiple_categories_sub'), $subcat_id));
+    	$que       = 'SELECT scatid, parentid, sname FROM %s WHERE parentid = %d';
+    	$que       = sprintf($que, sql_table('plug_multiple_categories_sub'), $subcat_id);
+    	$res       = sql_query($que);
 		while ($so =  mysql_fetch_object($res)) {
 			$r .= $this->getChildren($so->scatid) . '/' . intval($so->scatid);
 		}
@@ -477,4 +501,3 @@ class NP_ItemNaviEX extends NucleusPlugin
     }
 
 }
-?>
