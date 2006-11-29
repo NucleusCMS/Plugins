@@ -1,4 +1,4 @@
-<?
+<?php
 /**
   *
   * SHOW RECENT ITEMS PLUG-IN FOR NucleusCMS
@@ -65,44 +65,55 @@ class NP_RecentItems extends NucleusPlugin
             $query = 'SELECT bshortname as result FROM %s WHERE bnumber = %d';
             $blogname = quickQuery(sprintf($query, sql_table('blog'), intval($blogName)));
         }
-        if (!BLOG::exists($blogName)) return;
-        if (!TEMPLATE::exists($templateName)) return;
-        if ($amountEntries=='') $amountEntries = 5;
+        if (!BLOG::exists($blogName)) {
+            return;
+        }
+        if (!TEMPLATE::exists($templateName)) {
+            return;
+        }
+        if ($amountEntries=='') {
+            $amountEntries = 5;
+        }
 
-        $tempBid = getBlogIDFromName($blogName);
-        $b =& $manager->getBlog($tempBid); 
-
-        $query = $this->_getsqlquery($b, $amountEntries, '');
+        $tempBid =  getBlogIDFromName($blogName);
+        $b       =& $manager->getBlog($tempBid); 
+        $query   =  $this->_getsqlquery($b, $amountEntries, '');
         $b->showUsingQuery($templateName, $query, 0, 1, 0);
     }
 
     function _getsqlquery($blogObj, $amountEntries, $extraQuery)
     {
-        $query = 'SELECT i.inumber as itemid, i.ititle as title, i.ibody as body,' .
-                ' m.mname as author, m.mrealname as authorname, i.itime, i.imore as more,' .
-                ' m.mnumber as authorid, m.memail as authormail, m.murl as authorurl,' .
-                ' c.cname as category, i.icat as catid, i.iclosed as closed';
-		
-        $query .= ' FROM ' .                        // <mod by shizuki corresponds MySQL 5.0.x or later />
-                sql_table('member') . ' as m, ' .
-                sql_table('category') . ' as c,' .
-                sql_table('item') . ' as i' .
-                ' WHERE i.iblog = ' . intval($blogObj->getID()) .
-                ' AND i.iauthor = m.mnumber' .
-                ' AND i.icat = c.catid' .
-                ' AND i.idraft = 0' .             // exclude drafts
+        $query = 'SELECT'
+               . ' i.inumber as itemid,'
+               . ' i.ititle as title,'
+               . ' i.ibody as body,'
+               . ' m.mname as author,'
+               . ' m.mrealname as authorname,'
+               . ' i.itime,'
+               . ' i.imore as more,'
+               . ' m.mnumber as authorid,'
+               . ' m.memail as authormail,'
+               . ' m.murl as authorurl,'
+               . ' c.cname as category,'
+               . ' i.icat as catid,'
+               . ' i.iclosed as closed'
+               . ' FROM '                        // <mod by shizuki corresponds MySQL 5.0.x or later />
+               . sql_table('member') . ' as m, '
+               . sql_table('category') . ' as c,'
+               . sql_table('item') . ' as i'
+               . ' WHERE i.iblog = ' . intval($blogObj->getID())
+               . ' AND i.iauthor = m.mnumber'
+               . ' AND i.icat = c.catid'
+               . ' AND i.idraft = 0'             // exclude drafts
                 // don't show future items
-                ' AND i.itime <= ' . mysqldate($blogObj->getCorrectTime());
+               . ' AND i.itime <= ' . mysqldate($blogObj->getCorrectTime());
 
 //        if ($blogObj->getSelectedCategory())
 //            $query .= ' and i.icat=' . $blogObj->getSelectedCategory() . ' ';
 
-        $query .= $extraQuery;
-
-        $query .= ' ORDER BY i.itime DESC';
-        $query .= ' LIMIT ' . intval($amountEntries);
-
+        $query .= $extraQuery
+                . ' ORDER BY i.itime DESC'
+                . ' LIMIT ' . intval($amountEntries);
         return $query;
     }
 }
-?>
