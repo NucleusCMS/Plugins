@@ -1,109 +1,65 @@
-<?
+<?php
 
 class NP_CommentEdit extends NucleusPlugin
 {
 
 	function getName()
-	{
+	{	// name of plugin
 		return 'Comment Editable';
 	}
-	
+
 	function getAuthor()
-	{ 
+	{	// author of plugin
 		return 'nakahara21';
 	}
-	
+
 	function getURL()
-	{
-		return 'http://nakahara21.com'; 
+	{	// an URL to the plugin website
+		return 'http://japan.nucleuscms.org/wiki/plugins:commentedit';
 	}
-	
+
 	function getVersion()
-	{
+	{	// version of the plugin
 		return '0.3';
 	}
-	
+
+	// a description to be shown on the installed plugins listing
 	function getDescription()
-	{
+	{ 
 		return 'Comment Editable';
 	}
 
 	function supportsFeature($what)
 	{
-		switch ($what) {
+		switch($what){
 			case 'SqlTablePrefix':
 				return 1;
 			default:
 				return 0;
 		}
 	}
-//__________________________________________
-/*
-	function install() {
-	}
-
-	function uninstall() {
-	}
-
-	function getTableList() {
-		return array(sql_table(plug_QQQQQ),sql_table(plug_QQQQQ_cache));
-	}
-
-//__________________________________________
-
-	function getEventList() {
-		return array('PostAddItem','PreUpdateItem','AddItemFormExtras','EditItemFormExtras');
-	}
-
-	function event_PostAddItem($data) {
-	}
-
-	function event_PreUpdateItem($data) {
-	}
-
-	function event_AddItemFormExtras($data) {
-	}
-
-	function event_EditItemFormExtras($data) {
-	}
-
-//__________________________________________
-
-	function init() {
-
-	}
-*/
-//__________________________________________
 
 	function doTemplateCommentsVar(&$item, &$comment, $type, $param1 = 'QQQQQ') { 
 		global $CONF, $member;
-/*
-		global $manager, $blog;
-		global $catid, $itemid;
-*/	
 
 		if ($member->isLoggedIn()) {
-			if ($member->canAlterComment($comment['commentid'])) {
-			echo '<small class="commedit">';
-			echo '<a href="';
-			echo  $CONF['AdminURL'] . 'index.php?action=commentedit&commentid=' . intval($comment['commentid']);
-			echo '" target="_blank">[edit]</a>';
-			echo ' <a href="';
-			echo  $CONF['AdminURL'] . 'index.php?action=commentdelete&commentid=' . intval($comment['commentid']);
-			echo '" target="_blank">[del]</a>';
-			echo '</small>';
+			$commentid = intval($comment['commentid']);
+			if ($member->canAlterComment($commentid)) {
+				$editLink  = $CONF['AdminURL']
+						   . 'index.php?action=commentedit&amp;commentid='
+						   . $commentid;
+				$delLink   = $CONF['AdminURL']
+						   . 'index.php?action=commentdelete&amp;commentid='
+						   . $commentid;
+				$printData = "<small>\n"
+						   . '[ <a href="' . $editLink . '" target="_blank"> '
+						   . _LISTS_EDIT . "</a> ]\n"
+						   . '[ <a href="' . $delLink . '" target="_blank"> '
+						   . _LISTS_DELETE . "</a> ]\n"
+						   . "</small>\n";
+				echo $printData;
 			}
 		}
-
 	}
-	//__________________________________________
-
-/*
-	function doAction($type) {
-		echo 'QQQQQ';
-	}
-*/
-	//__________________________________________
 
 }
-?>

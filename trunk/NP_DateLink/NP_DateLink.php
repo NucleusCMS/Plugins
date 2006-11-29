@@ -1,4 +1,4 @@
-<?
+<?php
 
 class NP_DateLink extends NucleusPlugin
 {
