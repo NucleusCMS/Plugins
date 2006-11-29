@@ -16,14 +16,15 @@
  * @version   2.66
  * @link      http://japan.nucleuscms.org/wiki/plugins:showblogs
  *
- * 2.66 default argument bug fix
- * 2.65 add AD code control
- *      add Category mode
- *      fix stickies bug
- * 2.64 fix page switch URL generate
- * 2.62 security fix and tag related
- * 2.61 security fix
- * 2.6 security fix
+ * 2.66.1 fix sticky mode
+ * 2.66   default argument bug fix
+ * 2.65   add AD code control
+ *        add Category mode
+ *        fix stickies bug
+ * 2.64   fix page switch URL generate
+ * 2.62   security fix and tag related
+ * 2.61   security fix
+ * 2.6    security fix
  *
  ****************************************************************************
  *
@@ -57,7 +58,7 @@ class NP_ShowBlogs extends NucleusPlugin
 
 	function getVersion()
 	{
-		return '2.66';
+		return '2.66.1';
 	}
 
 	function getDescription()
@@ -98,12 +99,13 @@ class NP_ShowBlogs extends NucleusPlugin
 //		$this->createOption('stickmode',	'[currentblog mode only] 0:show all stickyID, 1:show current blog stickyID only', 'text', '1');
 //		$this->createOption('ads', '[Ads code] code displayed under first and second item of the page', 'textarea', '' . "\n");
 // <mod by shizuki>
-		$this->createOption('catformat',		_CAT_FORMAT,	'text',		'<%category%> on <%blogname%>');
-//		$this->createOption('catnametoshow',	_CATNAME_SHOW,	'text',		'0');
-		$this->createOption('stickmode',		_STICKMODE,		'text',		'1');
-		$this->createOption('ads',				_ADCODE_1,		'textarea',	'' . "\n");
-		$this->createOption('ads2',				_ADCODE_2,		'textarea',	'' . "\n");
-		$this->createOption('tagMode',			_TAG_MODE,		'select',		'2',	_TAG_SELECT);
+		$this->createOption('catformat',     _CAT_FORMAT,   'text',    '<%category%> on <%blogname%>');
+//		$this->createOption('catnametoshow', CATNAME_SHOW, 'text',     '0');
+//		$this->createOption('stickmode',    _STICKMODE,    'text',     '1');
+		$this->createOption('stickmode',    _STICKMODE,    'select',   '1', _STICKSELECT);
+		$this->createOption('ads',          _ADCODE_1,     'textarea', '' . "\n");
+		$this->createOption('ads2',         _ADCODE_2,     'textarea', '' . "\n");
+		$this->createOption('tagMode',      _TAG_MODE,     'select',   '2', _TAG_SELECT);
 /* todo can't install ? only warning ?
  * douyatte 'desc' ni keikoku wo daseba iinoka wakaranai desu
 		$ver_min = (getNucleusVersion() < $this->getMinNucleusVersion());
@@ -260,7 +262,7 @@ class NP_ShowBlogs extends NucleusPlugin
 			$catblogname = (count($w) > 1) ? 1 : 0;
 			$where .= ' AND i.icat in (' . implode(',', $w) . ')';
 		}
-		$stickWhere = $where;
+//		$stickWhere = $where;
 
 		if ($skinType == 'item' || $skinType == 'index' || $skinType == 'archive') {
 			$catformat = '"' . addslashes($catformat) . '"';
@@ -376,7 +378,7 @@ class NP_ShowBlogs extends NucleusPlugin
 				foreach ($stickys as $stickynumber) {
 					$sticky_query = $sh_query;
 					$tempblogid   = getBlogIDFromItemID($stickynumber);
-					if ($bmode != 'all') {
+					if ($bmode != 'all' && $this->getOption('stickmode') == 1) {
 						$sticky_query .= ' AND i.iblog = ' . $nowbid;
 					}
 					$sticky_query .= ' AND i.inumber = ' . intval($stickynumber)
@@ -388,12 +390,23 @@ class NP_ShowBlogs extends NucleusPlugin
 					if ($subcatid) {
 						$sticky_query .= ' AND p.subcategories = ' . intval($subcatid);
 					}
-					$sticky_query .= $stickWhere;
-					if ($this->getOption('stickmode') == 1 && intval($nowbid) == $tempblogid) {
+/*					$sticky_query .= $stickWhere;
+					if ($bmode == 'all') {
+						$b->showUsingQuery($sticktemplate, $sticky_query, 0, 1, 0); 
+					} elseif ($this->getOption('stickmode') == 1 && intval($nowbid) == $tempblogid) {
 						$b->showUsingQuery($sticktemplate, $sticky_query, 0, 1, 0); 
 					} elseif (!$this->getOption('stickmode')) {
 						$b->showUsingQuery($sticktemplate, $sticky_query, 0, 1, 0); 
+					}*/
+
+					if (
+					    ($bmode == 'all') ||
+						($this->getOption('stickmode') == 1 && intval($nowbid) == $tempblogid) ||
+						(!$this->getOption('stickmode'))
+					   ) {
+						$b->showUsingQuery($sticktemplate, $sticky_query, 0, 1, 0); 
 					}
+
 					//echo $stickynumber;
 					if ($showAdCode > 0 && mysql_num_rows(sql_query($sticky_query))) {
 						if ($ads == 0) {
