@@ -101,22 +101,24 @@ global $CONF, $manager;
 		$subrequest = 'subcatid';
 	}
 //	$query = 'SELECT * FROM %s WHERE catid%s';
-	$query = 'SELECT * FROM %s WHERE catid%s ORDER BY ordid ASC';
+//	$query = 'SELECT * FROM %s WHERE catid%s ORDER BY ordid ASC';
+	$query = 'SELECT * FROM %s WHERE catid%s ORDER BY parentid, catid, ordid';
 	$query = sprintf($query, $scatTable, $catFilter);
 	$res   = sql_query($query);
 	while ($o = mysql_fetch_object($res)) {
 		$scatid                       = intval($o->scatid);
 		$nodeArray['subcat'][$scatid] = $n;
 		$n++;
-	}
+//	}
 
 //	$query = 'SELECT * FROM %s WHERE catid%s';
 //	$query = sprintf($query, $scatTable, $catFilter);
-	$res = sql_query($query);
-	while ($u = mysql_fetch_object($res)) {
-		$scatid    = intval($u->scatid);
-		$parent_id = intval($u->parentid);
-		$cat_id    = intval($u->catid);
+//	$res = sql_query($query);
+//	while ($u = mysql_fetch_object($res)) {
+//$u = $o;
+//		$scatid    = intval($o->scatid);
+		$parent_id = intval($o->parentid);
+		$cat_id    = intval($o->catid);
 		$linkParam = array(
 						   $subrequest => $scatid
 						  );
@@ -127,21 +129,22 @@ global $CONF, $manager;
 		} else {
 			$pnode = $nodeArray['cat'][$cat_id];
 		}
-		$printData[$pnode][$scatid] = $objectId
-									. ".add"
-									. "(" . $nodeArray['subcat'][$scatid] . ","
-									. $pnode . ","
-									. "'" . htmlspecialchars($u->sname, ENT_QUOTES, _CHARSET) . "',"
-									. "'" . htmlspecialchars($url, ENT_QUOTES, _CHARSET) . "',"
-									. "'" . htmlspecialchars($u->sdesc, ENT_QUOTES, _CHARSET) . "'"
-									. ");\n";
+		$printData =  $objectId
+				   . ".add"
+						. "(" . $nodeArray['subcat'][$scatid] . ","
+						. $pnode . ","
+						. "'" . htmlspecialchars($o->sname, ENT_QUOTES, _CHARSET) . "',"
+						. "'" . htmlspecialchars($url, ENT_QUOTES, _CHARSET) . "',"
+						. "'" . htmlspecialchars($o->sdesc, ENT_QUOTES, _CHARSET) . "'"
+						. ");\n";
+		echo $printData;
 	}
-	ksort($printData);
-	foreach($printData as $parentNode => $scatNode) {
-		foreach($scatNode as $showData) {
-			echo $showData;
-		}
-	}
+//	ksort($printData);
+//	foreach($printData as $parentNode => $scatNode) {
+//		foreach($scatNode as $showData) {
+//			echo $showData;
+//		}
+//	}
 
 	echo "document.write(" . $objectId . ");\n";
 
