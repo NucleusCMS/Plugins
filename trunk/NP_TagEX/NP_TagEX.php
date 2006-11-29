@@ -56,7 +56,7 @@ class NP_TagEX extends NucleusPlugin
 	}
 	function getVersion()
 	{
-		return '0.5';
+		return '0.51';
 	}
 	function getDescription()
 	{
@@ -190,12 +190,14 @@ class NP_TagEX extends NucleusPlugin
 	{
 // Hightlight tags
 		global $currentTemplateName;
-		$currentTemplateName = $this->quote_smart($currentTemplateName);
+//		$currentTemplateName = $this->quote_smart($currentTemplateName);
+		$currTemplateName    = $this->quote_smart($currentTemplateName);
 		$templateDescTable   = sql_table('template_desc');
 		$q_query             = 'SELECT tddesc as result '
 							 . 'FROM %s '
 							 . 'WHERE tdname = %s';
-		$q_query             = sprintf($q_query, $templateDescTable, $currentTemplateName);
+//		$q_query             = sprintf($q_query, $templateDescTable, $currentTemplateName);
+		$q_query             = sprintf($q_query, $templateDescTable, $currTemplateName);
 		$currentTemplateDesc = quickQuery($q_query);
 		if (eregi('<highlightTagsAll>', $currentTemplateDesc)) {
 			$tags = $this->scanExistTags(0, 99999999);
