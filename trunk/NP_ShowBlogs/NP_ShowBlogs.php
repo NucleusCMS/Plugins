@@ -13,16 +13,17 @@
  * @author    Original Author nakahara21
  * @copyright 2005-2006 nakahara21
  * @license   http://www.gnu.org/licenses/gpl.txt  GNU GENERAL PUBLIC LICENSE Version 2, June 1991
- * @version   2.65
- * @link      http://nakahara21.com
+ * @version   2.66
+ * @link      http://japan.nucleuscms.org/wiki/plugins:showblogs
  *
+ * 2.66 default argument bug fix
  * 2.65 add AD code control
  *      add Category mode
  *      fix stickies bug
  * 2.64 fix page switch URL generate
  * 2.62 security fix and tag related
  * 2.61 security fix
- * 2.6  security fix
+ * 2.6 security fix
  *
  ****************************************************************************
  *
@@ -51,12 +52,12 @@ class NP_ShowBlogs extends NucleusPlugin
 
 	function getURL()
 	{
-		return 'http://nakahara21.com/';
+		return 'http://japan.nucleuscms.org/wiki/plugins:showblogs';
 	}
 
 	function getVersion()
 	{
-		return '2.65';
+		return '2.66';
 	}
 
 	function getDescription()
@@ -126,54 +127,43 @@ class NP_ShowBlogs extends NucleusPlugin
 
 	function doSkinVar($skinType,
 					   $template      = 'default/index',
-					   $amount        = 10,
-					   $bmode         = '',
-					   $type          = 1,
-					   $sort          = 'DESC',
-					   $sticky        = '',
+					   $amount        = 10,              // amount/page
+					   $bmode         = '',              // show or hide Blogs
+					   $type          = 1,               // pagw switch type
+					   $sort          = 'DESC',          // item sort mode (DESC or ASC)
+					   $sticky        = '',              // sticky item id
 					   $sticktemplate = '',
-					   $catmode       = 'all',
-					   $showAdCode    = 1,
-					   $catStick      = 0
+					   $catmode       = 'all',           // show or hide categories
+					   $showAdCode    = 1,               // AdCode switch
+					   $catStick      = 0                // show sticky item when category selected ?
 					  )
 	{
 		global $manager, $CONF, $blog, $blogid, $catid, $itemid, $archive, $subcatid;
 
-//***************************************
-//	extra setting
-//***************************************
-/* blogid(blogshortname) you want to hide 
-	example:
-	 $hide =array(5)
-	 $hide = array(3,5);
-	 $hide = array('private');
-	 $hide =array('private','atloss');
-*/
+		if (!$template) {
+			$template = 'default/index';
+		}
+
+// initialize hide blogID
 		$hide = array();
-//show blogID
+// initialize show blogID
 		$show = array();
 // limit number of pages(months) 
 		$pagelimit  = 0;
 		$monthlimit = 0;
-		$catformat = $this->getOption('catformat');
+		$catformat  = $this->getOption('catformat');
 
-/**************************************************************************************/
-
-		$type             = (float) $type;
-		$typeExp          = intval(($type - floor($type))*10); //0 or 1 or 9
-		$this->showAdCode = $showAdCode;
-
-		list ($pageamount, $offset) = sscanf($amount, '%d(%d)');
-		if (!$pageamount) {
-			$pageamount = 10;
-		}
-		if ($sort != 'ASC' && $sort != 'DESC') {
-			$sticktemplate = $sticky;
-			$sticky        = $sort;
-			$sort          = 'DESC';
-		}
-		if (!empty($sticky) && empty($sticktemplate)) {
-			$sticktemplate = $template;
+		$params = func_get_args();
+		switch ($amount) {
+			case '0':
+				$type = $amount;
+				break;
+			case 'all':
+				$bmode = $amount;
+				if (is_numeric($params[3]) ||is_float($params[3])) {
+					$type = $params[3];
+				}
+				break;
 		}
 
 		if (preg_match("/^(<>)?([0-9\/]+)$/", $bmode, $matches)) {
@@ -185,6 +175,29 @@ class NP_ShowBlogs extends NucleusPlugin
 				$show = explode("/", $matches[2]);
 			}
 			$bmode = 'all';
+		}
+
+		$type             = (float) $type;
+		$typeExp          = intval(($type - floor($type))*10); //0 or 1 or 9
+		$this->showAdCode = $showAdCode;
+
+		list ($pageamount, $offset) = sscanf($amount, '%d(%d)');
+		if (!$pageamount) {
+			$pageamount = 10;
+		}
+
+		if ($sort != 'ASC') {
+			$sort = 'DESC';
+		}
+
+/*		if ($sort != 'ASC' && $sort != 'DESC') {
+			$sticktemplate = $sticky;
+			$sticky        = $sort;
+			$sort          = 'DESC';
+		}*/
+
+		if (!empty($sticky) && empty($sticktemplate)) {
+			$sticktemplate = $template;
 		}
 
 		if (preg_match("/^(<>)?([0-9\/]+)$/", $catmode, $matches)) {
@@ -882,4 +895,3 @@ class NP_ShowBlogs extends NucleusPlugin
 
 }
 
-?>
