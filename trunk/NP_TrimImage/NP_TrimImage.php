@@ -13,12 +13,18 @@
 //	0.8:	supports gif
 //	0.9:	doTemplateVar calls DB data for other PreItem Plugin
 //	0.9:	change '&' to '&amp;'
-//	1.1:	NP_Paint supported.
+//	1.1:	NP_Paint support.
 //			Security Fix.
+//	2.0: 	use phpThumb() (http://phpthumb.sourceforge.net)
+
+define('NP_TRIMIMAGE_CACHE_MAXAGE', 86400 * 30); // 30days
+
+require_once(dirname(__FILE__).'/sharedlibs/sharedlibs.php');
+require_once('phpthumb/phpthumb.functions.php');
+require_once('phpthumb/phpthumb.class.php');
 
 class NP_TrimImage extends NucleusPlugin
 {
-
 	function getName ()
 	{
 		return 'TrimImage';
@@ -26,7 +32,7 @@ class NP_TrimImage extends NucleusPlugin
 
 	function getAuthor ()
 	{
-		return 'nakahara21';
+		return 'nakahara21 + hsur';
 	}
 
 	function getURL () {
@@ -34,7 +40,7 @@ class NP_TrimImage extends NucleusPlugin
 	}
 	
 	function getVersion () {
-		return '1.1';
+		return '2.0';
 	}
 	
 	function supportsFeature($what)
@@ -51,7 +57,33 @@ class NP_TrimImage extends NucleusPlugin
 	{
 		return 'Trim image in items, and embed these images.';
 	}
+			function getEventList() { 
+		return array(
+			'PostAddItem',
+			'PostUpdateItem',
+			'PostDeleteItem',
+		); 
+	}
+	
+	function event_PostAddItem(&$data){
+		$this->_clearCache();
+	}
+	function event_PostUpdateItem(&$data){		$this->_clearCache();
+	}
+	function event_PostDeleteItem(&$data){
+		$this->_clearCache();
+	}
+	function _clearCache(){
+		$phpThumb = new phpThumb();
+		foreach($this->phpThumbParams as $paramKey => $paramValue ){
+			$phpThumb->setParameter($paramKey, $paramValue);
+		}
+		$phpThumb->setParameter('config_cache_maxage', 1);
+		$phpThumb->CleanUpCacheDirectory();
+		//var_dump($phpThumb);
+	}
 
+/*
 	function instaii()
 	{
 		$ver_min = (getNucleusVersion() < $this->getMinNucleusVersion());
@@ -74,11 +106,30 @@ class NP_TrimImage extends NucleusPlugin
 		$admin->pagefoot();
 		return;
 	}
-
+*/
 	function init()
 	{
+		global $DIR_MEDIA;
 		$this->fileex = array('.gif', '.jpg', '.png');
 		$this->random = 1;
+		
+		$this->phpThumbParams = array(
+			'config_document_root' => $DIR_MEDIA,
+			'config_cache_directory' => $DIR_MEDIA.'phpthumb/',
+			'config_cache_disable_warning' => true,
+			'config_cache_directory_depth' => 0,
+			'config_cache_maxage' => NP_TRIMIMAGE_CACHE_MAXAGE,
+			'config_cache_maxsize' => 10 * 1024 * 1024, // 10MB
+			'config_cache_maxfiles' => 1000,
+			'config_cache_source_filemtime_ignore_local' => false,
+			'config_cache_source_filemtime_ignore_remote' => true,
+			'config_cache_cache_default_only_suffix' => '',
+			'config_cache_prefix' => 'phpThumb_cache',
+			'config_cache_force_passthru' => true,
+			'config_max_source_pixels' => 3871488, //4Mpx
+			'config_output_format' => 'jpg',
+			'config_disable_debug' => true,
+		);
 	}
 	
 	function doSkinVar($skinType, $amount = 10, $wsize = 80, $hsize = 80, $point = 0, $random = 0, $exmode = '')
@@ -122,6 +173,7 @@ class NP_TrimImage extends NucleusPlugin
 					global $catid;
 					if ($catid) $this->exquery .= ' and icat = ' . intval($catid);
 				} elseif ($exmode == 'all') {
+					// nothing
 				} else {
 					$spid_array = $spbid = $spcid = array();
 					$spid_array = explode('/', $exmode);
@@ -133,16 +185,14 @@ class NP_TrimImage extends NucleusPlugin
 					}
 					$spbid = implode(',', $spbid);
 					$spcid = implode(',', $spcid);
-					if ($spbid && $spcid) {
-						$this->exquery .= ' and ( iblog IN (' . $spbid . ') or icat IN (' . $spcid . ') )';
-					} elseif($spbid) {
+					if($spbid) {
 						$this->exquery .= ' and iblog IN (' . $spbid . ') ';
-					} elseif ($spcid) {
+					}
+					if($spcid) {
 						$this->exquery .= ' and icat IN (' . $spcid . ') ';
 					}
 				}
 		}
-
 
 		$filelist = array();
 		$this->imglists = array();
@@ -221,20 +271,6 @@ class NP_TrimImage extends NucleusPlugin
 		$this->imglists[] = array($imginfo, $iaid[0]);
 	}
 
-	function baseimageCreate($p,$imgtype)
-	{
-		switch ($imgtype) {
-			case 1:
-				return ImageCreateFromGif($p);
-			case 2:
-				return ImageCreateFromJpeg($p);
-			case 3:
-				return ImageCreateFromPng($p);
-			default:
-				return;
-		}
-	}
-
 	function doTemplateVar(&$item, $wsize=80, $hsize=80, $point=0, $maxAmount=0)
 	{
 		global $CONF;
@@ -299,79 +335,70 @@ class NP_TrimImage extends NucleusPlugin
 
 	function doAction($type)
 	{
-		global $DIR_MEDIA;
+		$w = intRequestVar('wsize') ? intRequestVar('wsize') : 80;
+		$h = intRequestVar('hsize') ? intRequestVar('hsize') : 80;
+		$pnt = requestVar('pnt');
 		
-		$tsize['w'] = intRequestVar('wsize') ? intRequestVar('wsize') : 80;
-		$tsize['h'] = intRequestVar('hsize') ? intRequestVar('hsize') : 80;
-		$point = requestVar('pnt');
-
-		if (!requestVar('p')) 'No such file';
-		if (requestVar('p') == 'non') {
-			$im = @ImageCreate($tsize['w'], $tsize['h']) or die ("Cannnot Initialize new GD image stream");
-			$bgcolor = ImageColorAllocate($im, 0, 255, 255); //color index:0
-			//					$strcolor = ImageColorAllocate($im,153,153,153); //color index:1
-			imagecolortransparent($im, $bgcolor);
-			//					imageString($im, 1, 4, 0,'No images',$strcolor);
-			header ("Content-type: image/png");
-			ImagePng($im);
-			imagedestroy($im);
-			berak;
-		}
-		
-		$p = $DIR_MEDIA . requestVar('p');	//path
-		$p = realpath($p);
-		if( !$p ) return 'No such file';
-		if( strpos($p, $DIR_MEDIA) !== 0 ) return 'No such file';
-				
 		switch ($type) {
 			case 'draw':
-				list($imgwidth, $imgheight, $imgtype) = GetImageSize($p);
-						
-				if ($imgwidth / $imgheight < $tsize['w'] / $tsize['h']) { // height longer
-					$trimX = 0;
-					$trimW = $imgwidth;
-					$trimH = intval($tsize['h'] / $tsize['w'] * $imgwidth);
-					$trimY = intval(($imgheight - $trimH) / 2);
-				} else { // width longer
-					$trimY = 0;
-					$trimH = $imgheight;
-					$trimW = intval($tsize['w'] / $tsize['h'] * $imgheight);
-					$trimX = intval(($imgwidth - $trimW) / 2);
-				}
-				
-				if ($point == 'lefttop') {
-					$trimX = $trimY = 0;
-				}
-				
-				$im_r = $this->baseimageCreate($p,$imgtype);
-				$im = ImageCreateTrueColor($tsize['w'],$tsize['h']);
-				ImageCopyResampled( $im, $im_r, 0, 0, $trimX, $trimY, $tsize['w'], $tsize['h'], $trimW, $trimH);
-				switch ($imgtype) {
-					case 1:
-					header ("Content-type: image/gif");
-					Imagegif($im);
-					imagedestroy($im);
-					break;
-					case 2:
-					header ("Content-type: image/jpeg");
-					ImageJpeg($im);
-					imagedestroy($im);
-					break;
-					case 3:
-					header ("Content-type: image/png");
-					ImagePng($im);
-					imagedestroy($im);
-					break;
-					default:
-					return;
-				}
-			break;
-
+				$this->createImage(requestVar('p'), $w, $h, $pnt);
+				break;
 			default:
 				return 'No such action';
 				break;
-//_=======
 		}
+	}
+	
+	function createImage($p, $w, $h, $pnt){
+		$phpThumb = new phpThumb();
+		foreach($this->phpThumbParams as $paramKey => $paramValue ){
+			$phpThumb->setParameter($paramKey, $paramValue);
+		}
+		$phpThumb->setParameter('w', $w);
+		$phpThumb->setParameter('h', $h);
+		
+		if ($p == 'non') {
+			$phpThumb->setParameter('new', 'FFFFFF');
+		} else {
+			$phpThumb->setParameter('src', $p);
+			$phpThumb->setParameter('zc', 1);
+			if ($pnt == 'lefttop') {
+				$phpThumb->setParameter('sx', 0);
+				$phpThumb->setParameter('sy', 0);
+			}
+		}
+		
+		// getCache	
+		$phpThumb->SetCacheFilename();
+		if( file_exists($phpThumb->cache_filename) ){
+			$nModified  = filemtime($phpThumb->cache_filename);
+			if( time() - $nModified < NP_TRIMIMAGE_CACHE_MAXAGE ){
+				header('Last-Modified: '.gmdate('D, d M Y H:i:s', $nModified).' GMT');
+				if (@serverVar('HTTP_IF_MODIFIED_SINCE') && ($nModified == strtotime(serverVar('HTTP_IF_MODIFIED_SINCE'))) && @serverVar('SERVER_PROTOCOL')) {
+					header(serverVar('SERVER_PROTOCOL').' 304 Not Modified');
+					return;
+				}
+				if ($getimagesize = @GetImageSize($phpThumb->cache_filename)) {
+					header('Content-Type: '.phpthumb_functions::ImageTypeToMIMEtype($getimagesize[2]));
+				} elseif (eregi('\.ico$', $phpThumb->cache_filename)) {
+					header('Content-Type: image/x-icon');
+				}
+				@readfile($phpThumb->cache_filename);
+				return;
+			}
+		}
+		
+		// generate
+		$phpThumb->GenerateThumbnail();
+
+		// putCache
+		if( !rand(0,20) ) $phpThumb->CleanUpCacheDirectory();
+		$phpThumb->RenderToFile($phpThumb->cache_filename);
+		chmod($phpThumb->cache_filename, 0666);
+		
+		// to browser
+		$phpThumb->OutputThumbnail();
+		unset($phpThumb);
 	}
 
 	function canEdit()
@@ -404,6 +431,5 @@ class NP_TrimImage extends NucleusPlugin
 		}
 		return addLinkParams($link, $extra);
 	}
-
 }
 ?>
