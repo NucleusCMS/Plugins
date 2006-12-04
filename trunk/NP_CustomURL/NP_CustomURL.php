@@ -38,7 +38,7 @@ class NP_CustomURL extends NucleusPlugin
 
 	function getVersion()
 	{
-		return '0.3.2e';
+		return '0.3.4';
 	}
 
 	function getDescription()
@@ -117,6 +117,24 @@ class NP_CustomURL extends NucleusPlugin
 
 	function install()
 	{
+
+// Can't install when faster requier Nucleus Core Version
+		$ver_min = (getNucleusVersion() < $this->getMinNucleusVersion());
+		$pat_min = ((getNucleusVersion() == $this->getMinNucleusVersion()) &&
+				   (getNucleusPatchLevel() < $this->getMinNucleusPatchLevel()));
+		if ($ver_min || $pat_min) {
+			global $DIR_LIBS;
+			// uninstall plugin again...
+			include_once($DIR_LIBS . 'ADMIN.php');
+			$admin = new ADMIN();
+			$admin->deleteOnePlugin($this->getID());
+		
+			// ...and show error
+			$admin->error(_ERROR_NUCLEUSVERSIONREQ .
+			$this->getMinNucleusVersion() . ' patch ' .
+			$this->getMinNucleusPatchLevel());
+		}
+
 		global $manager, $CONF;
 // Keys initialize
 		if (empty($CONF['ArchiveKey'])) {
@@ -234,15 +252,15 @@ class NP_CustomURL extends NucleusPlugin
 					 . 'WHERE        obj_param = "%s"';
 		sql_query(sprintf($createQuery, $tmpTable, _CUSTOMURL_TABLE, $type));
 		$TmpQuery    = 'SELECT    %s, %s '
-					 . 'FROM      %s as ttb'
-					 . 'LEFT JOIN %s as tcu'
+					 . 'FROM      %s as ttb '
+					 . 'LEFT JOIN %s as tcu '
 					 . 'ON        ttb.%s = tcu.obj_id '
 					 . 'WHERE     tcu.obj_id is null';
 		$table       = sql_table($n_table);
 		$TmpQuery    = sprintf($TmpQuery, $id, $bids, $table, $tmpTable, $id);
 		$temp        = sql_query($TmpQuery);
 		if ($temp) {
-			while ($row=mysql_fetch_array($temp)) {
+			while ($row = mysql_fetch_array($temp)) {
 				switch ($type) {
 					case 'blog':
 						//set access by BlogshortName/
@@ -257,13 +275,17 @@ class NP_CustomURL extends NucleusPlugin
 								 . 'WHERE inumber = %d';
 						$tque    = sprintf($tque, $table, intval($row[$id]));
 						$itime   = quickQuery($tque);
-						$y = $m  = $d = $temp = '';
-						sscanf($itime, '%d-%d-%d %s', $y, $m, $d, $temp);
-						$itime   = array(
-										 'year'  => $y,
-										 'month' => $m,
-										 'day'   => $d
-									    );
+//						$y = $m = $d = $trush = '';
+//						sscanf($itime, '%d-%d-%d %s', $y, $m, $d, $trush);
+						list($y, $m, $d, $trush) = sscanf($itime, '%d-%d-%d %s');
+						$param['year']           = sprintf('%04d', $y);
+						$param['month']          = sprintf('%02d', $m);
+						$param['day']            = sprintf('%02d', $d);
+//						$param   = array (
+//										  'year'  => $y,
+//										  'month' => $m,
+//										  'day'   => $d
+//									     );
 						$itplt   = $this->getOption('customurl_dfitem');
 						$ikey    = TEMPLATE::fill($itplt, $itime);
 						$newPath = $ikey . '_' . $row[$id] . '.html';
@@ -867,6 +889,7 @@ class NP_CustomURL extends NucleusPlugin
 							$itemid = intval($item_id);
 							$iLink  = TRUE;
 						}
+//var_dump($linkObj);
 					}
 				break;
 			}
@@ -1824,7 +1847,7 @@ class NP_CustomURL extends NucleusPlugin
 
 	function event_InitSkinParse($data)
 	{
-		global $blogid, $CONF, $manager, $nucleus;
+		global $blogid, $CONF, $manager;
 		$feedurl = array(
 						 'rss1.xml',
 						 'index.rdf',
@@ -2132,13 +2155,17 @@ class NP_CustomURL extends NucleusPlugin
 		$tpath   = requestVar('plug_custom_url_path');
 		$tque    = 'SELECT itime as result FROM %s WHERE inumber = %d';
 		$itime   = quickQuery(sprintf($tque, sql_table('item'), $item_id));
-		$y = $m = $d = $temp = '';
-		sscanf($itime, '%d-%d-%d %s', $y, $m, $d, $temp);
-		$param = array (
-						'year'  => $y,
-						'month' => $m,
-						'day'   => $d
-					   );
+//		$y = $m = $d = $trush = '';
+//		sscanf($itime, '%d-%d-%d %s', $y, $m, $d, $trush);
+		list($y, $m, $d, $trush) = sscanf($itime, '%d-%d-%d %s');
+		$param['year']           = sprintf('%04d', $y);
+		$param['month']          = sprintf('%02d', $m);
+		$param['day']            = sprintf('%02d', $d);
+//		$param   = array (
+//						  'year'  => $y,
+//						  'month' => $m,
+//						  'day'   => $d
+//					     );
 		$ipath   = TEMPLATE::fill($tpath, $param);
 		$query   = 'SELECT ititle as result FROM %s WHERE inumber = %d';
 		$iname   = quickQuery(sprintf($query, sql_table('item'), $item_id));
@@ -2172,13 +2199,17 @@ class NP_CustomURL extends NucleusPlugin
 		$itime   = quickQuery(sprintf($tque ,sql_table('item'), $item_id));
 //		$itimestamp = strtotime($itime);
 //		$tt = explode(',', date('Y,m,d', $itimestamp));
-		$y = $m = $d = $temp = '';
-		sscanf($itime, '%d-%d-%d %s', $y, $m, $d, $temp);
-		$param   = array (
-						  'year'  => $y,
-						  'month' => $m,
-						  'day'   => $d
-					     );
+//		$y = $m = $d = $trush = '';
+//		sscanf($itime, '%d-%d-%d %s', $y, $m, $d, $trush);
+		list($y, $m, $d, $trush) = sscanf($itime, '%d-%d-%d %s');
+		$param['year']           = sprintf('%04d', $y);
+		$param['month']          = sprintf('%02d', $m);
+		$param['day']            = sprintf('%02d', $d);
+//		$param   = array (
+//						  'year'  => $y,
+//						  'month' => $m,
+//						  'day'   => $d
+//					     );
 		$ipath   = TEMPLATE::fill($tpath, $param);
 		$query   = 'SELECT ititle as result FROM %s WHERE inumber = %d';
 		$iname   = quickQuery(sprintf($query, sql_table('item'), $item_id));
@@ -2257,19 +2288,20 @@ OUTPUT;
 
 	function event_PostMoveItem($data)
 	{
-		$query = 'UPDATE %s SET obj_bid = %d'
-			   . ' WHERE obj_param = "%s" AND obj_id = %d';
+//	var_dump($data);
+		$query      = 'UPDATE %s SET obj_bid = %d'
+					. ' WHERE obj_param = "%s" AND obj_id = %d';
 		$destblogid = intval($data['destblogid']);
-		$item_id = intval($data['itemid']);
+		$item_id    = intval($data['itemid']);
 		sql_query(sprintf($query, _CUSTOMURL_TABLE, $destblogid, 'item', $item_id));
 	}
 
 	function event_PostMoveCategory($data)
 	{
-		$query = 'UPDATE %s SET obj_bid = %d'
-			   . ' WHERE obj_param = "%s" AND obj_id = %d';
+		$query      = 'UPDATE %s SET obj_bid = %d'
+					. ' WHERE obj_param = "%s" AND obj_id = %d';
 		$destblogid = intval($data['destblog']->blogid);
-		$cat_id = intval($data['catid']);
+		$cat_id     = intval($data['catid']);
 		sql_query(sprintf($query, _CUSTOMURL_TABLE, $destblogid, 'category', $cat_id));
 	}
 
@@ -2295,18 +2327,21 @@ OUTPUT;
 		$name  = rawurlencode($name);
 
 		if ($new && $oParam == 'item') {
-			$tque = 'SELECT itime as result FROM %s WHERE inumber = %d';
+			$tque  = 'SELECT itime as result FROM %s WHERE inumber = %d';
 			$itime = quickQuery(sprintf($tque ,sql_table('item'), $objID));
 //			$itimestamp = strtotime($itime);
 //			$tt = explode(',', date('Y,m,d', $itimestamp));
-			$y = $m = $d = $temp = '';
-			sscanf($itime, '%d-%d-%d %s', $y, $m, $d, $temp);
-			$template = $this->getOption('customurl_dfitem');
-			$param    = array (
-							   'year' => $y,
-							   'month' => $m,
-							   'day' => $d
-							  );
+//			$y = $m = $d = $trush = '';
+//			sscanf($itime, '%d-%d-%d %s', $y, $m, $d, $trush);
+			list($y, $m, $d, $trush) = sscanf($itime, '%d-%d-%d %s');
+			$param['year']           = sprintf('%04d', $y);
+			$param['month']          = sprintf('%02d', $m);
+			$param['day']            = sprintf('%02d', $d);
+//			$param   = array (
+//							  'year'  => $y,
+//							  'month' => $m,
+//							  'day'   => $d
+//						     );
 			$ikey = TEMPLATE::fill($template, $param); 
 				if ($path == $ikey) {
 					$path = $ikey . '_' . $objID;
@@ -2320,7 +2355,7 @@ OUTPUT;
 		}
 
 		$dotslash = array ('.', '/');
-		$path = str_replace ($dotslash, '_', $path);
+		$path     = str_replace ($dotslash, '_', $path);
 		if (!ereg("^[-_a-zA-Z0-9]+$", $path)) {
 			$msg = array (1, _INVALID_ERROR, $name, _INVALID_MSG);
 			return $msg;
@@ -2336,7 +2371,7 @@ OUTPUT;
 				  . ' AND    obj_id != %d';
 		$res = sql_query(sprintf($conf_que, _CUSTOMURL_TABLE, $tempPath, $bid, $oParam, $objID));
 		if ($res && mysql_num_rows($res)) {
-			$msg = array (0, _CONFLICT_ERROR, $name, _CONFLICT_MSG);
+			$msg   = array (0, _CONFLICT_ERROR, $name, _CONFLICT_MSG);
 			$path .= '_'.$objID;
 		}
 		if ($oParam == 'category' && !$msg) {
@@ -2344,7 +2379,7 @@ OUTPUT;
 					  . ' AND obj_param = "blog"';
 			$res = sql_query(sprintf($conf_cat, _CUSTOMURL_TABLE, $tempPath));
 			if ($res && mysql_num_rows($res)) {
-				$msg = array (0, _CONFLICT_ERROR, $name, _CONFLICT_MSG);
+				$msg   = array (0, _CONFLICT_ERROR, $name, _CONFLICT_MSG);
 				$path .= '_'.$objID;
 			}
 		}
@@ -2353,7 +2388,7 @@ OUTPUT;
 					  . ' AND obj_param = "category"';
 			$res = sql_query(sprintf($conf_blg, _CUSTOMURL_TABLE, $tempPath));
 			if ($res && mysql_num_rows($res)) {
-				$msg = array (0, _CONFLICT_ERROR, $name, _CONFLICT_MSG);
+				$msg   = array (0, _CONFLICT_ERROR, $name, _CONFLICT_MSG);
 				$path .= '_'.$objID;
 			}
 		}
@@ -2411,4 +2446,3 @@ OUTPUT;
 		return $value;
 	}
 }
-?>
