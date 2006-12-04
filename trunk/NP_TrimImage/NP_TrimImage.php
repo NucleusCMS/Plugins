@@ -14,9 +14,14 @@
 //	0.9:	doTemplateVar calls DB data for other PreItem Plugin
 //	0.9:	change '&' to '&amp;'
 //	1.1:	NP_Paint support.
-//			Security Fix.
+//	    	Security Fix.
 //	2.0: 	use phpThumb() (http://phpthumb.sourceforge.net)
+// 	2.1:	update regex
+//	    	add alt/title attribute
+//	    	bug fix
 
+define('NP_TRIMIMAGE_FORCE_PASSTHRU', true); //passthru(standard)
+//define('NP_TRIMIMAGE_FORCE_PASSTHRU', false); //redirect(advanced)
 define('NP_TRIMIMAGE_CACHE_MAXAGE', 86400 * 30); // 30days
 
 require_once(dirname(__FILE__).'/sharedlibs/sharedlibs.php');
@@ -40,7 +45,7 @@ class NP_TrimImage extends NucleusPlugin
 	}
 	
 	function getVersion () {
-		return '2.0';
+		return '2.1';
 	}
 	
 	function supportsFeature($what)
@@ -74,12 +79,12 @@ class NP_TrimImage extends NucleusPlugin
 		$this->_clearCache();
 	}
 	function _clearCache(){
-		$phpThumb = new phpThumb();
-		foreach($this->phpThumbParams as $paramKey => $paramValue ){
-			$phpThumb->setParameter($paramKey, $paramValue);
-		}
-		$phpThumb->setParameter('config_cache_maxage', 1);
-		$phpThumb->CleanUpCacheDirectory();
+		//$phpThumb = new phpThumb();
+		//foreach($this->phpThumbParams as $paramKey => $paramValue ){
+		//	$phpThumb->setParameter($paramKey, $paramValue);
+		//}
+		//$phpThumb->setParameter('config_cache_maxage', 1);
+		//$phpThumb->CleanUpCacheDirectory();
 		//var_dump($phpThumb);
 	}
 
@@ -111,7 +116,6 @@ class NP_TrimImage extends NucleusPlugin
 	{
 		global $DIR_MEDIA;
 		$this->fileex = array('.gif', '.jpg', '.png');
-		$this->random = 1;
 		
 		$this->phpThumbParams = array(
 			'config_document_root' => $DIR_MEDIA,
@@ -121,11 +125,10 @@ class NP_TrimImage extends NucleusPlugin
 			'config_cache_maxage' => NP_TRIMIMAGE_CACHE_MAXAGE,
 			'config_cache_maxsize' => 10 * 1024 * 1024, // 10MB
 			'config_cache_maxfiles' => 1000,
-			'config_cache_source_filemtime_ignore_local' => false,
-			'config_cache_source_filemtime_ignore_remote' => true,
+			'config_cache_source_filemtime_ignore_local' => true,
 			'config_cache_cache_default_only_suffix' => '',
 			'config_cache_prefix' => 'phpThumb_cache',
-			'config_cache_force_passthru' => true,
+			'config_cache_force_passthru' => NP_TRIMIMAGE_FORCE_PASSTHRU,
 			'config_max_source_pixels' => 3871488, //4Mpx
 			'config_output_format' => 'jpg',
 			'config_disable_debug' => true,
@@ -144,13 +147,12 @@ class NP_TrimImage extends NucleusPlugin
 			$b =& $blog :
 			$b =& $manager->getBlog($CONF['DefaultBlog']);*/
 		
-		if ($amount=='') $amount = 10;
-		if ($hsize=='') $hsize = 80;
-		if ($wsize=='') $wsize = 80;
-		if ($point != 'lefttop') $point = 0;
+		if ( !is_numeric($amount) ) $amount = 10;
+		if ( !is_numeric($hsize) ) $hsize = 80;
+		if ( !is_numeric($wsize) ) $wsize = 80;
+		$point = ($point == 'lefttop' ) ? true : false;
 		$this->exquery = '';
 		
-
 		switch($skinType){
 			case 'archive':
 				global $archive;
@@ -197,16 +199,12 @@ class NP_TrimImage extends NucleusPlugin
 		$filelist = array();
 		$this->imglists = array();
 		$this->imgfilename = array();
-		if (!($filelist = $this->listup())) {
+		$random =  $random ? true : false;
+		if (!($filelist = $this->listup($amount,$random))) {
 			echo 'No images here.';
 			return;
 		}
 //		print_r($filelist);
-		$amount = min($amount,count($filelist));
-		if ($random) {
-			srand((float)microtime()*1000000);
-			shuffle($filelist);
-		}
 
 		echo '<div>';
 		for ($i=0;$i<$amount;$i++) {
@@ -214,16 +212,22 @@ class NP_TrimImage extends NucleusPlugin
 //			$itemlink = $this->createItemLink($filelist[$i][1]);
 			echo '<a href="' . $itemlink . '">';
 			
-			$exq = '';
-			if ($point) $exq = '&amp;pnt=lefttop';
-				
-			echo '<img src="' . $CONF['ActionURL'] . '?action=plugin&amp;name=TrimImage&amp;type=draw&amp;p=' . htmlspecialchars($filelist[$i][0][0], ENT_QUOTES) . '&amp;wsize=' . $wsize . '&amp;hsize=' . $hsize . $exq . '" />';
+			$src = '';
+			if( ! $this->phpThumbParams['config_cache_force_passthru'] ){
+				$src = $this->createImage($filelist[$i][0], $wsize, $hsize, $point, true);
+			}
+			if(!$src) {
+				$src = htmlspecialchars($CONF['ActionURL'],ENT_QUOTES)
+				. '?action=plugin&amp;name=TrimImage&amp;type=draw'
+				. '&amp;p=' . $filelist[$i][0] . '&amp;wsize=' . $wsize . '&amp;hsize=' . $hsize . ( $point ? '&amp;pnt=lefttop' : '');
+			}
+			echo '<img src="'.$src.'" width="'.$wsize.'" height="'.$hsize.'" alt="'.htmlspecialchars($filelist[$i][2]).'" title="'.htmlspecialchars($filelist[$i][2]).'"/>';
 			echo "</a>\n";
 		}
 		echo "</div>\n";
 	}
 
-	function listup()
+	function listup($amount = 10, $random = false)
 	{
 		global $CONF, $manager, $blog;
 		if ($blog) {
@@ -241,42 +245,43 @@ class NP_TrimImage extends NucleusPlugin
 		$query .= ' WHERE idraft = 0';
 		$query .= ' and itime <= ' . mysqldate($b->getCorrectTime());	// don't show future items!
 		$query .= $this->exquery;
-		$query .= ' ORDER BY itime DESC'; 
-	
+		$query .= ' ORDER BY itime DESC LIMIT ' . intval($amount * 10);
+				
 		$res = sql_query($query);
 		
 		if (!mysql_num_rows($res)) return FALSE;
 		
 		while ($it = mysql_fetch_object($res)) {
 			$txt = $it->body . $it->more;
-			preg_match_all("/\<\%image\((.*)\)\%\>/Us", $txt, $imgpnt, PREG_PATTERN_ORDER);
-			@array_walk($imgpnt[1], array(&$this, "exarray"), array($it->itemid, $it->iauthor));
-			preg_match_all("/\<\%popup\((.*)\)\%\>/Us", $txt, $imgpntp, PREG_PATTERN_ORDER);
-			@array_walk($imgpntp[1], array(&$this, "exarray"), array($it->itemid, $it->iauthor));
-			preg_match_all("/\<\%paint\((.*)\)\%\>/Us", $txt, $imgpnta, PREG_PATTERN_ORDER);
-			@array_walk($imgpnta[1], array(&$this, "exarray"), array($it->itemid, $it->iauthor));
+			if( preg_match_all("/<%(image|popup|paint)\((.*?)\)%>/s", $txt, $imgpnt) )
+				@array_walk($imgpnt[2], array(&$this, "exarray"), array($it->itemid, $it->iauthor));
+			if( count($this->imglists) >= $amount ) break;
 		}
+		mysql_free_result($res);
+	
+		if($random) shuffle($this->imglists);
+		$this->imglists = array_slice($this->imglists, 0, $amount);
 		return $this->imglists;
 	}
 
 	function exarray($imginfo,$key,$iaid)
 	{
-		$imginfo = explode("|", $imginfo);
-		if (!in_array(strtolower(strrchr($imginfo[0], "." )), $this->fileex)) return;
-		if (in_array($imginfo[0], $this->imgfilename)) return;
-		$this->imgfilename[] = $imginfo[0];
-		if (!strstr($imginfo[0], '/')) {
-			$imginfo[0] = $iaid[1] . '/' . $imginfo[0];
+		list($url, $w, $h, $alt, $ext)  = explode("|", $imginfo, 5);
+		if (!in_array(strtolower(strrchr($url, "." )), $this->fileex)) return;
+		if (in_array($url, $this->imgfilename)) return;
+		$this->imgfilename[] = $url;
+		if (!strstr($url, '/')) {
+			$url = $iaid[1] . '/' . $url;
 		}
-		$this->imglists[] = array($imginfo, $iaid[0]);
+		$this->imglists[] = array($url,$iaid[0],$alt,$ext);
 	}
 
 	function doTemplateVar(&$item, $wsize=80, $hsize=80, $point=0, $maxAmount=0)
 	{
 		global $CONF;
-		if ($hsize=='') $hsize = 80;
-		if ($wsize=='') $wsize = 80;
-		if ($point != 'lefttop') $point = 0;
+		if ( !is_numeric($hsize) ) $hsize = 80;
+		if ( !is_numeric($wsize) ) $wsize = 80;
+		$point = ($point == 'lefttop' ) ? true : false;
 		
 		$filelist = array();
 		$this->imglists = array();
@@ -289,25 +294,17 @@ class NP_TrimImage extends NucleusPlugin
 				$txt .= $d->body.$d->more;
 			}
 
-			preg_match_all("/\<\%image\((.*)\)\%\>/Us", $txt, $imgipnt, PREG_PATTERN_ORDER);
-			@array_walk($imgipnt[1], array(&$this, "exarray"), array($item->itemid, $item->authorid));
-			preg_match_all("/\<\%popup\((.*)\)\%\>/Us",$txt,$imgipntp, PREG_PATTERN_ORDER);
-			@array_walk($imgipntp[1], array(&$this, "exarray"), array($item->itemid, $item->authorid));
-			preg_match_all("/\<\%paint\((.*)\)\%\>/Us",$txt,$imgipnta, PREG_PATTERN_ORDER);
-			@array_walk($imgipnta[1], array(&$this, "exarray"), array($item->itemid, $item->authorid));
+			if( preg_match_all("/<%(image|popup|paint)\((.*?)\)%>/s", $txt, $imgpnt) )
+				@array_walk($imgpnt[2], array(&$this, "exarray"), array($item->itemid, $item->authorid));
 
 			$filelist = $this->imglists;
-//			print_r($filelist);
 			if(!$maxAmount)
 				$amount = count($filelist);
 			else
 				$amount = min($maxAmount, count($filelist));
 
-//		echo '<div style="text-align:center;padding:3px;">';
-
 		if (!$amount) {
-//			echo '<img src="" width="'.$wsize.'" height="'.$hsize.'" />';
-			$img_tag = '<img src="' . $CONF['ActionURL'] . '?action=plugin&amp;name=TrimImage';
+			$img_tag = '<img src="' . htmlspecialchars($CONF['ActionURL'],ENT_QUOTES) . '?action=plugin&amp;name=TrimImage';
 			$img_tag .= '&amp;type=draw&amp;p=non&amp;wsize=' . $wsize . '&amp;hsize=' . $hsize . $exq;
 			$img_tag .= '" width="' . $wsize . '" height="' . $hsize . '" />';
 			echo $img_tag;
@@ -315,21 +312,17 @@ class NP_TrimImage extends NucleusPlugin
 
 
 		for ($i=0;$i<$amount;$i++) {
-//			$itemlink = $this->createGlobalItemLink($filelist[$i][1], '');
-//			echo '<a href="'.$itemlink.'">';
-			
-			$exq = '';
-			if ($point) $exq = '&amp;pnt=lefttop';
-				
-			$img_tag = '<img src="' . $CONF['ActionURL'] . '?action=plugin&amp;name=TrimImage&amp;type=draw';
-			$img_tag .= '&amp;p=' . $filelist[$i][0][0] . '&amp;wsize=' . $wsize . '&amp;hsize=' . $hsize . $exq;
-			$img_tag .= '" width="' . $wsize . '" height="' . $hsize . '" />';
-			echo $img_tag;
-//			echo '<img src="'.$CONF['ActionURL'].'?action=plugin&name=TrimImage&type=draw&p='.$filelist[$i][0][0].'&wsize='.$wsize.'&hsize='.$hsize.$exq.'" width="'.$wsize.'" height="'.$hsize.'" />';
-//			echo '<br />'.shorten(strip_tags($item->title),16,'...');
-//			echo "</a>\n";
+			$src = '';
+			if( ! $this->phpThumbParams['config_cache_force_passthru'] ){
+				$src = $this->createImage($filelist[$i][0], $wsize, $hsize, $point, true);
+			}
+			if(!$src) {
+				$src = htmlspecialchars($CONF['ActionURL'],ENT_QUOTES)
+					. '?action=plugin&amp;name=TrimImage&amp;type=draw'
+					. '&amp;p=' . $filelist[$i][0] . '&amp;wsize=' . $wsize . '&amp;hsize=' . $hsize . ( $point ? '&amp;pnt=lefttop' : '');
+			}
+			echo '<img src="'.$src.'" width="'.$wsize.'" height="'.$hsize.'" alt="'.htmlspecialchars($filelist[$i][2]).'" title="'.htmlspecialchars($filelist[$i][2]).'"/>';
 		}
-//		echo "</div>\n";
 	}
 
 
@@ -337,11 +330,11 @@ class NP_TrimImage extends NucleusPlugin
 	{
 		$w = intRequestVar('wsize') ? intRequestVar('wsize') : 80;
 		$h = intRequestVar('hsize') ? intRequestVar('hsize') : 80;
-		$pnt = requestVar('pnt');
+		$isLefttop = (requestVar('pnt') == 'lefttop') ? true : false;
 		
 		switch ($type) {
 			case 'draw':
-				$this->createImage(requestVar('p'), $w, $h, $pnt);
+				$this->createImage(requestVar('p'), $w, $h, $isLefttop);
 				break;
 			default:
 				return 'No such action';
@@ -349,43 +342,56 @@ class NP_TrimImage extends NucleusPlugin
 		}
 	}
 	
-	function createImage($p, $w, $h, $pnt){
+	function createImage($p, $w, $h, $isLefttop, $cacheCheckOnly = false){
 		$phpThumb = new phpThumb();
 		foreach($this->phpThumbParams as $paramKey => $paramValue ){
 			$phpThumb->setParameter($paramKey, $paramValue);
 		}
-		$phpThumb->setParameter('w', $w);
-		$phpThumb->setParameter('h', $h);
 		
 		if ($p == 'non') {
+			$phpThumb->setParameter('w', intval($w) );
+			$phpThumb->setParameter('h', intval($h) );
 			$phpThumb->setParameter('new', 'FFFFFF');
 		} else {
-			$phpThumb->setParameter('src', $p);
-			$phpThumb->setParameter('zc', 1);
-			if ($pnt == 'lefttop') {
-				$phpThumb->setParameter('sx', 0);
-				$phpThumb->setParameter('sy', 0);
-			}
+			$phpThumb->setParameter('src', '/' . $p);
+			$phpThumb->setParameter('w', intval($w) );
+			$phpThumb->setParameter('h', intval($h) );
+			$phpThumb->setParameter('zc', $isLefttop ? 2 : 1 );
 		}
 		
 		// getCache	
+		$phpThumb->cache_filename = null;
+		$phpThumb->CalculateThumbnailDimensions();
 		$phpThumb->SetCacheFilename();
 		if( file_exists($phpThumb->cache_filename) ){
 			$nModified  = filemtime($phpThumb->cache_filename);
 			if( time() - $nModified < NP_TRIMIMAGE_CACHE_MAXAGE ){
+				global $CONF;
+				preg_match('/^'.preg_quote($this->phpThumbParams['config_document_root'], '/').'(.*)$/', $phpThumb->cache_filename, $matches);
+				$fileUrl = $CONF['MediaURL'].$matches[1];
+				if( $cacheCheckOnly ) return $fileUrl;
+
 				header('Last-Modified: '.gmdate('D, d M Y H:i:s', $nModified).' GMT');
 				if (@serverVar('HTTP_IF_MODIFIED_SINCE') && ($nModified == strtotime(serverVar('HTTP_IF_MODIFIED_SINCE'))) && @serverVar('SERVER_PROTOCOL')) {
 					header(serverVar('SERVER_PROTOCOL').' 304 Not Modified');
-					return;
+					return true;
 				}
 				if ($getimagesize = @GetImageSize($phpThumb->cache_filename)) {
 					header('Content-Type: '.phpthumb_functions::ImageTypeToMIMEtype($getimagesize[2]));
 				} elseif (eregi('\.ico$', $phpThumb->cache_filename)) {
 					header('Content-Type: image/x-icon');
 				}
-				@readfile($phpThumb->cache_filename);
-				return;
+				if( $this->phpThumbParams['config_cache_force_passthru'] ){
+					@readfile($phpThumb->cache_filename);
+				} else {
+					header('Location: '.$fileUrl);
+				}
+				return true;
 			}
+		}
+		if( $cacheCheckOnly ){
+			unset($phpThumb);
+			return false;
 		}
 		
 		// generate
@@ -399,6 +405,7 @@ class NP_TrimImage extends NucleusPlugin
 		// to browser
 		$phpThumb->OutputThumbnail();
 		unset($phpThumb);
+		return true;
 	}
 
 	function canEdit()

@@ -38,7 +38,7 @@ Zoom-Cropの際に、sx,syを評価するようにするパッチ
  				$this->thumbnailCropX = round(($this->source_width - $allowable_width) / 2);
  
 +				// added by cles
-+				if( $this->sx !== null ) $this->thumbnailCropX = $this->sx;
++				if( $this->zc == 2 ) $this->thumbnailCropX = 0;
  			} elseif ($scaling_Y > $scaling_X) {
  				// some of the height will need to be cropped
  				$allowable_height = $this->source_height / $scaling_Y * $scaling_X;
@@ -46,7 +46,7 @@ Zoom-Cropの際に、sx,syを評価するようにするパッチ
  				$this->thumbnailCropY = round(($this->source_height - $allowable_height) / 2);
  
 +				// added by cles
-+				if( $this->sy !== null ) $this->thumbnailCropY = $this->sy;
++				if( $this->zc == 2 ) $this->thumbnailCropY = 0;
  			} else {
  				// image fits perfectly, no cropping needed
  			}
