@@ -86,13 +86,22 @@ global $CONF, $manager;
 		return;
 	}
 
-	if ($catFilter[1]) {
+/*	if ($catFilter[1]) {
 		$catFilter = implode(', ', $catFilter);
 		$catFilter = ' IN (' . $catFilter . ')';
 	} else {
 		$catFilter = ' = ' . $catFilter;
-	}
-	
+	}	//original*/
+
+	if (count($catFilter) == 1) {
+		$catFilter = ' = ' . $catFilter[0];
+	} elseif (count($catFilter) > 1) {
+		$catFilter = implode(', ', $catFilter);
+		$catFilter = ' IN (' . $catFilter . ')';
+	} else {
+		$catFilter = '';
+	}	// test
+
 	$scatTable   =  sql_table('plug_multiple_categories_sub');
 	$mcategories =& $manager->getPlugin('NP_MultipleCategories');
 	if (method_exists($mcategories, 'getRequestName')) {
@@ -131,12 +140,12 @@ global $CONF, $manager;
 		}
 		$printData =  $objectId
 				   . ".add"
-						. "(" . $nodeArray['subcat'][$scatid] . ","
-						. $pnode . ","
-						. "'" . htmlspecialchars($o->sname, ENT_QUOTES, _CHARSET) . "',"
-						. "'" . htmlspecialchars($url, ENT_QUOTES, _CHARSET) . "',"
-						. "'" . htmlspecialchars($o->sdesc, ENT_QUOTES, _CHARSET) . "'"
-						. ");\n";
+				   . "(" . $nodeArray['subcat'][$scatid] . ","
+				   . $pnode . ","
+				   . "'" . htmlspecialchars($o->sname, ENT_QUOTES, _CHARSET) . "',"
+				   . "'" . htmlspecialchars($url, ENT_QUOTES, _CHARSET) . "',"
+				   . "'" . htmlspecialchars($o->sdesc, ENT_QUOTES, _CHARSET) . "'"
+				   . ");\n";
 		echo $printData;
 	}
 //	ksort($printData);
