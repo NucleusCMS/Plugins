@@ -651,10 +651,7 @@
 		  */
 		function getTrackBackUrl($itemid) {
 			global $CONF, $manager;
-//			return $CONF['ActionURL'] . '?action=plugin&amp;name=TrackBack&amp;tb_id='.$itemid;
-//	cles::blog
-			return createItemLink(intval($itemid),'') . '.trackback';
-//	cles::blog
+			return $CONF['ActionURL'] . '?action=plugin&amp;name=TrackBack&amp;tb_id='.$itemid;
 		}		
 
 		/*
@@ -678,8 +675,10 @@
 			$desc   = $this->_cut_string($desc, 200);
 			$desc   = htmlspecialchars($desc, ENT_QUOTES);
 			
-// cles::blog
-			/*
+			$timestamp = time();
+			$sourceaddr = ip2long(serverVar('REMOTE_ADDR'));
+			$key = md5( sprintf("%u %u %u %s", $timestamp, $sourceaddr, $itemid, __FILE__));
+			?>
 			<!--
 			<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 					 xmlns:dc="http://purl.org/dc/elements/1.1/"
@@ -693,37 +692,7 @@
 					 dc:date="<?php echo strftime('%Y-%m-%dT%H:%M:%S')?>" />
 			</rdf:RDF>
 			-->
-			*/
-// cles blog start
-			
-			$timestamp = time();
-			$sourceaddr = ip2long(serverVar('REMOTE_ADDR'));
-			$key = md5( sprintf("%u %u %u %s", $timestamp, $sourceaddr, $itemid, __FILE__));
-			?>
-<!--
-<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-		 xmlns:dc="http://purl.org/dc/elements/1.1/"
-		 xmlns:trackback="http://madskills.com/public/xml/rss/module/trackback/"
-		 xmlns:foaf="http://xmlns.com/foaf/0.1/" >
-<rdf:Description
-		 rdf:about="<?php echo $uri; ?>"
-		 dc:identifier="<?php echo $uri; ?>"
-		 dc:title="<?php echo $title; ?>"
-		 dc:description="<?php echo $desc; ?>"
-		 trackback:ping="<?php echo $this->getTrackBackUrl($itemid) . sprintf("/%u/%u/%s", $timestamp, $sourceaddr, $key); ?>"
-		 dc:date="<?php echo strftime('%Y-%m-%dT%H:%M:%S'); ?>">
-	<foaf:maker rdf:parseType="Resource">
- 		<foaf:holdsAccount>
-   			<foaf:OnlineAccount foaf:accountName="hsur">
-   				<foaf:accountServiceHomepage rdf:resource="http://www.hatena.ne.jp/" />
-			</foaf:OnlineAccount>
-		</foaf:holdsAccount>
-	</foaf:maker>
-</rdf:Description>
-</rdf:RDF>
-		-->
 			<?php
-// cles::blog
 		}
 
 		/**
