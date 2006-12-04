@@ -13,16 +13,15 @@
 
 	// create the admin area page
 	$oPluginAdmin = new PluginAdmin('CustomURL');
-
-	$language = ereg_replace( '[\\|/]', '', getLanguageName());
-	if (file_exists($oPluginAdmin->plugin->getDirectory().'language/'.$language.'.php')) {
-		include_once($oPluginAdmin->plugin->getDirectory().'language/'.$language.'.php');
-	}else {
-		include_once($oPluginAdmin->plugin->getDirectory().'language/english.php');
+	$language     = ereg_replace( '[\\|/]', '', getLanguageName());
+	if (file_exists($oPluginAdmin->plugin->getDirectory() . 'language/' . $language . '.php')) {
+		include_once($oPluginAdmin->plugin->getDirectory() . 'language/' . $language . '.php');
+	} else {
+		include_once($oPluginAdmin->plugin->getDirectory() . 'language/english.php');
 	}
 
 	if (!($member->isLoggedIn() && $member->isAdmin())) {
-		ACTIONLOG::add(WARNING, _ACTIONLOG_DISALLOWED . $HTTP_SERVER_VARS['REQUEST_URI']);
+		ACTIONLOG::add(WARNING, _ACTIONLOG_DISALLOWED . serverVar('REQUEST_URI'));
 		$myAdmin->error(_ERROR_DISALLOWED);
 	}
 
@@ -32,16 +31,19 @@ class CustomURL_ADMIN
 	function CustomURL_ADMIN()
 	{
 		global $manager, $CONF, $oPluginAdmin;
-
-		$this->plugin =& $oPluginAdmin->plugin;
-		$this->name = $this->plugin->getName();
-		$this->adminurl = $this->plugin->getAdminURL();
-		$this->editurl = $CONF['adminURL'];
-		$this->table = sql_table('plug_customurl');
-		$this->uScat = ($manager->pluginInstalled('NP_MultipleCategories') == TRUE);
+		$this->plugin   =& $oPluginAdmin->plugin;
+		$this->name     =  $this->plugin->getName();
+		$this->pluginid =  $this->plugin->getID();
+		$this->adminurl =  $this->plugin->getAdminURL();
+		$this->editurl  =  $CONF['adminURL'];
+		$this->pediturl =  $CONF['adminURL']
+						. 'index.php?action=pluginoptions&amp;plugid='
+						. $this->pluginid;
+		$this->table    =  sql_table('plug_customurl');
+		$this->uScat    =  ($manager->pluginInstalled('NP_MultipleCategories') == TRUE);
 		if ($manager->pluginInstalled('NP_MultipleCategories')) {
 			$mplugin =& $manager->getPlugin('NP_MultipleCategories');
-			if (method_exists($mplugin,"getRequestName")) {
+			if (method_exists($mplugin, 'getRequestName')) {
 				$this->mcadmin = $mplugin->getAdminURL();
 				global $subcatid;
 			}
@@ -51,7 +53,22 @@ class CustomURL_ADMIN
 
 	function action($action)
 	{
-		$methodName = 'action_'.$action;
+		global $manager;
+		$methodName         = 'action_' . $action;
+		$this->action       = strtolower($action);
+		$aActionsNotToCheck = array(
+									'blogview',
+									'categoryview',
+									'memberview',
+									'itemview',
+									'pathupdate',
+								   );
+		if (!in_array($this->action, $aActionsNotToCheck)) {
+			if (!$manager->checkTicket()) {
+				$this->error(_ERROR_BADTICKET);
+			}
+		}
+
 		if (method_exists($this, $methodName)) {
 			call_user_func(array(&$this, $methodName));
 		} else {
@@ -61,9 +78,8 @@ class CustomURL_ADMIN
 
 	function disallow()
 	{
-		global $HTTP_SERVER_VARS;
 
-		ACTIONLOG::add(WARNING, _ACTIONLOG_DISALLOWED . $HTTP_SERVER_VARS['REQUEST_URI']);
+		ACTIONLOG::add(WARNING, _ACTIONLOG_DISALLOWED . serverVar('REQUEST_URI'));
 		$msg = array (0, _ERROR_DISALLOWED, '***', _DISALLOWED_MSG);
 		$this->error($msg);
 	}
@@ -73,10 +89,13 @@ class CustomURL_ADMIN
 		global $oPluginAdmin;
 
 		$oPluginAdmin->start();
-		echo $msg[1].'name : '.$msg[2].'<br />';
-		echo $msg[3].'<br />';
-		echo '<a href="'.$this->adminurl.'index.php" onclick="history.back()">'._BACK.'</a>';
+		$printData = $msg[1] . 'name : ' . $msg[2] . '<br />'
+				   . $msg[3] . '<br />'
+				   . '<a href="' . $this->adminurl . 'index.php" onclick="history.back()">'
+				   . _BACK . '</a>';
+		echo $printData;
 		$oPluginAdmin->end();
+		unset($printData);
 		exit;
 	}
 
@@ -85,31 +104,52 @@ class CustomURL_ADMIN
 		global $CONF, $oPluginAdmin;
 
 		$oPluginAdmin->start();
-		echo '<h2><a id="pagetop">'._ADMIN_AREA_TITLE.'</a></h2>';
-		echo '<ul style="list-style:none;"><li><a href="'.$this->editurl.'index.php?action=pluginoptions&amp;plugid='.$this->plugin->getID().'">'._OPTION_SETTING.'</a></li>';
-		echo '<li><a href="'.$this->adminurl.'index.php?action=memberview">'._FOR_MEMBER_SETTING.'</a></li></ul>';
-		echo '<p>'.$msg;
+		$printData = '<h2><a id="pagetop">'._ADMIN_AREA_TITLE.'</a></h2>'
+				   . '<ul style="list-style:none;">'
+				   . '  <li>'
+				   . '    <a href="' . $this->pediturl . '">'
+				   . _OPTION_SETTING
+				   . '    </a>'
+				   . '  </li>'
+				   . '  <li>'
+				   . '    <a href="' . $this->adminurl . 'index.php?action=memberview">'
+				   . _FOR_MEMBER_SETTING
+				   . '    </a>'
+				   . '  </li>'
+				   . '</ul>'
+				   . '<p>' . $msg;
+		echo $printData;
+		unset($printData);
 		$this->print_tablehead(_BLOG_LIST_TITLE, _LISTS_ACTIONS);
-		$res = sql_query(sprintf('SELECT %s,%s,%s FROM %s', bname, bnumber, bshortname, sql_table('blog')));
+		$query = 'SELECT %s,%s,%s FROM %s';
+		$query = sprintf($query, bname, bnumber, bshortname, sql_table('blog'));
+		$res   = sql_query($query);
 		while ($b = mysql_fetch_object($res)) {
-		$forCatURI = $this->adminurl.'index.php?action=goCategory&amp;blogid='.$b->bnumber;
-		$forItemURI = $this->adminurl.'index.php?action=goItem&amp;blogid='.$b->bnumber;
+		$forCatURI  = $this->adminurl . 'index.php?action=goCategory&amp;blogid=' . $b->bnumber;
+		$forItemURI = $this->adminurl . 'index.php?action=goItem&amp;blogid=' . $b->bnumber;
 		$data = array (
-				'oid'			=>	$b->bnumber,
-				'obd'			=>	0,
-				'opr'			=>	'blog',
-				'name'			=>	$b->bname,
-				'ret'			=>	'blogview',
-				'ed_URL'		=>	$this->edhiturl.'index.php?action=blogsettings&blogid='.$b->bnumber,
-				'desc'			=>	'[<a href="'.$forItemURI.'" style="font-size:x-small;">'._FOR_ITEMS_SETTING.'</a>]&nbsp;
-				[<a href="'.$forCatURI.'" style="font-size:x-small;">'._FOR_CATEGORY_SETTING.'</a>]',
-				'path'			=>	$this->plugin->getBlogOption($b->bnumber, 'customurl_bname'),
-				'setting_text'	=>	_BLOG_SETTING
-				);
+                       'oid'          => $b->bnumber,
+                       'obd'          => 0,
+                       'opr'          => 'blog',
+                       'name'         => $b->bname,
+                       'ret'          => 'blogview',
+                       'ed_URL'       => $this->edhiturl . 'index.php?action=blogsettings'
+                       				  .  '&amp;blogid=' . $b->bnumber,
+                       'desc'         => '[<a href="' . $forItemURI . '" style="font-size:x-small;">'
+                                      .  _FOR_ITEMS_SETTING
+                                      .  '</a>]'
+                                      .  '&nbsp;'
+                                      .  '[<a href="' . $forCatURI . '" style="font-size:x-small;">'
+                                      .  _FOR_CATEGORY_SETTING
+                                      .  '</a>]',
+                       'path'         => $this->plugin->getBlogOption($b->bnumber, 'customurl_bname'),
+                       'setting_text' => _BLOG_SETTING
+					  );
 		$this->print_tablerow($data);
 		}
 			echo '</tbody></table>';
 		echo '</p>';
+		unset($query);
 		$oPluginAdmin->end();
 	}
 
@@ -119,49 +159,86 @@ class CustomURL_ADMIN
 		$bname = getBlognameFromID($bid);
 
 		$oPluginAdmin->start();
-		echo '<h2><a id="pagetop">'._ADMIN_AREA_TITLE.'</a></h2>';
-		echo '<ul style="list-style:none;"><li><a href="'.$this->editurl.'index.php?action=pluginoptions&amp;plugid='.$this->plugin->getID().'">'._OPTION_SETTING.'</a></li>';
-		echo '<li><a href="'.$this->adminurl.'index.php?action=blogview">'._FOR_BLOG_SETTING.'</a></li>';
-		echo '<li><a href="'.$this->adminurl.'index.php?action=goItem&amp;blogid='.$bid.'">'._FOR_ITEMS_SETTING.'</a></li>';
-		echo '<li><a href="'.$this->adminurl.'index.php?action=memberview">'._FOR_MEMBER_SETTING.'</a></li></ul>';
-		echo '<p>'.$msg;
-			echo '<h3 style="padding-left: 0px">'.$bname.'</h3>';
-			$this->print_tablehead(_LISTS_CAT_NAME, _LISTS_DESC);
-			$cnm = sql_query(sprintf('SELECT catid, cname, cdesc FROM %s WHERE cblog = %d', sql_table('category'), $bid));
-			while ($c = mysql_fetch_object($cnm)) {
-				$data = array (
-						'oid'		=>	$c->catid,
-						'obd'		=>	$bid,
-						'opr'		=>	'category',
-						'name'		=>	$c->cname,
-						'ret'		=>	'catoverview',
-						'ed_URL'	=>	$this->edhiturl.'index.php?action=categoryedit&blogid='.$bid.'&catid='.$c->catid,
-						'desc'		=>	$c->cdesc,
-						'path'		=>	$this->plugin->getCategoryOption($c->catid, 'customurl_cname')
-						);
-				$this->print_tablerow($data);
-				if ($this->uScat) {
-					$scnm = sql_query(sprintf('SELECT scatid, sname, sdesc FROM %s WHERE catid = %d', sql_table('plug_multiple_categories_sub'), $c->catid));
-					while ($sc = mysql_fetch_object($scnm)) {
-						$scpt = sql_query(sprintf('SELECT obj_name FROM %s WHERE obj_param = "subcategory" AND obj_bid = %d AND obj_id = %d', $this->table, $c->catid, $sc->scatid));
-						$scp = mysql_fetch_object($scpt);
-						$data = array (
-								'oid'		=>	$sc->scatid,
-								'obd'		=>	$c->catid,
-								'opr'		=>	'subcategory',
-								'name'		=>	'&raquo;'.$sc->sname,
-								'ret'		=>	'catoverview',
-								'ed_URL'	=>	$this->mcadmin.'index.php?action=scatedit&catid='.$c->catid.'&scatid='.$sc->scatid,
-								'desc'		=>	$sc->sdesc,
-								'path'		=>	$scp->obj_name
-								);
-						$this->print_tablerow($data);
-					}
+		$printData = '<h2><a id="pagetop">'._ADMIN_AREA_TITLE.'</a></h2>'
+				   . '<ul style="list-style:none;">'
+				   . '  <li>'
+				   . '    <a href="' . $this->pediturl . '">'
+				   . _OPTION_SETTING
+				   . '    </a>'
+				   . '  </li>'
+				   . '  <li>'
+				   . '    <a href="' . $this->adminurl . 'index.php?action=blogview">'
+				   . _FOR_BLOG_SETTING
+				   . '    </a>'
+				   . '  </li>'
+				   . '  <li>'
+				   . '    <a href="' . $this->adminurl . 'index.php?action=goItem&amp;blogid=' . $bid . '">'
+				   ._FOR_ITEMS_SETTING
+				   . '    </a>'
+				   . '  </li>'
+				   . '  <li>'
+				   . '    <a href="' . $this->adminurl . 'index.php?action=memberview">'
+				   . _FOR_MEMBER_SETTING
+				   . '    </a>'
+				   . '  </li>'
+				   . '</ul>'
+				   . '<p>' . $msg
+				   . '<h3 style="padding-left: 0px">' . $bname . '</h3>';
+		echo $printData;
+		unset($printData);
+		$this->print_tablehead(_LISTS_CAT_NAME, _LISTS_DESC);
+		$query = 'SELECT catid, cname, cdesc FROM %s WHERE cblog = %d';
+		$query = sprintf($query, sql_table('category'), $bid);
+		$cnm   = sql_query($query);
+		while ($c = mysql_fetch_object($cnm)) {
+			$data = array (
+					'oid'    => $c->catid,
+					'obd'    => $bid,
+					'opr'    => 'category',
+					'name'   => $c->cname,
+					'ret'    => 'catoverview',
+					'ed_URL' => $this->edhiturl
+							 .  'index.php?action=categoryedit'
+							 .  '&amp;blogid=' . $bid
+							 .  '&amp;catid=' . $c->catid,
+					'desc'   => $c->cdesc,
+					'path'   => $this->plugin->getCategoryOption($c->catid, 'customurl_cname')
+					);
+			$this->print_tablerow($data);
+			if ($this->uScat) {
+				$query = 'SELECT scatid, sname, sdesc FROM %s WHERE catid = %d';
+				$query = sprintf($query, sql_table('plug_multiple_categories_sub'), $c->catid);
+				$scnm  = sql_query($query);
+				while ($sc = mysql_fetch_object($scnm)) {
+					$query = 'SELECT obj_name '
+						   . 'FROM %s '
+						   . 'WHERE obj_param = "subcategory" '
+						   . 'AND   obj_bid = %d '
+						   . 'AND   obj_id = %d';
+					$query = sprintf($query, $this->table, $c->catid, $sc->scatid);
+					$scpt  = sql_query($query);
+					$scp   = mysql_fetch_object($scpt);
+					$data  = array (
+							'oid'    => $sc->scatid,
+							'obd'    => $c->catid,
+							'opr'    => 'subcategory',
+							'name'   => '&raquo;'.$sc->sname,
+							'ret'    => 'catoverview',
+							'ed_URL' => $this->mcadmin
+									 .  'index.php?action=scatedit'
+									 .  '&amp;catid=' . $c->catid
+									 .  '&amp;scatid=' . $sc->scatid,
+							'desc'   => $sc->sdesc,
+							'path'   => $scp->obj_name
+							);
+					$this->print_tablerow($data);
 				}
 			}
-			echo '</tbody></table>';
-			echo '<a href="'.$this->adminurl.'index.php" onclick="history.back()">'._BACK.'</a>';
+		}
+		echo '</tbody></table>';
+		echo '<a href="'.$this->adminurl.'index.php" onclick="history.back()">'._BACK.'</a>';
 		echo '</p>';
+		unset($query);
 		$oPluginAdmin->end();
 	}
 
@@ -170,59 +247,101 @@ class CustomURL_ADMIN
 		global $CONF, $oPluginAdmin;
 
 		$oPluginAdmin->start();
-		echo '<h2>'._ADMIN_AREA_TITLE.'</h2>';
-		echo '<ul style="list-style:none;"><li><a href="'.$this->editurl.'index.php?action=pluginoptions&amp;plugid='.$this->plugin->getID().'">'._OPTION_SETTING.'</a></li>';
-		echo '<li><a href="'.$this->adminurl.'index.php?action=blogview">'._FOR_BLOG_SETTING.'</a></li></ul>';
-		echo '<p>'.$msg;
+		$printData = '<h2>'._ADMIN_AREA_TITLE.'</h2>'
+				   . '<ul style="list-style:none;">'
+				   . '  <li>'
+				   . '    <a href="' . $this->pediturl . '">'
+				   . _OPTION_SETTING
+				   . '    </a>'
+				   . '  </li>'
+				   . '  <li>'
+				   . '    <a href="' . $this->adminurl . 'index.php?action=blogview">'
+				   . _FOR_BLOG_SETTING
+				   . '    </a>'
+				   . '  </li>'
+				   . '</ul>'
+				   . '<p>'.$msg;
+		echo $printData;
+		unset($printData);
 		$this->print_tablehead(_LOGIN_NAME, _MEMBERS_REALNAME);
-		$res = sql_query(sprintf('SELECT %s,%s,%s FROM %s', mname, mnumber, mrealname, sql_table('member')));
+		$query = 'SELECT %s,%s,%s FROM %s';
+		$query = sprintf($query, mname, mnumber, mrealname, sql_table('member'));
+		$res   = sql_query($query);
 		while ($m = mysql_fetch_object($res)) {
 			$data = array (
-					'oid'		=>	$m->mnumber,
-					'obd'		=>	0,
-					'opr'		=>	'member',
-					'name'		=>	$m->mname,
-					'ret'		=>	'memberview',
-					'ed_URL'	=>	$this->edhiturl.'index.php?action=memberedit&memberid='.$m->mnumber,
-					'desc'		=>	$m->mrealname,
-					'path'		=>	$this->plugin->getMemberOption($m->mnumber, 'customurl_mname')
-					);
+						   'oid'    => $m->mnumber,
+						   'obd'    => 0,
+						   'opr'    => 'member',
+						   'name'   => $m->mname,
+						   'ret'    => 'memberview',
+						   'ed_URL' => $this->edhiturl
+									.  'index.php?action=memberedit'
+									.  '&amp;memberid=' . $m->mnumber,
+						   'desc'   => $m->mrealname,
+						   'path'   => $this->plugin->getMemberOption($m->mnumber, 'customurl_mname')
+						   );
 			$this->print_tablerow($data);
 		}
 		echo '</tbody></table></p>';
+		unset($query);
 		$oPluginAdmin->end();
 	}
 
-	function action_itemview($bid, $msg = '')
-	{
+	function action_itemview($bid, $msg = '') {
 		global $CONF, $oPluginAdmin;
 
 		$oPluginAdmin->start();
-		echo '<h2>'._ADMIN_AREA_TITLE.'</h2>';
-		echo '<ul style="list-style:none;"><li><a href="'.$this->editurl.'index.php?action=pluginoptions&amp;plugid='.$this->plugin->getID().'">'._OPTION_SETTING.'</a></li>';
-		echo '<li><a href="'.$this->adminurl.'index.php?action=blogview">'._FOR_BLOG_SETTING.'</a></li>';
-		echo '<li><a href="'.$this->adminurl.'index.php?action=goCategory&amp;blogid='.$bid.'">'._FOR_CATEGORY_SETTING.'</a></li>';
-		echo '<li><a href="'.$this->adminurl.'index.php?action=memberview">'._FOR_MEMBER_SETTING.'</a></li></ul>';
-		echo '<p><h3>'.$msg.'</h3>';
+		$printData = '<h2>'._ADMIN_AREA_TITLE.'</h2>'
+				   . '<ul style="list-style:none;">'
+				   . '  <li>'
+				   . '    <a href="' . $this->pediturl . '">'
+				   . _OPTION_SETTING
+				   . '    </a>'
+				   . '  </li>'
+				   . '  <li>'
+				   . '    <a href="' . $this->adminurl . 'index.php?action=blogview">'
+				   . _FOR_BLOG_SETTING
+				   . '    </a>'
+				   . '  </li>'
+				   . '  <li>'
+				   . '    <a href="' . $this->adminurl . 'index.php?action=goCategory&amp;blogid=' . $bid . '">'
+				   . _FOR_CATEGORY_SETTING
+				   . '    </a>'
+				   . '  </li>'
+				   . '  <li>'
+				   . '    <a href="' . $this->adminurl . 'index.php?action=memberview">'
+				   . _FOR_MEMBER_SETTING
+				   . '    </a>'
+				   . '  </li>'
+				   . '</ul>'
+				   . '<p><h3>'.$msg.'</h3>';
+		echo $printData;
+		unset($printData);
 		$this->print_tablehead(_LISTS_TITLE, _LISTS_ITEM_DESC);
-		$res = sql_query(sprintf('SELECT %s,%s,%s FROM %s WHERE iblog = %d ORDER BY itime DESC', ititle, inumber, ibody, sql_table('item'), $bid));
+		$query = 'SELECT %s,%s,%s FROM %s WHERE iblog = %d ORDER BY itime DESC';
+		$query = sprintf($query, ititle, inumber, ibody, sql_table('item'), $bid);
+		$res   = sql_query($query);
 		while ($i = mysql_fetch_object($res)) {
-			$temp_res = quickQuery('SELECT obj_name as result FROM '.sql_table('plug_customurl').' WHERE obj_param = "item" AND obj_id = '.$i->inumber);
+			$query = 'SELECT obj_name as result FROM %s WHERE obj_param = "item" AND obj_id = %d';
+			$query = sprintf($query, sql_table('plug_customurl'), $i->inumber);
+			$temp_res = quickQuery($query);
 			$ipath = substr($temp_res, 0, (strlen($temp_res)-5));
 			$data = array (
-					'oid'		=>	$i->inumber,
-					'obd'		=>	$bid,
-					'opr'		=>	'item',
-					'name'		=>	$i->ititle,
-					'ret'		=>	'itemview',
-					'ed_URL'	=>	$this->edhiturl.'index.php?action=itemedit&itemid='.$i->inumber,
-					'desc'		=>	mb_substr(strip_tags($i->ibody), 0, 80),
-//					'path'		=>	$this->plugin->getItemOption($i->inumber, 'customurl_iname')
-					'path'		=>	$ipath
+						   'oid'    => $i->inumber,
+						   'obd'    => $bid,
+						   'opr'    => 'item',
+						   'name'   => $i->ititle,
+						   'ret'    => 'itemview',
+						   'ed_URL' => $this->edhiturl
+						   			.  'index.php?action=itemedit'
+						   			.  '&amp;itemid=' . $i->inumber,
+						   'desc'   => mb_substr(strip_tags($i->ibody), 0, 80),
+						   'path'   => $ipath
 					);
 			$this->print_tablerow($data);
 		}
 		echo '</tbody></table></p>';
+		unset($query);
 		$oPluginAdmin->end();
 	}
 
@@ -230,9 +349,9 @@ class CustomURL_ADMIN
 	{
 		global $oPluginAdmin;
 
-		$NAME = $o_name;
-		$DESC = $o_desc;
-		$PATH = _LISTS_PATH;
+		$NAME   = $o_name;
+		$DESC   = $o_desc;
+		$PATH   = _LISTS_PATH;
 		$ACTION = _LISTS_ACTIONS;
 echo <<< TABLE_HEAD
 	<table>
@@ -250,10 +369,10 @@ TABLE_HEAD;
 
 	function print_tablerow($data)
 	{
-		global $oPluginAdmin;
+		global $oPluginAdmin, $manager;
 
 		$updateText = _SETTINGS_UPDATE_BTN;
-		$edit = _EDIT;
+		$edit       = _EDIT;
 echo <<< TBODY
 			<tr onmouseover="focusRow(this);" onmouseout="blurRow(this);">
 				<form method="post" action="{$this->adminurl}index.php" />
@@ -263,6 +382,9 @@ echo <<< TBODY
 				<input type="hidden" name="opr" value="{$data['opr']}" />
 				<input type="hidden" name="name" value="{$data['name']}" />
 				<input type="hidden" name="ret" value="{$data['ret']}" />
+TBODY;
+		$manager->addTicketHidden();
+echo <<< TBODY
 				<td>{$data['name']}&nbsp;&nbsp;<a href="{$data['ed_URL']}" style="font-size:xx-small;">[{$edit}]</a></td>
 				<td>{$data['desc']}</td>
 				<td><input type="text" name="path" size="32" value="{$data['path']}"/></td>
@@ -272,16 +394,15 @@ echo <<< TBODY
 TBODY;
 	}
 
-	function action_pathupdate()
-	{
+	function action_pathupdate() {
 		global $oPluginAdmin;
 
-		$o_oid = RequestVar('oid');
-		$o_bid = RequestVar('obd');
-		$o_param = RequestVar('opr');
-		$o_name = RequestVar('name');
-		$newPath = RequestVar('path');
-		$action = RequestVar('ret');
+		$o_oid   = intRequestVar('oid');
+		$o_bid   = intRequestVar('obd');
+		$o_param = requestVar('opr');
+		$o_name  = requestVar('name');
+		$newPath = requestVar('path');
+		$action  = requestVar('ret');
 
 		$msg = $this->plugin->RegistPath($o_oid, $newPath, $o_bid, $o_param, $o_name);
 		if ($msg) {
@@ -317,19 +438,17 @@ TBODY;
 		return;
 	}
 
-	function action_goItem()
-	{
+	function action_goItem() {
 		global $oPluginAdmin;
 
-		$bid = $_GET['blogid'];
+		$bid = getVar('blogid');
 		$this->action_itemview($bid);
 	}
 
-	function action_goCategory()
-	{
+	function action_goCategory() {
 		global $oPluginAdmin;
 
-		$bid = $_GET['blogid'];
+		$bid = getVar('blogid');
 		$this->action_categoryview($bid);
 	}
 
@@ -343,4 +462,3 @@ if (requestVar('action')) {
 	$myAdmin->action('blogview');
 }
 
-?>
