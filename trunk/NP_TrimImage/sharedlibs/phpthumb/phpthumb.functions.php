@@ -416,7 +416,9 @@ class phpthumb_functions {
 			switch ($execfunction) {
 				case 'passthru':
 					ob_start();
-					$execfunction($command);
+					// modified by cles
+					//$execfunction($command);
+					@$execfunction($command);
 					$returnvalue = ob_get_contents();
 					ob_end_clean();
 					break;
@@ -426,7 +428,9 @@ class phpthumb_functions {
 				case 'exec':
 				default:
 					ob_start();
-					$returnvalue = $execfunction($command);
+					// modified by cles
+					//$returnvalue = $execfunction($command);
+					$returnvalue = @$execfunction($command);
 					ob_end_clean();
 					break;
 			}

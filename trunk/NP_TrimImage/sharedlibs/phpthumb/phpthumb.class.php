@@ -1206,7 +1206,9 @@ class phpthumb {
 					$commandline .= ' -density '.$this->dpi;
 				}
 				ob_start();
-				$getimagesize = GetImageSize($this->sourceFilename);
+				// added by cles
+				//$getimagesize = GetImageSize($this->sourceFilename);
+				$getimagesize = @GetImageSize($this->sourceFilename);
 				$GetImageSizeError = ob_get_contents();
 				ob_end_clean();
 				if (is_array($getimagesize)) {
@@ -1282,6 +1284,8 @@ class phpthumb {
 //print_r($getimagesize);
 //echo '</pre>';
 
+							// added by cles
+							if( $this->zc != 2 )
 							$commandline .= ' -gravity center';
 
 							if (($wAll > 0) && ($hAll > 0)) {

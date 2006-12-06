@@ -22,7 +22,9 @@
 
 define('NP_TRIMIMAGE_FORCE_PASSTHRU', true); //passthru(standard)
 //define('NP_TRIMIMAGE_FORCE_PASSTHRU', false); //redirect(advanced)
+
 define('NP_TRIMIMAGE_CACHE_MAXAGE', 86400 * 30); // 30days
+define('NP_TRIMIMAGE_PREFER_IMAGEMAGICK', false);
 
 require_once(dirname(__FILE__).'/sharedlibs/sharedlibs.php');
 require_once('phpthumb/phpthumb.functions.php');
@@ -45,7 +47,7 @@ class NP_TrimImage extends NucleusPlugin
 	}
 	
 	function getVersion () {
-		return '2.1';
+		return '2.1.1';
 	}
 	
 	function supportsFeature($what)
@@ -116,10 +118,12 @@ class NP_TrimImage extends NucleusPlugin
 	{
 		global $DIR_MEDIA;
 		$this->fileex = array('.gif', '.jpg', '.png');
+		$cacheDir = $DIR_MEDIA.'phpthumb/';
+		$cacheDir = (is_dir($cacheDir) && @is_writable($cacheDir) ) ? $cacheDir : null;
 		
 		$this->phpThumbParams = array(
 			'config_document_root' => $DIR_MEDIA,
-			'config_cache_directory' => $DIR_MEDIA.'phpthumb/',
+			'config_cache_directory' => $cacheDir,
 			'config_cache_disable_warning' => true,
 			'config_cache_directory_depth' => 0,
 			'config_cache_maxage' => NP_TRIMIMAGE_CACHE_MAXAGE,
@@ -132,6 +136,7 @@ class NP_TrimImage extends NucleusPlugin
 			'config_max_source_pixels' => 3871488, //4Mpx
 			'config_output_format' => 'jpg',
 			'config_disable_debug' => true,
+			'config_prefer_imagemagick' => NP_TRIMIMAGE_PREFER_IMAGEMAGICK,
 		);
 	}
 	
@@ -348,14 +353,12 @@ class NP_TrimImage extends NucleusPlugin
 			$phpThumb->setParameter($paramKey, $paramValue);
 		}
 		
+		$phpThumb->setParameter('w', intval($w) );
+		$phpThumb->setParameter('h', intval($h) );
 		if ($p == 'non') {
-			$phpThumb->setParameter('w', intval($w) );
-			$phpThumb->setParameter('h', intval($h) );
 			$phpThumb->setParameter('new', 'FFFFFF');
 		} else {
 			$phpThumb->setParameter('src', '/' . $p);
-			$phpThumb->setParameter('w', intval($w) );
-			$phpThumb->setParameter('h', intval($h) );
 			$phpThumb->setParameter('zc', $isLefttop ? 2 : 1 );
 		}
 		
@@ -400,7 +403,7 @@ class NP_TrimImage extends NucleusPlugin
 		// putCache
 		if( !rand(0,20) ) $phpThumb->CleanUpCacheDirectory();
 		$phpThumb->RenderToFile($phpThumb->cache_filename);
-		chmod($phpThumb->cache_filename, 0666);
+		@chmod($phpThumb->cache_filename, 0666);
 		
 		// to browser
 		$phpThumb->OutputThumbnail();
