@@ -47,7 +47,7 @@ class NP_TrimImage extends NucleusPlugin
 	}
 	
 	function getVersion () {
-		return '2.1.1';
+		return '2.1.2';
 	}
 	
 	function supportsFeature($what)
@@ -211,6 +211,7 @@ class NP_TrimImage extends NucleusPlugin
 		}
 //		print_r($filelist);
 
+		$amount = min($amount, count($filelist));
 		echo '<div>';
 		for ($i=0;$i<$amount;$i++) {
 			$itemlink = $this->createGlobalItemLink($filelist[$i][1], '');	// why not createItemLink ?
