@@ -49,14 +49,14 @@ class NP_Dtree extends NucleusPlugin
 
     function install()
     {
-        $this->createOption('folderLinks',    _DTREE_DIR_LINK,  'yesno', 'yes');
-        $this->createOption('useSelection',   _DTREE_SELECTION, 'yesno', 'no');
-        $this->createOption('useCookies',     _DTREE_COOKIE,    'yesno', 'no');
-        $this->createOption('useLines',       _DTREE_LINE,      'yesno', 'yes');
-        $this->createOption('useIcons',       _DTREE_ICON,      'yesno', 'yes');
-        $this->createOption('useStatusText',  _DTREE_ST_TEXT,   'yesno', 'no');
-        $this->createOption('closeSameLevel', _DTREE_CL_SLEVEL, 'yesno', 'no');
-        $this->createOption('inOrder',        _DTREE_IN_ORDER,  'yesno', 'no');
+        $this->createOption('folderLinks',      _DTREE_DIR_LINK,    'yesno',    'yes');
+        $this->createOption('useSelection',     _DTREE_SELECTION,   'yesno',    'no');
+        $this->createOption('useCookies',       _DTREE_COOKIE,      'yesno',    'no');
+        $this->createOption('useLines',         _DTREE_LINE,        'yesno',    'yes');
+        $this->createOption('useIcons',         _DTREE_ICON,        'yesno',    'yes');
+        $this->createOption('useStatusText',    _DTREE_ST_TEXT,     'yesno',    'no');
+        $this->createOption('closeSameLevel',   _DTREE_CL_SLEVEL,   'yesno',    'no');
+        $this->createOption('inOrder',          _DTREE_IN_ORDER,    'yesno',    'no');
     }
 
     function init()
@@ -124,6 +124,9 @@ class NP_Dtree extends NucleusPlugin
               . ' | ' . "\n"
               . '<a href="javascript: ' . $randomID . 'd.closeAll();">' . _DTREE_CLOSEALL . '</a>' . "\n";
         echo $data;
+/*        if (!(intRequestVar('page') > 0) !$catid && !$subcatid) {
+            echo '<script type="text/javascript">' . $randomID . 'd.openAll();</script>';
+        }*/
 
     }
 

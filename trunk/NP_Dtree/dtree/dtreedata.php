@@ -45,27 +45,30 @@ global $CONF, $manager;
 	$CONF['ArchiveListURL'] = $blogurl;
 	$CONF['SearchURL']      = $blogurl;
 
-	echo $objectId . "=new dTree('"
-	   . htmlspecialchars($objectId, ENT_QUOTES, _CHARSET)
-	   . "');\n";
-	
-	echo $objectId . ".add(0,-1,'"
-	   . htmlspecialchars($blogname, ENT_QUOTES, _CHARSET)
-	   . "');\n";
+	$printData = $objectId . "=new dTree('" . $objectId . "');\n"
+			   . $objectId . ".add(0,-1,'"
+			   . htmlspecialchars($blogname, ENT_QUOTES, _CHARSET)
+			   . "');\n";
+	echo $printData;
+	unset($printData);
 	
 	$resq = 'SELECT * FROM %s WHERE cblog = %d';
 	$res  = sql_query(sprintf($resq, sql_table('category'), $blogid));
 	$n    = 1;
 	while ($o = mysql_fetch_object($res)) {
-		$catid = intval($o->catid);
+		$catid                    = intval($o->catid);
 		$nodeArray['cat'][$catid] = $n;
-		$url       = createCategoryLink($catid);
-		$printData = $objectId
-				   . ".add(" . $n
-				   . ",0,'"
-				   . htmlspecialchars($o->cname, ENT_QUOTES, _CHARSET) . "','"
-				   . htmlspecialchars($url, ENT_QUOTES, _CHARSET) . "','"
-				   . htmlspecialchars($o->cdesc, ENT_QUOTES, _CHARSET) . "');\n";
+		$url                      = createCategoryLink($catid);
+		$printData                = $objectId
+								  . ".add"
+								  . "("
+								  . $n . ","
+								  . "0,"
+								  . "'" . htmlspecialchars($o->cname, ENT_QUOTES, _CHARSET) . "',"
+//								  . "'" . htmlspecialchars($url,      ENT_QUOTES, _CHARSET) . "',"
+								  . "'" . $url . "',"
+								  . "'" . htmlspecialchars($o->cdesc, ENT_QUOTES, _CHARSET). "'"
+								  . ");\n";
 		echo $printData;
 		$catFilter[] = $catid;
 		$n++;
@@ -75,13 +78,15 @@ global $CONF, $manager;
 	if (!$manager->pluginInstalled('NP_MultipleCategories')) {
 		echo 'document.write(' . $objectId . ');';
 		if ($itemid = intRequestVar('id')) {
-			$que    = 'SELECT icat as result FROM %s WHERE inumber = %d';
-			$catid  = quickQuery(sprintf($que, sql_table('item'), $itemid));
-			$catid  = intval($catid);
-			$nodeId = 's' . $objectId . $nodeArray['cat'][$catid];
-			echo "document.getElementById('"
-			   . htmlspecialchars($nodeId, ENT_QUOTES, _CHARSET)
-			   . "').className = 'selectedNode';";
+			$que       = 'SELECT icat as result FROM %s WHERE inumber = %d';
+			$catid     = quickQuery(sprintf($que, sql_table('item'), $itemid));
+			$catid     = intval($catid);
+			$nodeId    = 's' . $objectId . $nodeArray['cat'][$catid];
+			$printData = "document.getElementById('"
+					   . htmlspecialchars($nodeId, ENT_QUOTES, _CHARSET)
+					   . "').className = 'selectedNode';";
+			echo $printData;
+			unset($printData);
 		}
 		return;
 	}
@@ -110,7 +115,6 @@ global $CONF, $manager;
 		$subrequest = 'subcatid';
 	}
 //	$query = 'SELECT * FROM %s WHERE catid%s';
-//	$query = 'SELECT * FROM %s WHERE catid%s ORDER BY ordid ASC';
 	$query = 'SELECT * FROM %s WHERE catid%s ORDER BY parentid, catid, ordid';
 	$query = sprintf($query, $scatTable, $catFilter);
 	$res   = sql_query($query);
@@ -134,56 +138,67 @@ global $CONF, $manager;
 		$url       = createCategoryLink($cat_id, $linkParam);
 
 		if (!empty($parent_id)) {
-			$pnode = $nodeArray['subcat'][$parent_id];
+			$pnode = intval($nodeArray['subcat'][$parent_id]);
 		} else {
-			$pnode = $nodeArray['cat'][$cat_id];
+			$pnode = intval($nodeArray['cat'][$cat_id]);
 		}
 		$printData =  $objectId
 				   . ".add"
-				   . "(" . $nodeArray['subcat'][$scatid] . ","
+				   . "("
+				   . intval($nodeArray['subcat'][$scatid]) . ","
 				   . $pnode . ","
 				   . "'" . htmlspecialchars($o->sname, ENT_QUOTES, _CHARSET) . "',"
-				   . "'" . htmlspecialchars($url, ENT_QUOTES, _CHARSET) . "',"
+//				   . "'" . htmlspecialchars($url,      ENT_QUOTES, _CHARSET) . "',"
+				   . "'" . $url . "',"
 				   . "'" . htmlspecialchars($o->sdesc, ENT_QUOTES, _CHARSET) . "'"
 				   . ");\n";
 		echo $printData;
+		unset($printData);
 	}
-//	ksort($printData);
-//	foreach($printData as $parentNode => $scatNode) {
-//		foreach($scatNode as $showData) {
-//			echo $showData;
-//		}
-//	}
 
 	echo "document.write(" . $objectId . ");\n";
 
 	if ($sid = intRequestVar('sid')) {
-		$nodeId = 's' . $objectId . $nodeArray['subcat'][$sid];
-		echo "document.getElementById('" . $nodeId . "').className='urlselected';\n";
-		echo $objectId . ".openTo(" . $nodeArray['subcat'][$sid] . ",true);\n";
+		$nodeId    = 's' . $objectId . intval($nodeArray['subcat'][$sid]);
+		$printData = "document.getElementById('" . $nodeId . "')"
+				   . ".className='urlselected';\n"
+				   . $objectId
+				   . ".openTo(" . intval($nodeArray['subcat'][$sid]) . ",true);\n";
+		echo $printData;
+		unset($printData);
 	} elseif ($cid = intRequestVar('cid')) {
-		$nodeId = 's' . $objectId . $nodeArray['cat'][$cid];
-		echo "document.getElementById('" . $nodeId . "').className='urlselected';\n";
-		echo $objectId . ".openTo(" . $nodeArray['cat'][$cid] . ",true);\n";
+		$nodeId    = 's' . $objectId . intval($nodeArray['cat'][$cid]);
+		$printData = "document.getElementById('" . $nodeId . "')."
+				   . "className='urlselected';\n"
+				   . $objectId
+				   . ".openTo(" . intval($nodeArray['cat'][$cid]) . ",true);\n";
 	}
 
 	if ($itemid = intRequestVar('id')) {
-		$que    = 'SELECT icat as result FROM %s WHERE inumber = %d';
-		$catid  = quickQuery($que, sql_table('item'), $itemid);
-		$catid  = intva($catid);
-		$nodeId = 's' . $objectId.$nodeArray['cat'][$catid];
-		echo "document.getElementById('" . $nodeId . "').className='selectedNode';\n";
+		$que       = 'SELECT icat as result FROM %s WHERE inumber = %d';
+		$catid     = quickQuery($que, sql_table('item'), $itemid);
+		$catid     = intval($catid);
+		$nodeId    = 's' . $objectId . intval($nodeArray['cat'][$catid]);
+		$printData = "document.getElementById('" . $nodeId . "')"
+				   . ".className='selectedNode';\n";
+		echo $printData;
+		unset($printData);
 		
 		//multi catid
-		$que = 'SELECT categories as result FROM %s WHERE item_id = %d';
-		$catids = quickQuery(sprintf($que, sql_table('plug_multiple_categories'), $itemid));
+		$que    = 'SELECT categories as result FROM %s WHERE item_id = %d';
+		$que    = sprintf($que, sql_table('plug_multiple_categories'), $itemid);
+		$catids = quickQuery($que);
 		if ($catids) {
 			$catids = explode(',', $catids);
-			for ($i=0;$i<count($catids);$i++) {
+			$cCount = count($catids);
+			for ($i=0; $i < $cCount; $i++) {
 				$catidTemp = intval($catids[$i]);
 				if ($catidTemp != $catid) {
-					$nodeId = 's' . $objectId . $nodeArray['cat'][$catidTemp];
-					echo "document.getElementById('" . $nodeId . "').className='selectedCatNode';\n";
+					$nodeId   = 's' . $objectId . intval($nodeArray['cat'][$catidTemp]);
+					$prntData = "document.getElementById('" . $nodeId . "')"
+							  . ".className='selectedCatNode';\n";
+					echo $printData;
+					unset($printData);
 				}
 			}
 		}
@@ -195,12 +210,15 @@ global $CONF, $manager;
 		if ($scatids) {
 			$scatids = explode(',', $scatids);
 			$scatCnt = count($scatids);
-			for ($i=0; $i<$scatCnt; $i++) {
-				$scatid = intval($scatids[$i]);
-				$nodeId = 's' . $objectId . $nodeArray['subcat'][$scatid];
-				echo "document.getElementById('" . $nodeId . "').className='selectedScatNode';\n";
-				echo $objectId . ".openTo(" . $nodeArray['subcat'][$scatid] . ",true);\n";
+			for ($i=0; $i < $scatCnt; $i++) {
+				$scatid    = intval($scatids[$i]);
+				$nodeId    = 's' . $objectId . intval($nodeArray['subcat'][$scatid]);
+				$printData = "document.getElementById('" . $nodeId . "')"
+						   . ".className='selectedScatNode';\n"
+						   . $objectId
+						   . ".openTo(" . intval($nodeArray['subcat'][$scatid]) . ",true);\n";
+				echo $printData;
+				unset($printData);
 			}
 		}
 	}
-?>
