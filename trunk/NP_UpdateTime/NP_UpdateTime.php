@@ -1,146 +1,256 @@
 <?php
 
 //history
+//	0.72:	Internationalize.
+//			Fixed typo.
 //	0.71:	Fixed security issue.
 //			Fixed typo.
 
-// plugin needs to work on Nucleus versions <=2.0 as well
-if (!function_exists('sql_table')){
-	function sql_table($name) { return 'nucleus_' . $name; }
-}
+class NP_UpdateTime extends NucleusPlugin
+{
+	function getName()
+	{
+		return 'UpdateTime';
+	}
 
-class NP_UpdateTime extends NucleusPlugin {
-	function getName() { return 'UpdateTime'; }
-	function getAuthor()  { return 'nakahara21'; }
-	function getURL() { return 'http://xx.nakahara21.net/'; }
-	function getVersion() { return '0.71'; }
-	function getDescription() { return 'Record updatetime when the item updated.'; }
-	function supportsFeature($what) {
-		switch($what){
+	function getAuthor()
+	{
+		return 'nakahara21 + shizuki';
+	}
+
+	function getURL()
+	{
+		return 'http://nakahara21.com';
+	}
+
+	function getVersion()
+	{
+		return '0.72';
+	}
+
+	function getDescription()
+	{
+		return _UPDATETIME_DESCRIPTION;
+	}
+
+	function supportsFeature($what)
+	{
+		switch ($what) {
 			case 'SqlTablePrefix':
 				return 1;
 			default:
 				return 0;
 		}
 	}
-	function getTableList() {	return array( sql_table('plugin_rectime') ); }
-	function getEventList() { return array('EditItemFormExtras','PreUpdateItem'); }
-	function install() {
-		sql_query('CREATE TABLE IF NOT EXISTS ' . sql_table('plugin_rectime'). ' (up_id int(11) not null, updatetime datetime, PRIMARY KEY (up_id))');
-		$this->createOption('DefautMode','デフォルトのモードは？','select', '1', '何もしない|0|更新日時記録のみ|1|アイテム日時上書き|2');
-		$this->createOption('BeforeTime','アイテム日時上書きの場合の表示形式:','text','※ このアイテムは<%utime%>に保存されたものを再編集しています');
-		$this->createOption('AfterTime','更新日時記録のみの場合の表示形式','text','最終更新日時:<%utime%>');
-		$this->createOption('DateFormat','テンプレート内の日時表示形式(phpのdate関数 例 Y-m-d H:i:s):','text','Y-m-d H:i:s');
-		$this->createOption('s_lists','最新更新リストの開始タグ','text','<ul class="nobullets">');
-		$this->createOption('e_lists','最新更新リストの終了タグ','text','</ul>');
-		$this->createOption('s_items','最新更新リストの各アイテムの開始タグ','text','<li>');
-		$this->createOption('e_items','最新更新リストの各アイテムの終了タグ','text','</li>');
-		$this->createOption("del_uninstall", "Delete tables on uninstall?", "yesno", "no");
+
+	function getTableList()
+	{
+		return array (
+					  sql_table('plugin_rectime')
+					 );
 	}
-	function unInstall() { 
-		if ($this->getOption('del_uninstall') == "yes") {
-			mysql_query ("DROP TABLE IF EXISTS ".sql_table('plugin_rectime'));
-		}
+
+	function getEventList()
+	{
+		return array (
+					  'EditItemFormExtras',
+					  'PreUpdateItem'
+					 );
 	}
-	function init() {
-		if(($this->def_mode = intval($this->getOption('DefautMode'))) > 2){
-			$this->def_mode = 0;
+
+	function install()
+	{
+		$query = 'CREATE TABLE IF NOT EXISTS ' . sql_table('plugin_rectime') . ' ('
+			   . ' up_id      INT(11)  not null,'
+			   . ' updatetime DATETIME,'
+			   . ' PRIMARY KEY (up_id)'
+			   . ')';
+		sql_query($query);
+		$this->createOption('DefautMode', _UPDATETIME_DEFAULT_MODE, 'select', '1', _UPDATETIME_DEFAULT_MODE_VALUE);
+		$this->createOption('BeforeTime', _UPDATETIME_BEFORE_TIME,  'text',        _UPDATETIME_BEFORE_TIME_VALUE);
+		$this->createOption('AfterTime',  _UPDATETIME_AFTER_TIME,   'text',        _UPDATETIME_AFTER_TIME_VALUE);
+		$this->createOption('DateFormat', _UPDATETIME_DATE_FORMAT,  'text',        'Y-m-d H:i:s');
+		$this->createOption('sLists',     _UPDATETIME_S_LISTS,      'text',        '<ul class="nobullets">');
+		$this->createOption('eLists',     _UPDATETIME_E_LISTS,      'text',        '</ul>');
+		$this->createOption('sItems',     _UPDATETIME_S_ITEMS,      'text',        '<li>');
+		$this->createOption('eItems',     _UPDATETIME_E_ITEMS,      'text',        '</li>');
+		$this->createOption('uninstFlag', _UPDATETIME_UNINST_FLAG,  'yesno',      'no');
+	}
+
+	function unInstall()
+	{ 
+		if ($this->getOption('uninstFlag') == 'yes') {
+			sql_query ('DROP TABLE IF EXISTS ' . sql_table('plugin_rectime'));
 		}
 	}
 
-	function event_EditItemFormExtras($data) {
-		$checked_flag[$this->def_mode] = ' checked="checked"';
-		echo '<h3 style="margin-bottom:0;">更新時刻の記録方法の選択</h3>';
-		echo '<input type="radio" name="updatetime" value="2" id="updatetime_2"'.$checked_flag[2].' /><label for="updatetime_2">アイテム日時として上書きする</label><br />';
-		echo '<input type="radio" name="updatetime" value="1" id="updatetime_1"'.$checked_flag[1].' /><label for="updatetime_1">更新日時を記録するのみ</label><br />';
-		echo '<input type="radio" name="updatetime" value="0" id="updatetime_0"'.$checked_flag[0].' /><label for="updatetime_0">何もしない</label><br />';
+	function init()
+	{
+		$language = ereg_replace( '[\\|/]', '', getLanguageName());
+		if (file_exists($this->getDirectory() . $language . '.php')) {
+			include_once($this->getDirectory() . $language . '.php');
+		} else {
+			include_once($this->getDirectory() . 'english.php');
+		}
+		$this->defMode = intval($this->getOption('DefautMode'));
+		if ($this->defMode > 2) {
+			$this->defMode = 0;
+		}
 	}
 
-	function event_PreUpdateItem($data) {
+	function event_EditItemFormExtras($data)
+	{
+		$checkedFlag[$this->defMode] = ' checked="checked"';
+		$updateMode = _UPDATETIME_MODE;
+		$updateOver = _UPDATETIME_OVERWRITE;
+		$recordOnly = _UPDATETIME_RECORDEONLY;
+		$noAction   = _UPDATETIME_NOACTION;
+		$printData  = '<h3 style="margin-bottom:0;">' . $updateMode . "</h3>\n"
+					. '<input type="radio" name="updatetime" value="2" id="updatetime_2"' . $checkedFlag[2] . ' />'
+					. '<label for="updatetime_2">' . $updateOverwrite . "</label><br />\n"
+					. '<input type="radio" name="updatetime" value="1" id="updatetime_1"' . $checkedFlag[1] . ' />'
+					. '<label for="updatetime_1">' . $recordOnly . "</label><br />\n"
+					. '<input type="radio" name="updatetime" value="0" id="updatetime_0"' . $checkedFlag[0] . ' />'
+					. '<label for="updatetime_0">' . $noAction . "</label><br />\n";
+		echo $printData;
+	}
+
+	function event_PreUpdateItem($data)
+	{
 		$recd = intRequestVar('updatetime');
-		if (!$recd) return;
-		if (postVar('actiontype') == 'adddraft') return;
+		if (!$recd) {
+			return;
+		}
+		if (postVar('actiontype') == 'adddraft') {
+			return;
+		}
 
 		$updatetime = mysqldate($data['blog']->getCorrectTime());
-		if ($recd == 2){
-			$up_query = 'UPDATE '.sql_table('item').' SET itime='.$updatetime.' WHERE inumber='.intval($data['itemid']);
-			$updatetime = '"'.quickQuery('SELECT itime as result FROM '.sql_table('item').' WHERE inumber='.intval($data['itemid'])).'"';
-			$tmptime = '"'.quickQuery('SELECT updatetime as result FROM '.sql_table('plugin_rectime').' WHERE up_id='.intval($data['itemid'])).'"';
-			if($tmptime > $updatetime)
+		if ($recd == 2) {
+			$upTimeQue  = 'SELECT itime as result '
+						. 'FROM ' . sql_table('item')
+						. ' WHERE inumber=' . intval($data['itemid']);
+			$tmpTimeQue = 'SELECT updatetime as result '
+						. 'FROM ' . sql_table('plugin_rectime')
+						. ' WHERE up_id = ' . intval($data['itemid']);
+			$updatetime = '"' . quickQuery($upTimeQue) . '"';
+			$tmptime = '"' . quickQuery($tmpTimeQue) . '"';
+			$upQuery    = 'UPDATE ' . sql_table('item')
+						. ' SET   itime   = ' . $updatetime
+						. ' WHERE inumber = ' . intval($data['itemid']);
+			if ($tmptime > $updatetime) {
 				$updatetime = $tmptime;
-			sql_query($up_query);
+			}
+			sql_query($upQuery);
 		}
-		sql_query('DELETE FROM '.sql_table('plugin_rectime')." WHERE up_id=".intval($data['itemid']));
-		$query = 'INSERT INTO ' . sql_table('plugin_rectime') . " (up_id, updatetime) VALUES ('".intval($data['itemid'])."',".$updatetime.")";
-		$res = @mysql_query($query);
-		if (!$res) 
-			return 'Could not save data: ' . mysql_error();
+		$delQuery = 'DELETE FROM ' . sql_table('plugin_rectime')
+				  . ' WHERE up_id = ' . intval($data['itemid']);
+		sql_query($delQuery);
+		$query = 'INSERT INTO ' . sql_table('plugin_rectime')
+			   . ' (up_id, updatetime) '
+			   . 'VALUES'
+			   . ' (' . intval($data['itemid']) . ', "' . $updatetime . '")';
+		$res   = sql_query($query);
+		if (strpos($res, 'mySQL')) {
+			return '<p>Could not save data: ' . $res;
+		}
 		return '';
 	}
 
-	function doSkinVar($skinType, $maxtoshow = 5, $bmode = 'current') {
+	function doSkinVar($skinType, $maxtoshow = 5, $bmode = 'current')
+	{
 		global $manager, $CONF, $blogid;
 		if (is_numeric($blogid)) {
 			$blogid = intval($blogid);
 		} else {
 			$blogid = gttBlogIDFromName($blogid);
 		}
-		
-		$b =& $manager->getBlog($CONF['DefaultBlog']);
-		$this->defaultblogurl = $b->getURL() ;
-		if(!$this->defaultblogurl)
-			$this->defaultblogurl = $CONF['IndexURL'] ;
+		if (!$blogid) {
+			$blogid = $CONF['DefaultBlog'];
+		}
 
-		if($maxtoshow == ''){$maxtoshow = 5;}
-		if($bmode == ''){$bmode = 'current';}
-		
-		echo $this->getOption('s_lists')."\n";
-		$query = 'SELECT r.up_id as up_id, IF(INTERVAL(r.updatetime, i.itime), UNIX_TIMESTAMP(r.updatetime), UNIX_TIMESTAMP(i.itime) ) as utime FROM '.sql_table('plugin_rectime') . ' as r, '.sql_table('item') .' as i WHERE  r.up_id=i.inumber';
-		if($bmode != 'all'){
-			$query .= ' and i.iblog='.intval($blogid);
-		}	
-		$query .= ' ORDER BY utime DESC';
-		$query .= ' LIMIT 0,'.intval($maxtoshow);
-		$res = mysql_query($query);
-		while($row = mysql_fetch_object($res)){
-			$item =& $manager->getItem($row->up_id,0,0);
-			if($item){
-				$itemlink = $this->createGlobalItemLink($item['itemid'], '');
+		$b                    =& $manager->getBlog($blogid);
+		$this->defaultBlogURL = $b->getURL() ;
+		if (!$this->defaultBlogURL) {
+			$this->defaultBlogURL = $CONF['IndexURL'];
+		}
+
+		if ($maxtoshow == '') {
+			$maxtoshow = 5;
+		}
+		if ($bmode == '') {
+			$bmode = 'current';
+		}
+
+		echo $this->getOption('sLists') . "\n";
+		$query = 'SELECT'
+			   . ' r.up_id as up_id, '
+			   . ' IF(INTERVAL(r.updatetime, i.itime), UNIX_TIMESTAMP(r.updatetime), UNIX_TIMESTAMP(i.itime)) as utime '
+			   . 'FROM '
+			   .   sql_table('plugin_rectime') . ' as r, '
+			   .   sql_table('item') .           ' as i '
+			   . 'WHERE'
+			   . ' r.up_id=i.inumber';
+		if ($bmode != 'all') {
+			$query .= ' and i.iblog=' . intval($blogid);
+		}
+		$query .= ' ORDER BY utime DESC'
+				. ' LIMIT 0, ' . intval($maxtoshow);
+		$res    = sql_query($query);
+		while ($row = mysql_fetch_object($res)) {
+			$item =& $manager->getItem($row->up_id, 0, 0);
+			if ($item) {
+				$itemlink  = $this->createGlobalItemLink($item['itemid']);
 				$itemtitle = strip_tags($item['title']);
 				$itemtitle = shorten($itemtitle,26,'..');
-				$itemdate = date('m/d H:i',$row->utime);
+				$itemdate  = date('m/d H:i',$row->utime);
 
-				echo $this->getOption('s_items')."\n";
-				echo '<a href="'.$itemlink.'">'.htmlspecialchars($itemtitle,ENT_QUOTES).'</a> <small>'.$itemdate."</small>\n";
-				echo $this->getOption('e_lists')."\n";
+				$printData = $this->getOption('sItems') . "\n"
+						   . '<a href="' . $itemlink . '">'
+						   . htmlspecialchars($itemtitle, ENT_QUOTES, _CHARSET)
+						   .'</a> <small>' . $itemdate . "</small>\n"
+						   . $this->getOption('eItems') . "\n";
+				echo $printData;
+
 			}
 		}
-		echo $this->getOption('e_lists');
+		echo $this->getOption('eLists');
 	}
 
-	function doTemplateVar(&$item){
-		$query = 'SELECT r.up_id, UNIX_TIMESTAMP(r.updatetime) as updatetime, UNIX_TIMESTAMP(i.itime) as itemtime FROM '.sql_table('plugin_rectime') . ' as r, '.sql_table('item') .' as i WHERE r.up_id='.$item->itemid.' and r.up_id=i.inumber';
-		$res = sql_query($query);
-		if($row = mysql_fetch_assoc($res)){
-			$data['utime'] = date($this->getOption('DateFormat'),$row['updatetime']);
-			if($row['updatetime'] > $row['itemtime']){
-				echo TEMPLATE::fill($this->getOption('AfterTime'),$data);
-			}elseif($row['updatetime'] < $row['itemtime']){
-				echo TEMPLATE::fill($this->getOption('BeforeTime'),$data);
+	function doTemplateVar(&$item)
+	{
+		$query = 'SELECT'
+			   . '   r.up_id,'
+			   . '   UNIX_TIMESTAMP(r.updatetime) as updatetime,'
+			   . '   UNIX_TIMESTAMP(i.itime)      as itemtime '
+			   . 'FROM '
+			   .     sql_table('plugin_rectime') . ' as r, '
+			   .     sql_table('item') .           ' as i '
+			   . 'WHERE'
+			   . '     r.up_id = ' . intval($item->itemid)
+			   . ' and r.up_id = i.inumber';
+		$res   = sql_query($query);
+		if ($row = mysql_fetch_assoc($res)) {
+			$data['utime'] = date($this->getOption('DateFormat'), $row['updatetime']);
+			if ($row['updatetime'] > $row['itemtime']) {
+				echo TEMPLATE::fill($this->getOption('AfterTime'), $data);
+			} elseif ($row['updatetime'] < $row['itemtime']) {
+				echo TEMPLATE::fill($this->getOption('BeforeTime'), $data);
 			}
 		}
 	}
 
-	function createGlobalItemLink($itemid, $extra = '') {
+	function createGlobalItemLink($itemid, $extra = '')
+	{
 		global $CONF, $manager;
-		if ($CONF['URLMode'] == 'pathinfo'){
+/*		if ($CONF['URLMode'] == 'pathinfo') {
 			$link = $CONF['ItemURL'] . '/item/' . $itemid;
 		}else{
 			$blogid = getBlogIDFromItemID($itemid);
 			$b_tmp =& $manager->getBlog($blogid);
 			$blogurl = $b_tmp->getURL() ;
 			if(!$blogurl){
-				$blogurl = $this->defaultblogurl;
+				$blogurl = $this->defaultBlogURL;
 			}
 			if(substr($blogurl, -4) != '.php'){
 				if(substr($blogurl, -1) != '/')
@@ -149,7 +259,29 @@ class NP_UpdateTime extends NucleusPlugin {
 			}
 			$link = $blogurl . '?itemid=' . $itemid;
 		}
-		return addLinkParams($link, $extra);
+		return addLinkParams($link, $extra);*/
+		$blogid  =  getBlogIDFromItemID($itemid);
+		$b_tmp   =& $manager->getBlog($blogid);
+		$blogurl =  $b_tmp->getURL() ;
+		if (!$blogurl) {
+			$blogurl = $this->defaultBlogURL;
+		}
+		if (substr($blogurl, -4) != '.php') {
+			if(substr($blogurl, -1) != '/')
+				$blogurl .= '/';
+			$blogurl .= 'index.php';
+		}
+		if (($CONF['URLMode'] == 'pathinfo') && (substr($blogurl, -4) == '.php')) {
+			$originalURLMode = $CONF['URLMode'];
+			$CONF['URLMode'] = 'normal';
+		}
+		$originalItemURL = $CONF['ItemURL'];
+		$CONF['ItemURL'] = $blogurl;
+		$link            = createItemLink($itemid, $extra);
+		$CONF['ItemURL'] = $originalItemURL;
+		if ($CONF['URLMode'] <> $originalURLMode) {
+			$CONF['URLMode'] = $originalURLMode;
+		}
+		return $link;
 	}
 }
-?>
