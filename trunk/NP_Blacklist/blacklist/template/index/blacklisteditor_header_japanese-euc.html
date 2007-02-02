@@ -1,0 +1,38 @@
+<span style="color: red;">{{message}}</span>
+<div id="personal">
+	<h2>	
+		NGワード編集
+	</h2>
+	<h3>	
+		以下のフォームからNGワードが登録できます
+	</h3>
+	<div class="pbform">
+		<form action="{{indexurl}}" method="post">
+			<input type="hidden" name="ticket" value="{{ticket|}}" />
+			<input type="hidden" name="action" value="addpersonal" />
+			<table class="pblform">
+				<tr>
+					<td>NGワード</td>
+					<td><input class="pbltextinput" type="text" name="expression" size="50" /></td>
+				</tr>
+				<tr>
+					<td>コメント</td>
+					<td><input class="pbltextinput" type="text" name="comment" size="50" /></td>
+				</tr>
+				<tr>
+					<td>正規表現を有効にするか？</td>
+					<td><input class="pbltextinput" type="checkbox" name="enable_regex" value="1" /></td>
+				</tr>
+				<tr>
+					<td colspan="2" style="border:none;"><input type="submit" value="追加" /></td>
+				</tr>
+			</table>
+		</form>
+	</div>
+
+	<table>
+		<tr>
+			<th>NGワード</th>
+			<th>コメント</th>
+			<th>削除</th>
+		</tr>

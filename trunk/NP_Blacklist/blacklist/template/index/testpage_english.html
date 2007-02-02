@@ -1,0 +1,10 @@
+<span style="color: red;">{{message}}</span>
+<h2>Test if an expression is considered spam</h2>
+<div class="pbform" style="margin-left:10px;">
+	<form action="{{indexurl}}" method="post">
+		<input type="hidden" name="action" value="test" />
+		<input type="hidden" name="ticket" value="{{ticket|}}" />
+		<textarea class="pbltextinput" cols="60" rows="6" name="expression" ></textarea><br />
+		<input type="submit" value="Test this" />
+	</form>
+</div>

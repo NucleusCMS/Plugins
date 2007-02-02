@@ -16,4 +16,5 @@ roulette
 casino
 insurance
 slot
-href=
+(http:\/\/(.|\n|\r)*?){3,}
+(url=(.|\n|\r)*?){3,}

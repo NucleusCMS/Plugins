@@ -1,0 +1,41 @@
+<span style="color: red;">{{message}}</span>
+
+<h2 style="text-align:left">
+	<span style="margin-left:10px;">Blacklist: Blacklist Log</span>
+</h2>
+
+<div class="pbform" style="margin-left:10px;">
+	<form action="{{indexurl}}" method="post">
+		<input type="hidden" name="action" value="resetlog" />
+		<input type="hidden" name="ticket" value="{{ticket|}}" />
+		<input type="submit" value="Reset log" />
+	</form>
+</div>
+
+<table class="navigation">
+	<tr>
+		<td style='padding: 0;'>
+			<form action="{{indexurl}}" method="post">
+				<input type="{{prev_submit}}" value="&lt;&lt; Previous" />
+				<input type="hidden" name="no" value="{{prev_no}}" />
+				<input type="hidden" name="ticket" value="{{ticket|}}" />
+				<input type="hidden" name="action" value="log" />
+			</form>
+		</td>
+		<td style='padding: 0; text-align: right;'>	
+			<form action="{{indexurl}}" method="post">
+				<input type="{{next_submit}}" value="Next &gt;&gt;" />
+				<input type="hidden" name="no" value="{{next_no}}" />
+				<input type="hidden" name="ticket" value="{{ticket|}}" />
+				<input type="hidden" name="action" value="log" />
+			</form>
+		</td>
+	</tr>
+</table>
+
+<table class="pbllog">
+	<tr>
+		<th>Date/Time</th>
+		<th>IP</th>
+		<th>Rule Matched</th>
+	</tr>

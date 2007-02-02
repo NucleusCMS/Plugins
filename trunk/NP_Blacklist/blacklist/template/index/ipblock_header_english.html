@@ -1,0 +1,20 @@
+<span style="color: red;">{{message}}</span>
+<h2>Show blocked ip addresses</h2>
+<div class="pbform">
+	<form action="{{indexurl}}" method="post">
+		<input type="hidden" name="action" value="addip" />
+		<input type="hidden" name="ticket" value="{{ticket|}}" />
+		Add IP to block: 
+		<input class="pbltextinput" type="text" name="ipaddress" />
+		<input type="submit" value="Add" />
+	</form>
+</div>
+
+<h3>These ip-addresses are blocked</h3>
+
+<table>
+	<tr>
+		<th>IP Address</th>
+		<th>reversed lookup</th>
+		<th>deletion</th>
+	</tr>

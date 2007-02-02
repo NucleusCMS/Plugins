@@ -1,0 +1,20 @@
+<span style="color: red;">{{message}}</span>
+<h2>IPブラックリスト編集</h2>
+<div class="pbform">
+	<form action="{{indexurl}}" method="post">
+		<input type="hidden" name="action" value="addip" />
+		<input type="hidden" name="ticket" value="{{ticket|}}" />
+		禁止リストに追加: 
+		<input class="pbltextinput" type="text" name="ipaddress" />
+		<input type="submit" value="追加" />
+	</form>
+</div>
+
+<h3>以下のIPアドレスからのアクセスを禁止しています</h3>
+
+<table>
+	<tr>
+		<th>IP Address</th>
+		<th>ホスト名</th>
+		<th>削除</th>
+	</tr>

@@ -1,6 +1,6 @@
 <?php
     require_once("blacklist_lib.php");
-
+	
     //
     // Nucleus Admin section;
     // Created by Xiffy
@@ -9,6 +9,8 @@
 	include($strRel . 'config.php');
 
 	include($DIR_LIBS . 'PLUGINADMIN.php');
+	require_once($DIR_PLUGINS . 'sharedlibs/sharedlibs.php');
+	require_once('cles/Template.php');
 
 	if ($blogid) {$isblogadmin = $member->isBlogAdmin($blogid);}
 	else $isblogadmin = 0;
@@ -37,7 +39,6 @@
 	// get the plugin options; stored in the DB
     $pbl_config['enabled']       = $oPluginAdmin->plugin->getOption('enabled');
     $pbl_config['redirect']      = $oPluginAdmin->plugin->getOption('redirect');
-    //$pbl_config['update']        = $oPluginAdmin->plugin->getOption('update');
     $pbl_config['referrerblock'] = $oPluginAdmin->plugin->getOption('referrerblock');
     $pbl_config['ipblock']       = $oPluginAdmin->plugin->getOption('ipblock');
     $pbl_config['ipthreshold']   = $oPluginAdmin->plugin->getOption('ipthreshold');
@@ -52,73 +53,145 @@
 	    global $oPluginAdmin;
 	    return $oPluginAdmin->plugin->plugid;
 	}
+	
+	$templateEngine =& new cles_Template(dirname(__FILE__).'/template');
+	$templateEngine->defaultLang = 'english';
+	define('NP_BLACKLIST_TEMPLATEDIR_INDEX', 'index');
+	$tplVars = array(
+		'indexurl' => serverVar('PHP_SELF'),
+		'itemperpage' => '20',
+		'optionurl' => $CONF['AdminURL'] . 'index.php?action=pluginoptions&amp;plugid=' . $oPluginAdmin->plugin->getid(),
+		'actionurl' => $CONF['ActionURL'],
+		'ticket' => $manager->_generateTicket(),
+		'plugindirurl' => $oPluginAdmin->plugin->getAdminURL(),
+		'message' => '',
+	);
+	
+	// show menu
+	$menu = $templateEngine->fetch('menu', NP_BLACKLIST_TEMPLATEDIR_INDEX);
+	echo $templateEngine->fill($menu, $tplVars, false);
+	
+	// do aciton
+	switch($action){
+		case 'addpersonal':
+			$tplVars['message'] = pbl_addpersonal();
+			$action = 'blacklist';
+			break;
+		case 'deleteexpression':
+			$tplVars['message'] = pbl_deleteexpression();
+			$action = 'blacklist';
+			break;
 
-	pbl_nucmenu();
-	if ($action == 'blacklist') {
-	    pbl_blacklisteditor();
-    	echo "</div>";
-//	} elseif ($action == 'getblacklist') {
-//       if (pbl_updateblacklist($pbl_config['update'],true))  {
-//	    	$pblmessage = "Blacklist succesfully updated!";
-//    	    pbl_blacklisteditor();
-//        	echo "</div>";
-//    	}
-	} elseif ($action == 'addpersonal') {
-    	pbl_addpersonal();
-    	pbl_blacklisteditor();
-    	echo "</div>";
-	} elseif ($action == 'deleteexpression') {
-    	pbl_deleteexpression();
-	    echo "<div class=\"pblmessage\">Expression deleted from personal blacklist.</div>\n";
-    	pbl_blacklisteditor();
-    } elseif ($action == 'log') {
-    	echo "<h2 style=\"text-align:left\"><span style=\"margin-left:10px;\">Blacklist: Blacklist Log</span></h2>";
-	    echo "<div class=\"pbldescription\">This is your Blacklist logviewer. Each blocked spam attempt will end up in this overview.If you wish you can reset the log below.</div>\n";
-    	pbl_logtable();
-    } elseif ($action == 'resetlog') {
-    	pbl_resetfile('log');
-    	echo "<h2> logfile has been reset</h2>";
-    	echo "<h2 style=\"text-align:left\"><span style=\"margin-left:10px;\">Blacklist: Blacklist Log</span></h2>";
-	    echo "<div class=\"pbldescription\">This is your Blacklist logviewer. Each blocked spam attempt will end up in this overview.If you wish you can reset the log below.</div>\n";
-    	pbl_logtable();
-    } elseif ($action == 'testpage') {
-    	echo "<h2>Test if an expression is considered spam</h2>";
-        pbl_testpage();
-    } elseif ($action == 'test') {
-    	echo "<h2>Test if an expression is considered spam</h2>";
-        pbl_test();
-        pbl_testpage();
-    } elseif ($action == 'showipblock') {
-        echo "<h2>These ip-addresses are blocked</h2>";
-        pbl_showipblock();
-    } elseif ($action == 'addip') {
-        pbl_addipblock();
-        echo "<h2>These ip-addresses are blocked</h2>";
-        pbl_showipblock();
-    } elseif  ($action == 'deleteipblock') {
-    	pbl_deleteipblock();
-	    echo "<div class=\"pblmessage\">Block deleted</div>\n";
-        echo "<h2>These ip-addresses are blocked</h2>";
-        pbl_showipblock();
-    } elseif ($action == 'htaccess') {
-        echo "<h2>Here you can generate .htaccess snippets</h2>";
-        pbl_htaccesspage();
-    } elseif ($action == 'spamsubmission') {
-		$url = requestVar('url');
-		if( requestVar('type') == 'send' && ! empty($url) ){
-			$result = $oPluginAdmin->plugin->submitSpamToBulkfeeds( $url );
+		case 'resetlog':
+			$tplVars['message'] = pbl_resetfile('log');
+			$action = 'log';
+			break;
+		
+		case 'test':
+			$tplVars['message'] = pbl_test();	
+			$action = 'testpage';
+			break;
+			
+		case 'addip':
+			$tplVars['message'] = pbl_addipblock();
+			$action = 'showipblock';
+			break;
+			
+		case 'deleteipblock':
+			$tplVars['message'] = pbl_deleteipblock();
+			$action = 'showipblock';
+			break;
 
-			echo "<h2>Spam submission</h2>";
-			echo "<h3>result</h3>";
-			echo "<pre>" . htmlspecialchars($result, ENT_QUOTES) . "</pre>";
-		} else {
-			echo "<h2>Spam submission</h2>";
-			pbl_spamsubmission_form();
-		}
-    }
-    echo "<br />";
-	echo "Based on pivot blacklist: <a style=\"border:0px; padding:0px; margin:10px;\" href=\"http://www.i-marco.nl/pivot-blacklist/\"><img style=\"border:0px\" src=\"".dirname($_SERVER['PHP_SELF'])."/pblbutton.png\" alt=\"Pivot Blacklist\"/></a><br/>";
+		case 'htaccess':
+			if (isset ($_POST["type"])) {
+				$type = (strpos(postVar("type"), "blocked") !== false) ? 'ip' : 'rules'; 
+			}
+			if (stristr(postVar("type"), "reset")) {
+				$tplVars['message'] = pbl_resetfile($type);
+			}
+			$tplVars['snippet'] = pbl_htaccess($type);
+			break;
+			
+		case 'spamsubmission':
+			$url = requestVar('url');
+			if( requestVar('type') == 'send' && ! empty($url) ){
+				$tplVars['message'] = $oPluginAdmin->plugin->submitSpamToBulkfeeds( $url );
+				$action = 'spamsubmission_result';
+			}
+			break;
+			
+		default:
+			break;
+	}
+	
+	global $pblmessage;
+	if($pblmessage)
+		$tplVars['message'] .= '<div class="pblmessage">'.$pblmessage.'</div>';
+		// show content
+	$content = '';
+	switch($action){
+		case 'blacklist':
+			$content = $templateEngine->fetch('blacklisteditor_header', NP_BLACKLIST_TEMPLATEDIR_INDEX);
+			echo $templateEngine->fill($content, $tplVars, false);
+			pbl_blacklisteditor();
+			$content = $templateEngine->fetch('blacklisteditor_footer', NP_BLACKLIST_TEMPLATEDIR_INDEX);
+			break;
+		
+		case 'log':
+			$files = pbl_getlogfiles();
+			$no = intPostVar("no");
+			if( !$no ) $no = 0;
 
+			if( $files[($no + 1)] )  {
+				$tplVars['prev_submit'] = 'submit';
+				$tplVars['prev_no'] = $no + 1;
+			} else {
+				$tplVars['prev_submit'] = 'hidden';
+			}
+			
+			if( $files[($no - 1)] )  {
+				$tplVars['next_submit'] = 'submit';
+				$tplVars['next_no'] = $no - 1;
+			} else {
+				$tplVars['next_submit'] = 'hidden';
+			}
+			
+			$content = $templateEngine->fetch('logtable_header', NP_BLACKLIST_TEMPLATEDIR_INDEX);
+			echo $templateEngine->fill($content, $tplVars, null);
+			pbl_logtable($no);
+			$content = $templateEngine->fetch('logtable_footer', NP_BLACKLIST_TEMPLATEDIR_INDEX);
+			break;
+		
+		case 'testpage':
+			$content = $templateEngine->fetch('testpage', NP_BLACKLIST_TEMPLATEDIR_INDEX);
+			break;
+		
+		case 'showipblock':
+			$content = $templateEngine->fetch('ipblock_header', NP_BLACKLIST_TEMPLATEDIR_INDEX);
+			echo $templateEngine->fill($content, $tplVars, null);
+			pbl_showipblock();
+			$content = $templateEngine->fetch('ipblock_footer', NP_BLACKLIST_TEMPLATEDIR_INDEX);
+			break;
+
+		case 'htaccess':
+			$content = $templateEngine->fetch('htaccess', NP_BLACKLIST_TEMPLATEDIR_INDEX);
+			break;
+		
+		case 'spamsubmission':
+			$content = $templateEngine->fetch('spamsubmission_form', NP_BLACKLIST_TEMPLATEDIR_INDEX);
+			break;
+		
+		case 'spamsubmission_result':
+			$content = $templateEngine->fetch('spamsubmission_result', NP_BLACKLIST_TEMPLATEDIR_INDEX);
+			break;
+			
+		default:
+			break;
+	}
+	echo $templateEngine->fill($content, $tplVars, null);
+
+	// show footer
+	$footer = $templateEngine->fetch('footer', NP_BLACKLIST_TEMPLATEDIR_INDEX);
+	echo $templateEngine->fill($footer, $tplVars, false);
+	
 	$oPluginAdmin->end();
-
-?>

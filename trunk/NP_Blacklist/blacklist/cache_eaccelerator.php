@@ -1,10 +1,10 @@
 <?php
 
 /**
-* cache_eaccelerator.php ($Revision: 1.4 $)
+* cache_eaccelerator.php ($Revision: 1.5 $)
 * 
 * by hsur ( http://blog.cles.jp/np_cles )
-* $Id: cache_eaccelerator.php,v 1.4 2006-11-26 05:52:33 hsur Exp $
+* $Id: cache_eaccelerator.php,v 1.5 2007-02-02 16:48:24 hsur Exp $
 */
 
 function pbl_ipcache_write(){
@@ -43,4 +43,3 @@ function pbl_ipcache_gc(){
 	
 	return $lastGc;
 }
-?>

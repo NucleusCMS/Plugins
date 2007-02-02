@@ -1,0 +1,23 @@
+</table>
+
+<table class="navigation">
+	<tr>
+		<td style='padding: 0;'>
+			<form action="{{indexurl}}" method="post">
+				<input type="{{prev_submit}}" value="&lt;&lt; Previous" />
+				<input type="hidden" name="no" value="{{prev_no}}" />
+				<input type="hidden" name="ticket" value="{{ticket|}}" />
+				<input type="hidden" name="action" value="log" />
+			</form>
+		</td>
+		<td style='padding: 0; text-align: right;'>	
+			<form action="{{indexurl}}" method="post">
+				<input type="{{next_submit}}" value="Next &gt;&gt;" />
+				<input type="hidden" name="no" value="{{next_no}}" />
+				<input type="hidden" name="ticket" value="{{ticket|}}" />
+				<input type="hidden" name="action" value="log" />
+			</form>
+		</td>
+	</tr>
+</table>
+

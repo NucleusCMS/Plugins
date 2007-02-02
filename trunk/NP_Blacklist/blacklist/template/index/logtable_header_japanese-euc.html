@@ -1,0 +1,41 @@
+<span style="color: red;">{{message}}</span>
+
+<h2 style="text-align:left">
+	<span style="margin-left:10px;">ブラックリスト動作ログ</span>
+</h2>
+
+<div class="pbform" style="margin-left:10px;">
+	<form action="{{indexurl}}" method="post">
+		<input type="hidden" name="action" value="resetlog" />
+		<input type="hidden" name="ticket" value="{{ticket|}}" />
+		<input type="submit" value="ログ消去" />
+	</form>
+</div>
+
+<table class="navigation">
+	<tr>
+		<td style='padding: 0;'>
+			<form action="{{indexurl}}" method="post">
+				<input type="{{prev_submit}}" value="&lt;&lt; 前へ" />
+				<input type="hidden" name="no" value="{{prev_no}}" />
+				<input type="hidden" name="ticket" value="{{ticket|}}" />
+				<input type="hidden" name="action" value="log" />
+			</form>
+		</td>
+		<td style='padding: 0; text-align: right;'>	
+			<form action="{{indexurl}}" method="post">
+				<input type="{{next_submit}}" value="次へ &gt;&gt;" />
+				<input type="hidden" name="no" value="{{next_no}}" />
+				<input type="hidden" name="ticket" value="{{ticket|}}" />
+				<input type="hidden" name="action" value="log" />
+			</form>
+		</td>
+	</tr>
+</table>
+
+<table class="pbllog">
+	<tr>
+		<th>日時</th>
+		<th>IP</th>
+		<th>適用したルール</th>
+	</tr>
