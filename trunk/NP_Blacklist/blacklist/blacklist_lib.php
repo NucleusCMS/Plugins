@@ -19,7 +19,7 @@
 //
 // Modified by hsur
 // http://blog.cles.jp
-// $Id: blacklist_lib.php,v 1.6 2007-02-02 16:48:24 hsur Exp $
+// $Id: blacklist_lib.php,v 1.7 2007-02-06 16:15:37 hsur Exp $
 
 define('__WEBLOG_ROOT', dirname(dirname(realpath(__FILE__))));
 define('__EXT', '/blacklist');
@@ -564,7 +564,7 @@ function pbl_htaccess($type) {
 		}
 	}
 	if ($type != "ip") {
-		$htaccess .= "\nRewriteRule .* � [F,L]\n";
+		$htaccess .= "\nRewriteRule .* [F,L]\n";
 	}
 	return $htaccess;
 }
