@@ -103,10 +103,11 @@
 			break;
 
 		case 'htaccess':
+			$type = '';
 			if (isset ($_POST["type"])) {
-				$type = (strpos(postVar("type"), "blocked") !== false) ? 'ip' : 'rules'; 
+				$type = (strpos(postVar("type"), "ip") !== false) ? 'ip' : 'rules'; 
 			}
-			if (stristr(postVar("type"), "reset")) {
+			if (strpos(postVar("type"), "reset") !== false ) {
 				$tplVars['message'] = pbl_resetfile($type);
 			}
 			$tplVars['snippet'] = pbl_htaccess($type);

@@ -1,15 +1,32 @@
 <span style="color: red;">{{message}}</span>
 <h2>.htaccessファイルの生成</h2>
 <div class="pbform" style="margin-left:10px;">
-	<form action="{{indexurl}}" method="post">
+	<form action="{{indexurl}}" method="post" style="display:inline">
 		<input type="hidden" name="ticket" value="{{ticket|}}" />
 		<input type="hidden" name="action" value="htaccess" />
-		<button type="submit" label="ip" name="type" value="Generate blocked IP's">IPルールの生成</button>
-		<button type="submit" label="ip" name="type" value="Generate rewrite rules">Rewriteルールの生成</button><br />
+		<input type="hidden" name="type" value="generate_ip" />
+		<input type="submit" name="submit" value="IPルールの生成" />
+	</form>
+	<form action="{{indexurl}}" method="post" style="display:inline">
+		<input type="hidden" name="ticket" value="{{ticket|}}" />
+		<input type="hidden" name="action" value="htaccess" />
+		<input type="hidden" name="type" value="generate_rule" />
+		<input type="submit" name="submit" value="Rewriteルールの生成" />
+	</form>
+		<br />
 		<br />
 		<textarea class="pbltextinput" cols="60" rows="15" name="snippet" >{{snippet}}</textarea><br />
 		<br />
-		<button type="submit" label="ip" name="type" value="Reset blocked IP's">IPブラックリストのリセット</button>
-		<button type="submit" label="ip" name="type" value="Reset rewrite rules">Rewriteルールのリセット</button>
+	<form action="{{indexurl}}" method="post" style="display:inline">
+		<input type="hidden" name="ticket" value="{{ticket|}}" />
+		<input type="hidden" name="action" value="htaccess" />
+		<input type="hidden" name="type" value="reset_ip" />
+		<input type="submit" name="submit" value="IPブラックリストのリセット" />
+	</form>
+	<form action="{{indexurl}}" method="post" style="display:inline">
+		<input type="hidden" name="ticket" value="{{ticket|}}" />
+		<input type="hidden" name="action" value="htaccess" />
+		<input type="hidden" name="type" value="reset_rule" />
+		<input type="submit" name="submit" value="Rewriteルールのリセット" />
 	</form>
 </div>
