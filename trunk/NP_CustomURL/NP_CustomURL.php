@@ -38,7 +38,7 @@ class NP_CustomURL extends NucleusPlugin
 
 	function getVersion()
 	{
-		return '0.3.5a';
+		return '0.3.5c';
 	}
 
 	function getDescription()
@@ -184,6 +184,8 @@ class NP_CustomURL extends NucleusPlugin
 							'text', $CONF['CategoryKey']);
 		$this->createOption('customurl_dfscat',    _OP_DEF_SCAT_KEY,
 							'text', 'subcategory');
+		$this->createOption('customurl_incbname',  _OP_INCLUDE_CBNAME,
+							'yesno', 'no');
 		$this->createOption('customurl_tabledel',  _OP_TABLE_DELETE,
 							'yesno', 'no');
 		$this->createOption('customurl_quicklink', _OP_QUICK_LINK,
@@ -275,17 +277,10 @@ class NP_CustomURL extends NucleusPlugin
 								 . 'WHERE inumber = %d';
 						$tque    = sprintf($tque, $table, intval($row[$id]));
 						$itime   = quickQuery($tque);
-//						$y = $m = $d = $trush = '';
-//						sscanf($itime, '%d-%d-%d %s', $y, $m, $d, $trush);
 						list($y, $m, $d, $trush) = sscanf($itime, '%d-%d-%d %s');
 						$param['year']           = sprintf('%04d', $y);
 						$param['month']          = sprintf('%02d', $m);
 						$param['day']            = sprintf('%02d', $d);
-//						$param   = array (
-//										  'year'  => $y,
-//										  'month' => $m,
-//										  'day'   => $d
-//									     );
 						$itplt   = $this->getOption('customurl_dfitem');
 						$ikey    = TEMPLATE::fill($itplt, $param);
 						$newPath = $ikey . '_' . $row[$id] . '.html';
@@ -479,9 +474,15 @@ class NP_CustomURL extends NucleusPlugin
 				if ($search_q) {
 					$que_str     = getVar('query');
 					$que_str     = htmlspecialchars($que_str);
-					$que_str     = mb_eregi_replace('/', 'ssslllaaassshhh', $que_str);
-					$que_str     = mb_eregi_replace("'", 'qqquuuooottt', $que_str);
-					$que_str     = mb_eregi_replace('&', 'aaammmppp', $que_str);
+					if (extension_loaded('mbstring')) {
+						$que_str = mb_eregi_replace('/', 'ssslllaaassshhh', $que_str);
+						$que_str = mb_eregi_replace("'", 'qqquuuooottt', $que_str);
+						$que_str = mb_eregi_replace('&', 'aaammmppp', $que_str);
+					} else {
+						$que_str = eregi_replace('/', 'ssslllaaassshhh', $que_str);
+						$que_str = eregi_replace("'", 'qqquuuooottt', $que_str);
+						$que_str = eregi_replace('&', 'aaammmppp', $que_str);
+					}
 					$que_str     = urlencode($que_str);
 					$search_path = '/search/' . $que_str;
 					$b_url       = createBlogidLink($blogid);
@@ -593,19 +594,18 @@ class NP_CustomURL extends NucleusPlugin
 // decode path_info
 
 // decode unofficial Page switch '/page_2.html'
-		foreach($v_path as $pathName) {
+/*		foreach($v_path as $pathName) {
 			if (preg_match('/^page_/', $pathName)) {
 				$temp_info    = explode('page_', $pathName);
 				$_GET['page'] = intval($temp_info[1]);
 				$page         = array_pop($v_path);
 			}
-		}
+		}*/
 
 // decode TrackBack URL shorten ver.
 		$tail = end($v_path);
 		if (substr($tail, -10, 10) == '.trackback') {
 			$v_pathName = substr($tail, 0, -10);
-//			echo $v_pathName;
 			if (is_numeric($v_pathName) || substr($v_pathName, -5) == '.html') {
 				$this->_trackback($blogid, $v_pathName);
 			} else {
@@ -701,7 +701,7 @@ class NP_CustomURL extends NucleusPlugin
 							$redURI      = createArchiveListLink(intval($v_path[$i]));
 						}
 				// Customized URL
-					} elseif (isset($v_path[$i])) {
+					} elseif (isset($v_path[$i]) && strpos($v_path[$i], 'page') === FALSE) {
 						$archivelist = $blogid;
 						$redURI      = createArchiveListLink($archivelist);
 					} else {
@@ -725,7 +725,6 @@ class NP_CustomURL extends NucleusPlugin
 						$aarc  = ($adarc || $amarc || $ayarc);
 						$carc  = ($darc || $marc || $yarc);
 				// FancyURL
-//						if (is_numeric($v_path[$i]) && !$darc && !$marc && !$yarc && isset($v_path[$ar]) && ($adarc || $amarc || $ayarc)) {
 						if (is_numeric($v_path[$i]) && $arc && isset($v_path[$ar]) && $aarc) {
 								sscanf($v_path[$ar], '%d-%d-%d', $y, $m, $d);
 							if (!empty($d)) {
@@ -743,7 +742,6 @@ class NP_CustomURL extends NucleusPlugin
 								$redURI = createArchiveLink($blogid, $archive);
 							}
 				// Customized URL
-//						} elseif ($darc || $marc || $yarc) {
 						} elseif ($carc) {
 							sscanf($v_path[$i], '%d-%d-%d', $y, $m, $d);
 							if (!empty($d)) {
@@ -818,10 +816,16 @@ class NP_CustomURL extends NucleusPlugin
 				case 'search':
 					$redirectSerch = ($this->getBlogOption($blogid, 'redirect_search') == 'yes');
 					if ($redirectSerch) {
-						$que_str       = urldecode($v_path[$i]);
-						$que_str       = mb_eregi_replace('ssslllaaassshhh', '/', $que_str);
-						$que_str       = mb_eregi_replace('qqquuuooottt',    "'", $que_str);
-						$que_str       = mb_eregi_replace('aaammmppp',       '&', $que_str);
+						$que_str = urldecode($v_path[$i]);
+						if (extension_loaded('mbstring')) {
+							$que_str = mb_eregi_replace('ssslllaaassshhh', '/', $que_str);
+							$que_str = mb_eregi_replace('qqquuuooottt',    "'", $que_str);
+							$que_str = mb_eregi_replace('aaammmppp',       '&', $que_str);
+						} else {
+							$que_str = eregi_replace('ssslllaaassshhh', '/', $que_str);
+							$que_str = eregi_replace('qqquuuooottt',    "'", $que_str);
+							$que_str = eregi_replace('aaammmppp',       '&', $que_str);
+						}
 						$que_str       = htmlspecialchars_decode($que_str);
 						$_GET['query'] = $que_str;
 						$query         = $que_str;
@@ -830,10 +834,10 @@ class NP_CustomURL extends NucleusPlugin
 				break;
 				// for pageswitch
 				case 'page':
-					if (isset($v_path[$i]) && is_numeric($v_path[$i])) {
-						$_GET['page'] = intval($v_path[$i]);
+//					if (isset($v_path[$i]) && is_numeric($v_path[$i])) {
+//						$_GET['page'] = intval($v_path[$i]);
 						$exLink       = TRUE;
-					}
+//					}
 				break;
 				// for tDiarySkin
 				case 'tdiarydate':
@@ -892,9 +896,9 @@ class NP_CustomURL extends NucleusPlugin
 							$itemid = intval($item_id);
 							$iLink  = TRUE;
 						}
-//						if (preg_match('/^page_/', $pathName)) {
-//							$iLink  = TRUE;
-//						}
+						if (preg_match('/^page_/', $pathName)) {
+							$iLink  = TRUE;
+						}
 //var_dump($linkObj);
 					}
 				break;
@@ -912,8 +916,6 @@ class NP_CustomURL extends NucleusPlugin
 				list($trush, $tempQueryString) = explode('?', serverVar('REQUEST_URI'), 2);
 			}
 			$tempQueryString = '?' . $tempQueryString;
-//			echo $tempQueryString;
-//			exit;
 			header('HTTP/1.1 301 Moved Permanently');
 			header('Location: ' . $redURI . $tempQueryString);
 			exit;
@@ -925,6 +927,9 @@ class NP_CustomURL extends NucleusPlugin
 						 'atom.xml',
 						);
 		$siteMapPlugin = $this->pluginCheck('GoogleSitemap');
+		if (!$siteMapPlugin) {
+			$siteMapPlugin = $this->pluginCheck('SearchenginesSitemapsGenerator');
+		}
 		if ($siteMapPlugin) {
 			$pcSitemaps = $siteMapPlugin->getAllBlogOptions('PcSitemap');
 			foreach ($pcSitemaps as $pCsitemap) {
@@ -977,16 +982,26 @@ class NP_CustomURL extends NucleusPlugin
 			} else {
 // Found
 // setting $CONF['Self'] for other plugins
-				$uri          = createBlogidLink($blogid);
-				$CONF['Self'] = rtrim($uri, '/');
-				$complete     = TRUE;
+				$uri                    = createBlogidLink($blogid);
+				$CONF['Self']           = rtrim($uri, '/');
+				$CONF['BlogURL']        = rtrim($uri, '/');
+				$CONF['ItemURL']        = rtrim($uri, '/');
+				$CONF['CategoryURL']    = rtrim($uri, '/');
+				$CONF['ArchiveURL']     = rtrim($uri, '/');
+				$CONF['ArchiveListURL'] = rtrim($uri, '/');
+				$complete               = TRUE;
 				return ;
 			}
 		} else {
-			$uri          = createBlogidLink($blogid);
-			$CONF['Self'] = rtrim($uri, '/');
-			$complete     = TRUE;
-				return ;
+			$uri                    = createBlogidLink($blogid);
+			$CONF['Self']           = rtrim($uri, '/');
+			$CONF['BlogURL']        = rtrim($uri, '/');
+			$CONF['ItemURL']        = rtrim($uri, '/');
+			$CONF['CategoryURL']    = rtrim($uri, '/');
+			$CONF['ArchiveURL']     = rtrim($uri, '/');
+			$CONF['ArchiveListURL'] = rtrim($uri, '/');
+			$complete               = TRUE;
+			return ;
 		}
 // Behavior Not Found
 		if ($notFound) {
@@ -1084,7 +1099,6 @@ class NP_CustomURL extends NucleusPlugin
 		$OP_MemberKey	= $this->getOption('customurl_member');
 		$params         = $data['params'];
 		$catParam       = $params['extra']['catid'];
-//		echo $catParam;
 		$subcatParam    = $params['extra'][$subrequest];
 		$useCustomURL   = $this->getAllBlogOptions('use_customurl');
 		switch ($data['type']) {
@@ -1132,9 +1146,6 @@ class NP_CustomURL extends NucleusPlugin
 						$objPath   = $ipath . '.html';
 					}
 				}
-//				if ($catParam && $subcatid && !$subcatParam) {
-//					$params['extra'][$subrequest] = $subcatid;
-//				}
 				if ($bid != $blogid) {
 					$burl = $this->_generateBlogLink($bid);
 				} else {
@@ -1191,9 +1202,6 @@ class NP_CustomURL extends NucleusPlugin
 				}
 				$objPath = $OP_ArchivesKey . '/';
 				$bid = $blogid;
-//				if ($catParam && $subcatid && !$subcatParam) {
-//					$params['extra'][$subrequest] = $subcatid;
-//				}
 			break;
 			case 'archive':
 				if ($useCustomURL[$blogid] == 'no') {
@@ -1209,9 +1217,6 @@ class NP_CustomURL extends NucleusPlugin
 				}
 				$objPath = $OP_ArchiveKey . '/' . $arc . '/';
 				$bid     = $blogid;
-//				if ($catParam && $subcatid && !$subcatParam) {
-//					$params['extra'][$subrequest] = $subcatid;
-//				}
 			break;
 			case 'blog':
 				if (!is_numeric($params['blogid'])) {
@@ -1226,7 +1231,7 @@ class NP_CustomURL extends NucleusPlugin
 		if (!$burl) {
 			$burl = $this->_generateBlogLink($blogid);
 		}
-
+/*
 		//NP_Analyze AdminArea check
 		$aplugin = $this->pluginCheck('Analyze');
 		if ($aplugin) {
@@ -1268,8 +1273,24 @@ class NP_CustomURL extends NucleusPlugin
 		$feedurl      = array_unique($feedurl);
 		$request_path = end($v_path);
 		$feeds        = in_array($request_path, $feedurl, true);
+*/
 
-		if (!$feeds && $bid != $blogid && !$CONF['UsingAdminArea']) {
+		$denyPlugins = array(
+							 'np_analyze',
+							 'np_googlesitemap',
+							);
+		$tempdeb=debug_backtrace();
+		foreach($tempdeb as $k => $v){
+			$analyzePlugin = (strtolower($v['class']) == 'np_analyze');
+			$sitemapPlugin = (strtolower($v['class']) == 'np_googlesitemap' || 
+							  strtolower($v['class']) == 'np_searchenginessitemapsgenerator');
+			if ($analyzePlugin || $sitemapPlugin) {
+				$denyPlugin = TRUE;
+			}
+		}
+
+//		if (!$feeds && $bid != $blogid && !$CONF['UsingAdminArea']) {
+		if (!$denyPlugin && $bid != $blogid) {
 			$params['extra'] = array();
 		}
 		if ($objPath || $data['type'] == 'blog') {
@@ -1291,6 +1312,15 @@ class NP_CustomURL extends NucleusPlugin
 			$data['completed'] = TRUE;
 			if (strstr ($data['url'], '//')) {
 				$link = preg_replace("/([^:])\/\//", "$1/", $data['url']);
+			}
+			//$tempdeb=debug_backtrace();
+			foreach($tempdeb as $k => $v){
+				if (strtolower($v['class']) == 'np_trackback' && strtolower($v['function']) == 'gettrackbackurl') {
+					$tb = 1;
+				}
+			}
+			if ($tb == 1 && $data['type'] == 'item' && $isItem) {
+				$data['url'] = substr($data['url'], 0, -5);
 			}
 			return $data;
 		}
@@ -1338,6 +1368,11 @@ class NP_CustomURL extends NucleusPlugin
 
 	function getParents($subid)
 	{
+		$mcatPlugin  = $this->pluginCheck('MultipleCategories');
+		$mcatVarsion = $mcatPlugin->getVersion() * 100;
+		if (intval($mcatVarsion) < 40) {
+			return intval($subid);
+		}
 		$subcat_id          = intval($subid);
 		$query              = 'SELECT '
 							. 'scatid, '
@@ -1384,6 +1419,7 @@ class NP_CustomURL extends NucleusPlugin
 	{
 		global $manager, $CONF;
 		$blog_id = intval($bid);
+/*
 		if ($this->getBlogOption($blog_id, 'use_customurl') == 'no') {
 			$b    =& $manager->getBlog($blog_id);
 			$burl =  $b->getURL();
@@ -1422,7 +1458,63 @@ class NP_CustomURL extends NucleusPlugin
 				}
 			}
 		}
+//*/
+		$param   = array(
+						 'blog',
+						 'bnumber',
+						 $blog_id
+						);
+		if (!$this->_isValid($param)) {
+			return _NOT_VALID_BLOG;
+		}
+		$b    =& $manager->getBlog($blog_id);
+		$burl = $b->getURL();
+		if ($this->getBlogOption($blog_id, 'use_customurl') == 'yes') {
+			if ($blog_id == $CONF['DefaultBlog'] && $this->getOption('customurl_incbname') == 'no') {
+				if (empty($burl)) {
+					$this->_updateBlogURL($CONF['IndexURL'], $blog_id);
+				}
+				$burl = $CONF['IndexURL'];
+			} else {
+				if (empty($burl)) {
+					$burl = $CONF['IndexURL'];
+				}
+				if (substr($burl, -4) == '.php' || $burl == $CONF['IndexURL']) {
+					$path = $this->getBlogOption($blog_id, 'customurl_bname');
+					if ($path) {
+						$burl = $CONF['IndexURL'] . $path;
+					} else {
+						$query = 'SELECT bshortname as result'
+							   . ' FROM %s'
+							   . ' WHERE bnumber = %d';
+						$query = sprintf($query, sql_table('blog'), $blog_id);
+						$bpath = quickQuery($query);
+						$this->RegistPath($blog_id, $bpath, 0, 'blog', $bpath, TRUE);
+						$burl  = $CONF['IndexURL'] . $bpath . '/';
+					}
+//					$burl_update = 'UPDATE %s '
+//								 . 'SET    burl = "%s" '
+//								 . 'WHERE  bnumber = %d';
+//					$burl        = $this->quote_smart($burl);
+//					$bTable      = sql_table('blog');
+//					sql_query(sprintf($burl_update, $bTable, $burl, $blog_id));
+					$this->_updateBlogURL($burl, $blog_id);
+				}
+			}
+		}
+
 		return trim($burl, '/');
+	}
+
+	function _updateBlogURL($burl, $blogid)
+	{
+		$blogid      = intval($blogid);
+		$burl_update = 'UPDATE %s '
+					 . 'SET    burl = "%s" '
+					 . 'WHERE  bnumber = %d';
+		$burl        = $this->quote_smart($burl);
+		$bTable      = sql_table('blog');
+		sql_query(sprintf($burl_update, $bTable, $burl, $blogid));
 	}
 
 	function _addLinkParams($link, $params)
@@ -1482,18 +1574,12 @@ class NP_CustomURL extends NucleusPlugin
 					break;
 				}
 			}
-//			$tagparam = (preg_match('/^tag\//', $link));
 			if (substr($link, -5, 5) == '.html' || $isArchives) {
-//				$link = $catlink . $sublink . $link;
 				$link = implode('', $paramlink) . $link;
 			} else {
-//				$link .= $catlink . $sublink;
 				$link .= implode('', $paramlink);
 			}
 		}
-//		if ($params['tag']) {
-//			$link .= 'tag/' . $params['tag'] . '/';
-//		}
 		if ($linkExtra) {
 			$link .= $linkExtra;
 		}
@@ -1515,43 +1601,6 @@ class NP_CustomURL extends NucleusPlugin
 			$link = preg_replace("/([^:])\/\//", "$1/", $link);
 		}
 		return $link;
-	}
-
-	function _convertAlphabettoXHTMLCharacterEntity($text)	//add shizuki
-	{
-		$alphabetKey = array (
-							  '/', '@',
-							  'A', 'B', 'C', 'D', 'E',
-							  'F', 'G', 'H', 'I', 'J',
-							  'K', 'L', 'M', 'N', 'O',
-							  'P', 'Q', 'R', 'S', 'T',
-							  'U', 'V', 'W', 'X', 'Y',
-							  'Z',
-							  'a', 'b', 'c', 'd', 'e',
-							  'f', 'g', 'h', 'i', 'j',
-							  'k', 'l', 'm', 'n', 'o',
-							  'p', 'q', 'r', 's', 't',
-							  'u', 'v', 'w', 'x', 'y',
-							  'z',
-							  '&&'
-							 );
-		$alphabetVal = array (
-							  '&#47;', '&#64;', '&#65;', '&#66;', '&#67;',
-							  '&#68;', '&#69;', '&#70;', '&#71;', '&#72;',
-							  '&#73;', '&#74;', '&#75;', '&#76;', '&#77;',
-							  '&#78;', '&#79;', '&#80;', '&#81;', '&#82;',
-							  '&#83;', '&#84;', '&#85;', '&#86;', '&#87;',
-							  '&#88;', '&#89;', '&#90;', '&#97;', '&#98;',
-							  '&#99;',
-							  '&#100;', '&#101;', '&#102;', '&#103;', '&#104;',
-							  '&#105;', '&#106;', '&#107;', '&#108;', '&#109;',
-							  '&#110;', '&#111;', '&#112;', '&#113;', '&#114;',
-							  '&#115;', '&#116;', '&#117;', '&#118;', '&#119;',
-							  '&#120;', '&#121;', '&#122;',
-							  '&#65286;&'
-							 );
-		$retData = str_replace($alphabetKey, $alphabetVal, $text);
-		return $retData;
 	}
 
 	function doSkinVar($skinType, $link_type = '', $target = '', $title = '')
@@ -1576,7 +1625,7 @@ class NP_CustomURL extends NucleusPlugin
 				$uri = $CONF['ActionURL']
 					 . '?action=plugin&amp;name=TrackBack&amp;tb_id=' . $itemid;
 			}
-			echo $this->_convertAlphabettoXHTMLCharacterEntity($uri);
+			echo $uri;
 			return;
 		}
 		// $data == type / id || name / 'i'd || 'n'ame
@@ -1627,7 +1676,7 @@ class NP_CustomURL extends NucleusPlugin
 				$uri = $CONF['ActionURL']
 					 . '?action=plugin&amp;name=TrackBack&amp;tb_id=' . $item_id;
 			}
-			echo $this->_convertAlphabettoXHTMLCharacterEntity($uri);
+			echo $uri;
 			return;
 		}
 		if (!$link_type || $link_type == 'subcategory') {
@@ -1761,9 +1810,6 @@ class NP_CustomURL extends NucleusPlugin
 				if (!$this->_isValid($param)) {
 					$url = _NOT_VALID_CAT;
 				} else {
-//					$bid = intval(getBlogIDFromCatID($cat_id));
-//					$blink = $this->_generateBlogLink(intval($bid));
-//					$url = $blink . '/' . $this->_generateCategoryLink($cat_id, '');
 					$url = createCategoryLink($cat_id);
 				}
 			break;
@@ -1946,7 +1992,9 @@ class NP_CustomURL extends NucleusPlugin
 						header('HTTP/1.0 304 Not Modified');
 						header('Content-Length: 0');
 					} else {
-						$feed = mb_convert_encoding($feed, 'UTF-8', _CHARSET);
+						if (extension_loaded('mbstring')) {
+							$feed = mb_convert_encoding($feed, 'UTF-8', _CHARSET);
+						}
 						header('Content-Type: application/xml');
 						header('Generator: Nucleus CMS ' . $nucleus['version']);
 						// dump feed
@@ -2184,26 +2232,21 @@ class NP_CustomURL extends NucleusPlugin
 	function event_PostAddItem ($data)
 	{
 		$item_id = intval($data['itemid']);
-//		$item_id = $data['itemid'];
 		$tpath   = requestVar('plug_custom_url_path');
 		$tque    = 'SELECT itime as result FROM %s WHERE inumber = %d';
 		$itime   = quickQuery(sprintf($tque, sql_table('item'), $item_id));
-//		$y = $m = $d = $trush = '';
-//		sscanf($itime, '%d-%d-%d %s', $y, $m, $d, $trush);
 		list($y, $m, $d, $trush) = sscanf($itime, '%d-%d-%d %s');
 		$param['year']           = sprintf('%04d', $y);
 		$param['month']          = sprintf('%02d', $m);
 		$param['day']            = sprintf('%02d', $d);
-//		$param   = array (
-//						  'year'  => $y,
-//						  'month' => $m,
-//						  'day'   => $d
-//					     );
 		$ipath   = TEMPLATE::fill($tpath, $param);
 		$query   = 'SELECT ititle as result FROM %s WHERE inumber = %d';
 		$iname   = quickQuery(sprintf($query, sql_table('item'), $item_id));
 		$blog_id = intval(getBlogIDFromItemID($item_id));
 		$this->RegistPath($item_id, $ipath, $blog_id, 'item', $iname, TRUE);
+		if ($this->pluginCheck('TrackBack')) {
+				$this->convertLocalTrackbackURL($data);
+		}
 	}
 
 	function event_PostRegister ($data)
@@ -2230,24 +2273,18 @@ class NP_CustomURL extends NucleusPlugin
 		$item_id = intval($data['itemid']);
 		$tque    = 'SELECT itime as result FROM %s WHERE inumber = %d';
 		$itime   = quickQuery(sprintf($tque ,sql_table('item'), $item_id));
-//		$itimestamp = strtotime($itime);
-//		$tt = explode(',', date('Y,m,d', $itimestamp));
-//		$y = $m = $d = $trush = '';
-//		sscanf($itime, '%d-%d-%d %s', $y, $m, $d, $trush);
 		list($y, $m, $d, $trush) = sscanf($itime, '%d-%d-%d %s');
 		$param['year']           = sprintf('%04d', $y);
 		$param['month']          = sprintf('%02d', $m);
 		$param['day']            = sprintf('%02d', $d);
-//		$param   = array (
-//						  'year'  => $y,
-//						  'month' => $m,
-//						  'day'   => $d
-//					     );
 		$ipath   = TEMPLATE::fill($tpath, $param);
 		$query   = 'SELECT ititle as result FROM %s WHERE inumber = %d';
 		$iname   = quickQuery(sprintf($query, sql_table('item'), $item_id));
 		$blog_id = intval(getBlogIDFromItemID($item_id));
 		$this->RegistPath($item_id, $ipath, $blog_id, 'item', $iname);
+		if ($this->pluginCheck('TrackBack')) {
+				$this->convertLocalTrackbackURL($data);
+		}
 	}
 
 	function createItemForm($item_id = 0)
@@ -2321,7 +2358,6 @@ OUTPUT;
 
 	function event_PostMoveItem($data)
 	{
-//	var_dump($data);
 		$query      = 'UPDATE %s SET obj_bid = %d'
 					. ' WHERE obj_param = "%s" AND obj_id = %d';
 		$destblogid = intval($data['destblogid']);
@@ -2372,19 +2408,10 @@ OUTPUT;
 		if ($new && $oParam == 'item') {
 			$tque  = 'SELECT itime as result FROM %s WHERE inumber = %d';
 			$itime = quickQuery(sprintf($tque ,sql_table('item'), $objID));
-//			$itimestamp = strtotime($itime);
-//			$tt = explode(',', date('Y,m,d', $itimestamp));
-//			$y = $m = $d = $trush = '';
-//			sscanf($itime, '%d-%d-%d %s', $y, $m, $d, $trush);
 			list($y, $m, $d, $trush) = sscanf($itime, '%d-%d-%d %s');
 			$param['year']           = sprintf('%04d', $y);
 			$param['month']          = sprintf('%02d', $m);
 			$param['day']            = sprintf('%02d', $d);
-//			$param   = array (
-//							  'year'  => $y,
-//							  'month' => $m,
-//							  'day'   => $d
-//						     );
 			$ikey = TEMPLATE::fill($template, $param); 
 				if ($path == $ikey) {
 					$path = $ikey . '_' . $objID;
@@ -2488,4 +2515,63 @@ OUTPUT;
 		}
 		return $value;
 	}
+
+	function convertLocalTrackbackURL($data)
+	{
+		global $manager, $CONF;
+		$ping_urls_count = 0;
+		$ping_urls       = array();
+		$localflag       = array();
+		$ping_url        = requestVar('trackback_ping_url');
+		if (trim($ping_url)) {
+			$ping_urlsTemp = array();
+			$ping_urlsTemp = preg_split("/[\s,]+/", trim($ping_url));
+			for ($i = 0; $i < count($ping_urlsTemp); $i++) {
+				$ping_urls[] = trim($ping_urlsTemp[$i]);
+				$ping_urls_count++;
+			}
+		}
+		$tb_url_amount = intRequestVar('tb_url_amount');
+		for ($i=0; $i < $tb_url_amount; $i++) {
+			$tb_temp_url = requestVar('tb_url_' . $i);
+			if ($tb_temp_url) {
+				$ping_urls[$ping_urls_count] = $tb_temp_url;
+				$localflag[$ping_urls_count] = (requestVar('tb_url_' . $i . '_local') == 'on') ? 1 : 0;
+				$ping_urls_count++;
+			}
+		}
+		if ($ping_urls_count <= 0) {
+			return;
+		}
+		$blog_id = getBlogidFromItemID(intval($data['itemid']));
+		for ($i=0; $i < count($ping_urls); $i++) {
+			if($localflag[$i]) {
+				$tmp_url         = parse_url($ping_urls[$i]);
+				$tmp_url['path'] = trim($tmp_url['path'], '/');
+				$path_arr        = explode("/", $tmp_url['path']);
+				$tail            = end($path_arr);
+				$linkObj         = array (
+										  'linkparam' => 'item',
+										  'bid'       => $blog_id,
+										 );
+				if (substr($tail, -10) == '.trackback') {
+					$pathName = substr($tail, 0, -10);
+					if (substr($pathName, -5) == '.html') {
+						$linkObj['name'] = $pathName;
+					} else {
+						$linkObj['name'] = $pathName . '.html';
+					}
+				} else {
+					$linkObj['name'] = $tail;
+				}
+				$item_id = $this->getRequestPathInfo($linkObj);
+				if ($item_id) {
+					$ping_urls[$i] = $CONF['ActionURL']
+								   . '?action=plugin&name=TrackBack&tb_id=' . $item_id;
+				}
+			}
+		}
+		$_REQUEST['trackback_ping_url'] = implode ("\n", $ping_urls);
+	}
+
 }

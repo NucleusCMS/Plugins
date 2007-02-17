@@ -13,6 +13,7 @@
 	define('_OP_DEF_ITEM_KEY',		'新規作成時のアイテムのURIの接頭語');
 	define('_OP_DEF_CAT_KEY',		'新規作成時のカテゴリーのURIの接頭語');
 	define('_OP_DEF_SCAT_KEY',		'新規作成時のサブカテゴリーのURIの接頭語');
+	define('_OP_INCLUDE_CBNAME',	'デフォルトのブログの URL にもブログの短縮名を追加する');
 	define('_OP_NOT_FOUND',			'URI に該当するデータが存在しなかった場合の挙動');
 	define('_OP_TABLE_DELETE',		'アンインストールするときにテーブルを削除しますか？');
 	define('_OP_QUICK_LINK',		'クイックメニューにショートカットを追加しますか？');
@@ -36,11 +37,16 @@
 	define('_CONFLICT_MSG',			'同一ブログ内にすでに存在するパスが指定されたので、パスの末尾に ID が付加されました<br />パスを変更する場合は、再度編集してください');
 	define('_DELETE_PATH',			'<h2>エイリアス名を削除しました</h2>');
 	define('_DELETE_MSG',			'パスとして空白が指定されたため、登録済みのパスを削除しました<br />リンク URI には通常の FancyURLs のものが適用されます');
-	define('_NOT_VALID_BLOG',		'指定されたブログは存在しません');
-	define('_NOT_VALID_ITEM',		'指定されたアイテムは存在しません');
-	define('_NOT_VALID_CAT',		'指定されたカテゴリーは存在しません');
-	define('_NOT_VALID_SUBCAT',		'指定されたサブカテゴリーは存在しません');
-	define('_NOT_VALID_MEMBER',		'指定されたメンバーは存在しません');
+//	define('_NOT_VALID_BLOG',		'指定されたブログは存在しません');
+//	define('_NOT_VALID_ITEM',		'指定されたアイテムは存在しません');
+//	define('_NOT_VALID_CAT',		'指定されたカテゴリーは存在しません');
+//	define('_NOT_VALID_SUBCAT',		'指定されたサブカテゴリーは存在しません');
+//	define('_NOT_VALID_MEMBER',		'指定されたメンバーは存在しません');
+	define('_NOT_VALID_BLOG',		'');
+	define('_NOT_VALID_ITEM',		'');
+	define('_NOT_VALID_CAT',		'');
+	define('_NOT_VALID_SUBCAT',		'');
+	define('_NOT_VALID_MEMBER',		'');
 
 // Admin area
 	define('_ADMIN_TITLE',			'URL CUSTOMIZE');

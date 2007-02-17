@@ -13,6 +13,7 @@
 	define('_OP_DEF_ITEM_KEY',		'Default prefix of Item request URI');
 	define('_OP_DEF_CAT_KEY',		'Default prefix of Categories request URI');
 	define('_OP_DEF_SCAT_KEY',		'Default prefix of Subcategories request URI');
+	define('_OP_INCLUDE_CBNAME',	'Add BlogShortcut to Default Blog');
 	define('_OP_NOT_FOUND',			'Behavior when there were not data to fall under');
 	define('_OP_TABLE_DELETE',		'Drop tables on uninstall ?');
 	define('_OP_QUICK_LINK',		'Show in Quick Menu ?');
@@ -36,11 +37,16 @@
 	define('_CONFLICT_MSG',			'Special id is automatically added at the end of URI because specified URI already exists in this weblog.<br /> Please edit again if you want to chage URI.');
 	define('_DELETE_PATH',			'<h2>Alias was successfully deleted.</h2>');
 	define('_DELETE_MSG',			'Drop registered URI because of empty setting.<br /> Nomal FancyURL is applied for the link URI.');
-	define('_NOT_VALID_BLOG',		'Specified weblog does not exist.');
-	define('_NOT_VALID_ITEM',		'Specified item does not exist.');
-	define('_NOT_VALID_CAT',		'Specified category does not exist.');
-	define('_NOT_VALID_SUBCAT',		'Specified subcategory does not exist.');
-	define('_NOT_VALID_MEMBER',		'Specified member does not exist.');
+//	define('_NOT_VALID_BLOG',		'Specified weblog does not exist.');
+//	define('_NOT_VALID_ITEM',		'Specified item does not exist.');
+//	define('_NOT_VALID_CAT',		'Specified category does not exist.');
+//	define('_NOT_VALID_SUBCAT',		'Specified subcategory does not exist.');
+//	define('_NOT_VALID_MEMBER',		'Specified member does not exist.');
+	define('_NOT_VALID_BLOG',		'');
+	define('_NOT_VALID_ITEM',		'');
+	define('_NOT_VALID_CAT',		'');
+	define('_NOT_VALID_SUBCAT',		'');
+	define('_NOT_VALID_MEMBER',		'');
 
 // Admin area
 	define('_ADMIN_TITLE',			'URL CUSTOMIZE');
