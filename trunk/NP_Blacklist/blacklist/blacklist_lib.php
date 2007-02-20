@@ -19,7 +19,7 @@
 //
 // Modified by hsur
 // http://blog.cles.jp
-// $Id: blacklist_lib.php,v 1.7 2007-02-06 16:15:37 hsur Exp $
+// $Id: blacklist_lib.php,v 1.8 2007-02-20 08:06:07 hsur Exp $
 
 define('__WEBLOG_ROOT', dirname(dirname(realpath(__FILE__))));
 define('__EXT', '/blacklist');
@@ -77,6 +77,7 @@ function pbl_checkforspam($text, $ipblock = false, $ipthreshold = 10, $logrule =
 					if ($logrule) {
 						pbl_logRule($expression);
 					}
+					fclose($handle);
 					return $expression;
 				}
 			}
@@ -365,8 +366,7 @@ function check_for_iprbl() {
 
 function check_for_domainrbl($comment_text) {
 	$domainrbl = array ('rbl.bulkfeeds.jp', 'url.rbl.jp', 'bsb.spamlookup.net');
-	$regex_url = "{https?://(?:www\.)?([a-z0-9._-]{2,})(?::[0-9]+)?((?:/[_.!~*a-z0-9;@&=+$,%-]+){0,2})}m";
-	$comment_text = mb_strtolower($comment_text);
+	$regex_url = "{https?://(?:www\.)?([a-z0-9._-]{2,})(?::[0-9]+)?((?:/[_.!~*a-z0-9;@&=+$,%-]+){0,2})}mi";
 
 	$mk_regex_array = array ();
 	preg_match_all($regex_url, $comment_text, $mk_regex_array);

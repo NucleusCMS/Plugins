@@ -1,9 +1,9 @@
 <?php
 
 /**
-  * NP_Blacklist(JP) ($Revision: 1.8 $)
+  * NP_Blacklist(JP) ($Revision: 1.9 $)
   * by hsur ( http://blog.cles.jp/np_cles )
-  * $Id: NP_Blacklist.php,v 1.8 2007-02-11 08:57:12 hsur Exp $
+  * $Id: NP_Blacklist.php,v 1.9 2007-02-20 08:06:07 hsur Exp $
   *
   * Based on NP_Blacklist 0.98
   * by xiffy
@@ -41,10 +41,10 @@ class NP_Blacklist extends NucleusPlugin {
 		return 'http://blog.cles.jp/np_cles/category/31/subcatid/11';
 	}
 	function getVersion() {
-		return '1.0.2';
+		return '1.0.3';
 	}
 	function getDescription() {
-		return '[$Revision: 1.8 $]<br />'.NP_BLACKLIST_description;
+		return '[$Revision: 1.9 $]<br />'.NP_BLACKLIST_description;
 	}
 	function supportsFeature($what) {
 		switch ($what) {
@@ -317,7 +317,7 @@ class NP_Blacklist extends NucleusPlugin {
 		// setup settings
 		if ($this->_is_writable($settingsDir)) {
 			foreach ($settings as $setting) {
-				touch($settingsDir.$setting);
+				@touch($settingsDir.$setting);
 			}
 			// setup personal blacklist
 			if (!file_exists($personalBlacklist)) {
