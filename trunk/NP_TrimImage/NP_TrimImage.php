@@ -1,4 +1,45 @@
 <?php
+// vim: tabstop=2:shiftwidth=2
+
+/**
+  * NP_TrimImage ($Revision: 1.9 $)
+  * by nakahara21 ( http://nakahara21.com/ )
+  * by hsur ( http://blog.cles.jp/np_cles/ )
+  * $Id: NP_TrimImage.php,v 1.9 2007-03-06 20:55:44 hsur Exp $
+  *
+  * Based on NP_TrimImage 1.0 by nakahara21
+  * http://nakahara21.com/?itemid=512
+*/
+
+/*
+  * Copyright (C) 2004-2006 nakahara21 All rights reserved.
+  * Copyright (C) 2006-2007 cles All rights reserved.
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License
+  * as published by the Free Software Foundation; either version 2
+  * of the License, or (at your option) any later version.
+  * 
+  * This program is distributed in the hope that it will be useful,
+  * but WITHOUT ANY WARRANTY; without even the implied warranty of
+  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  * GNU General Public License for more details.
+  * 
+  * You should have received a copy of the GNU General Public License
+  * along with this program; if not, write to the Free Software
+  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+  * 
+  * In addition, as a special exception, mamio and cles gives
+  * permission to link the code of this program with those files in the PEAR
+  * library that are licensed under the PHP License (or with modified versions
+  * of those files that use the same license as those files), and distribute
+  * linked combinations including the two. You must obey the GNU General Public
+  * License in all respects for all of the code used other than those files in
+  * the PEAR library that are licensed under the PHP License. If you modify
+  * this file, you may extend this exception to your version of the file,
+  * but you are not obligated to do so. If you do not wish to do so, delete
+  * this exception statement from your version.
+*/
 
 //history
 //	0.2:	$archive, $blogid and $catid suppot ($exmode=all ready)
@@ -19,6 +60,10 @@
 // 	2.1:	update regex
 //	    	add alt/title attribute
 //	    	bug fix
+//  2.2:	support <img /> tag. 
+// 			doTemplateVar() bug fix.
+// 			Add ENT_QUOTES to htmlspecialchars()
+// 			Add ExtractImageMode
 
 define('NP_TRIMIMAGE_FORCE_PASSTHRU', true); //passthru(standard)
 //define('NP_TRIMIMAGE_FORCE_PASSTHRU', false); //redirect(advanced)
@@ -30,96 +75,65 @@ require_once(dirname(__FILE__).'/sharedlibs/sharedlibs.php');
 require_once('phpthumb/phpthumb.functions.php');
 require_once('phpthumb/phpthumb.class.php');
 
-class NP_TrimImage extends NucleusPlugin
-{
-	function getName ()
-	{
+class NP_TrimImage extends NucleusPlugin {
+	function getName() {
 		return 'TrimImage';
 	}
 
-	function getAuthor ()
-	{
+	function getAuthor() {
 		return 'nakahara21 + hsur';
 	}
 
-	function getURL () {
-		return 'http://nakahara21.com/';
+	function getURL() {
+		return 'http://blog.cles.jp/np_cles/category/31/subcatid/15';
 	}
-	
-	function getVersion () {
-		return '2.1.2';
+
+	function getVersion() {
+		return '2.2.0';
 	}
-	
-	function supportsFeature($what)
-	{
+
+	function supportsFeature($what) {
 		switch ($what) {
-			case 'SqlTablePrefix':
+			case 'SqlTablePrefix' :
 				return 1;
-			default:
+			default :
 				return 0;
 		}
 	}
 
-	function getDescription ()
-	{
+	function getDescription() {
 		return 'Trim image in items, and embed these images.';
 	}
-			function getEventList() { 
-		return array(
-			'PostAddItem',
-			'PostUpdateItem',
-			'PostDeleteItem',
-		); 
+			function getEventList() {
+		return array ('PostAddItem', 'PostUpdateItem', 'PostDeleteItem',);
 	}
 	
-	function event_PostAddItem(&$data){
+	function event_PostAddItem(& $data) {
 		$this->_clearCache();
 	}
-	function event_PostUpdateItem(&$data){		$this->_clearCache();
-	}
-	function event_PostDeleteItem(&$data){
+	function event_PostUpdateItem(& $data) {
 		$this->_clearCache();
 	}
-	function _clearCache(){
-		//$phpThumb = new phpThumb();
-		//foreach($this->phpThumbParams as $paramKey => $paramValue ){
-		//	$phpThumb->setParameter($paramKey, $paramValue);
-		//}
-		//$phpThumb->setParameter('config_cache_maxage', 1);
-		//$phpThumb->CleanUpCacheDirectory();
-		//var_dump($phpThumb);
+	function event_PostDeleteItem(& $data) {
+		$this->_clearCache();
 	}
-
-/*
-	function instaii()
-	{
-		$ver_min = (getNucleusVersion() < $this->getMinNucleusVersion());
-		$pat_min = ((getNucleusVersion() == $this->getMinNucleusVersion()) &&
-			(getNucleusPatchLevel() < $this->getMinNucleusPatchLevel()));
-		if ($ver_min || $pat_min) {
-			$this->_attention();
+	function _clearCache() {
+		/*
+		$phpThumb = new phpThumb();
+		foreach ($this->phpThumbParams as $paramKey => $paramValue) {
+			$phpThumb->setParameter($paramKey, $paramValue);
 		}
+		$phpThumb->setParameter('config_cache_maxage', 1);
+		$phpThumb->CleanUpCacheDirectory();
+		var_dump($phpThumb);
+		*/
 	}
 
-	function _attention()
-	{
-		global $admin;
-		$admin->pagehead();
-		echo '<h2>ATTENTION</h2>';
-		echo 'Your Nucleus version is old<br />';
-		echo 'Please version-up Nucleus CORE<br />';
-		echo 'newest version is 3.23 !!<br />';
-		echo '<a href="index.php" onclick="history.back()">'._BACK.'</a>';
-		$admin->pagefoot();
-		return;
-	}
-*/
-	function init()
-	{
+	function init() {
 		global $DIR_MEDIA;
-		$this->fileex = array('.gif', '.jpg', '.png');
+		$this->fileex = array ('.gif', '.jpg', '.png');
 		$cacheDir = $DIR_MEDIA.'phpthumb/';
-		$cacheDir = (is_dir($cacheDir) && @is_writable($cacheDir) ) ? $cacheDir : null;
+		$cacheDir = (is_dir($cacheDir) && @ is_writable($cacheDir)) ? $cacheDir : null;
 		
 		$this->phpThumbParams = array(
 			'config_document_root' => $DIR_MEDIA,
@@ -140,49 +154,52 @@ class NP_TrimImage extends NucleusPlugin
 		);
 	}
 	
-	function doSkinVar($skinType, $amount = 10, $wsize = 80, $hsize = 80, $point = 0, $random = 0, $exmode = '')
-	{
+	function doSkinVar($skinType, $amount = 10, $wsize = 80, $hsize = 80, $point = 0, $random = 0, $exmode = '', $titlemode = '', $includeImg = 'true') {
 		global $CONF, $manager, $blog;
 		if ($blog) {
-			$b =& $blog;
+			$b = & $blog;
 		} else {
-			$b =& $manager->getBlog($CONF['DefaultBlog']);
+			$b = & $manager->getBlog($CONF['DefaultBlog']);
 		}
-/*		($blog)?
-			$b =& $blog :
-			$b =& $manager->getBlog($CONF['DefaultBlog']);*/
 		
-		if ( !is_numeric($amount) ) $amount = 10;
-		if ( !is_numeric($hsize) ) $hsize = 80;
-		if ( !is_numeric($wsize) ) $wsize = 80;
-		$point = ($point == 'lefttop' ) ? true : false;
+		if (!is_numeric($amount))
+			$amount = 10;
+		if (!is_numeric($hsize))
+			$hsize = 80;
+		if (!is_numeric($wsize))
+			$wsize = 80;
+		$point = ($point == 'lefttop') ? true : false;
+		$includeImg = ( $includeImg == 'true' ) ? true : false;
+		
 		$this->exquery = '';
-		
-		switch($skinType){
-			case 'archive':
+
+		switch ($skinType) {
+			case 'archive' :
 				global $archive;
 				$year = $month = $day = '';
 				sscanf($archive, '%d-%d-%d', $year, $month, $day);
-				if (empty($day)) {
+				if (empty ($day)) {
 					$timestamp_start = mktime(0, 0, 0, $month, 1, $year);
-					$timestamp_end = mktime(0, 0, 0, $month + 1, 1, $year);  // also works when $month==12
+					$timestamp_end = mktime(0, 0, 0, $month +1, 1, $year); // also works when $month==12
 				} else {
 					$timestamp_start = mktime(0, 0, 0, $month, $day, $year);
-					$timestamp_end = mktime(0, 0, 0, $month, $day + 1, $year);  
+					$timestamp_end = mktime(0, 0, 0, $month, $day +1, $year);
 				}
 				$this->exquery .= ' and itime >= ' . mysqldate($timestamp_start)
-								. ' and itime < ' . mysqldate($timestamp_end);
+									.' and itime < ' . mysqldate($timestamp_end);
 
-//			break;
-			default:
+				//break;
+			default :
 				if ($exmode == '') {
-					$this->exquery .= ' and iblog = ' . intval($b->getID());
+					$this->exquery .= ' and iblog = '.intval($b->getID());
 					global $catid;
-					if ($catid) $this->exquery .= ' and icat = ' . intval($catid);
-				} elseif ($exmode == 'all') {
+					if ($catid)
+						$this->exquery .= ' and icat = '.intval($catid);
+				}
+				elseif ($exmode == 'all') {
 					// nothing
 				} else {
-					$spid_array = $spbid = $spcid = array();
+					$spid_array = $spbid = $spcid = array ();
 					$spid_array = explode('/', $exmode);
 					foreach ($spid_array as $spid) {
 						if (substr($spid, 0, 1) == 'b')
@@ -192,255 +209,312 @@ class NP_TrimImage extends NucleusPlugin
 					}
 					$spbid = implode(',', $spbid);
 					$spcid = implode(',', $spcid);
-					if($spbid) {
-						$this->exquery .= ' and iblog IN (' . $spbid . ') ';
+					if ($spbid) {
+						$this->exquery .= ' and iblog IN ('.$spbid.') ';
 					}
-					if($spcid) {
-						$this->exquery .= ' and icat IN (' . $spcid . ') ';
+					if ($spcid) {
+						$this->exquery .= ' and icat IN ('.$spcid.') ';
 					}
 				}
 		}
 
-		$filelist = array();
-		$this->imglists = array();
-		$this->imgfilename = array();
-		$random =  $random ? true : false;
-		if (!($filelist = $this->listup($amount,$random))) {
-			echo 'No images here.';
+		$filelist = array ();
+		$this->imglists = array ();
+		$this->imgfilename = array ();
+		$random = $random ? true : false;
+		if (!($filelist = $this->listup($amount, $random, $includeImg))) {
+			//echo 'No images here.';
 			return;
 		}
-//		print_r($filelist);
 
 		$amount = min($amount, count($filelist));
 		echo '<div>';
-		for ($i=0;$i<$amount;$i++) {
-			$itemlink = $this->createGlobalItemLink($filelist[$i][1], '');	// why not createItemLink ?
-//			$itemlink = $this->createItemLink($filelist[$i][1]);
-			echo '<a href="' . $itemlink . '">';
-			
+		for ($i = 0; $i < $amount; $i ++) {
+			$itemlink = $this->createGlobalItemLink($filelist[$i][1], ''); // why not createItemLink ?
+			//			$itemlink = $this->createItemLink($filelist[$i][1]);
+			echo '<a href="'.$itemlink.'">';
+
 			$src = '';
-			if( ! $this->phpThumbParams['config_cache_force_passthru'] ){
+			if (!$this->phpThumbParams['config_cache_force_passthru']) {
 				$src = $this->createImage($filelist[$i][0], $wsize, $hsize, $point, true);
 			}
-			if(!$src) {
-				$src = htmlspecialchars($CONF['ActionURL'],ENT_QUOTES)
-				. '?action=plugin&amp;name=TrimImage&amp;type=draw'
-				. '&amp;p=' . $filelist[$i][0] . '&amp;wsize=' . $wsize . '&amp;hsize=' . $hsize . ( $point ? '&amp;pnt=lefttop' : '');
+			if (!$src) {
+				$src = htmlspecialchars($CONF['ActionURL'], ENT_QUOTES)
+						.'?action=plugin&amp;name=TrimImage&amp;type=draw'.'&amp;p='
+						.$filelist[$i][0].'&amp;wsize='.$wsize.'&amp;hsize='.$hsize
+						. ($point ? '&amp;pnt=lefttop' : '');
 			}
-			echo '<img src="'.$src.'" width="'.$wsize.'" height="'.$hsize.'" alt="'.htmlspecialchars($filelist[$i][2]).'" title="'.htmlspecialchars($filelist[$i][2]).'"/>';
+			
+			if($titlemode == 'item')
+				$title = ($filelist[$i][4]) ? $filelist[$i][4] : $filelist[$i][2];
+			else
+				$title = ($filelist[$i][2]) ? $filelist[$i][2] : $filelist[$i][4];
+
+			echo '<img src="'.$src.'" '			
+				. ( $wsize ? 'width="'.$wsize.'"'  : '' )
+				. ( $hsize ? 'height="'.$hsize.'"' : '' )
+				. 'alt="'.htmlspecialchars($title, ENT_QUOTES)
+				. '" title="'.htmlspecialchars($title, ENT_QUOTES).'"/>';
 			echo "</a>\n";
 		}
 		echo "</div>\n";
 	}
 
-	function listup($amount = 10, $random = false)
-	{
+	function listup($amount = 10, $random = false, $includeImg = true) {
 		global $CONF, $manager, $blog;
 		if ($blog) {
-			$b =& $blog;
+			$b = & $blog;
 		} else {
-			$b =& $manager->getBlog($CONF['DefaultBlog']);
+			$b = & $manager->getBlog($CONF['DefaultBlog']);
 		}
-/*		($blog)?
-			$b =& $blog :
-			$b =& $manager->getBlog($CONF['DefaultBlog']);*/
 
 		$query = 'SELECT inumber as itemid, ititle as title, ibody as body, iauthor, itime, imore as more,';
 		$query .= ' icat as catid, iclosed as closed';
-		$query .= ' FROM ' . sql_table('item');
+		$query .= ' FROM '.sql_table('item');
 		$query .= ' WHERE idraft = 0';
-		$query .= ' and itime <= ' . mysqldate($b->getCorrectTime());	// don't show future items!
+		$query .= ' and itime <= '.mysqldate($b->getCorrectTime()); // don't show future items!
 		$query .= $this->exquery;
-		$query .= ' ORDER BY itime DESC LIMIT ' . intval($amount * 10);
-				
+		$query .= ' ORDER BY itime DESC LIMIT '.intval($amount * 10);
+
 		$res = sql_query($query);
-		
-		if (!mysql_num_rows($res)) return FALSE;
-		
+
+		if (!mysql_num_rows($res))
+			return FALSE;
+
 		while ($it = mysql_fetch_object($res)) {
-			$txt = $it->body . $it->more;
-			if( preg_match_all("/<%(image|popup|paint)\((.*?)\)%>/s", $txt, $imgpnt) )
-				@array_walk($imgpnt[2], array(&$this, "exarray"), array($it->itemid, $it->iauthor));
-			if( count($this->imglists) >= $amount ) break;
+			$txt = $it->body.$it->more;
+			if (preg_match_all("/<%(image|popup|paint)\((.*?)\)%>/s", $txt, $imgpnt))
+				@ array_walk($imgpnt[2], array (& $this, "exarray"), array ($it->itemid, $it->iauthor, $it->title));
+
+			if ($includeImg && preg_match_all("/<img (.*?)>/s", $txt, $imgtmp)){
+				foreach($imgtmp[1] as $tmp){
+					$this->exarray($tmp, null, array($it->itemid, $it->iauthor, $it->title), true);
+				}
+			}
+
+			if (count($this->imglists) >= $amount)
+				break;
 		}
 		mysql_free_result($res);
-	
-		if($random) shuffle($this->imglists);
+
+		if ($random)
+			shuffle($this->imglists);
 		$this->imglists = array_slice($this->imglists, 0, $amount);
 		return $this->imglists;
 	}
 
-	function exarray($imginfo,$key,$iaid)
-	{
-		list($url, $w, $h, $alt, $ext)  = explode("|", $imginfo, 5);
-		if (!in_array(strtolower(strrchr($url, "." )), $this->fileex)) return;
-		if (in_array($url, $this->imgfilename)) return;
+	function exarray($imginfo, $key, $params, $isImg = false) {
+		global $CONF;
+		if ($isImg){
+			if( preg_match_all('/(src|width|height|alt)=\"(.*?)\"/i', $imginfo, $matches) ) {
+				$index = 0;
+				$param = array();
+				foreach( $matches[1] as $type ){
+					$param[$type] = $matches[2][$index];						
+					$index++;
+				}
+				if( $param['src'] && ( strpos($param['src'], $CONF['MediaURL']) === 0 ) ){
+					$imginfo = substr( $param['src'], strlen($CONF['MediaURL']) )
+					. '|' . $param['width']
+					. '|' . $param['height']
+					. '|' . $param['alt'];
+				}
+			} else {
+				return;
+			}
+		}
+		
+		list ($url, $w, $h, $alt, $ext) = explode("|", $imginfo, 5);
+		if (!in_array(strtolower(strrchr($url, ".")), $this->fileex))
+			return;
+		if (in_array($url, $this->imgfilename))
+			return;
 		$this->imgfilename[] = $url;
 		if (!strstr($url, '/')) {
-			$url = $iaid[1] . '/' . $url;
+			$url = $params[1].'/'.$url;
 		}
-		$this->imglists[] = array($url,$iaid[0],$alt,$ext);
+		$this->imglists[] = array ($url, $params[0], $alt, $ext, $params[2]);
 	}
 
-	function doTemplateVar(&$item, $wsize=80, $hsize=80, $point=0, $maxAmount=0)
-	{
+	function doTemplateVar(& $item, $wsize = 80, $hsize = 80, $point = 0, $maxAmount = 0, $titlemode = '', $includeImg = 'true') {
 		global $CONF;
-		if ( !is_numeric($hsize) ) $hsize = 80;
-		if ( !is_numeric($wsize) ) $wsize = 80;
-		$point = ($point == 'lefttop' ) ? true : false;
+		if (!is_numeric($hsize))
+			$hsize = 80;
+		if (!is_numeric($wsize))
+			$wsize = 80;
+		$point = ($point == 'lefttop') ? true : false;
+		$includeImg = ( $includeImg == 'true' ) ? true : false;
 		
-		$filelist = array();
-		$this->imglists = array();
-		$this->imgfilename = array();
-//			$txt = $item->body.$item->more;
-			$txt = '';
-			$q = 'SELECT ibody as body, imore as more FROM '.sql_table('item').' WHERE inumber='.intval($item->itemid);
-			$r = sql_query($q);
-			while ($d = mysql_fetch_object($r)) {
-				$txt .= $d->body.$d->more;
+		$filelist = array ();
+		$this->imglists = array ();
+		$this->imgfilename = array ();
+		//$txt = $item->body.$item->more;
+		$txt = '';
+		$q = 'SELECT ibody as body, imore as more, ititle as title FROM '.sql_table('item').' WHERE inumber='.intval($item->itemid);
+		$r = sql_query($q);
+		while ($d = mysql_fetch_object($r)) {
+			$txt .= $d->body.$d->more;
+		}
+
+		if (preg_match_all("/<%(image|popup|paint)\((.*?)\)%>/s", $txt, $imgpnt))
+			@ array_walk($imgpnt[2], array (& $this, "exarray"), array ($item->itemid, $item->authorid, $item->title));
+			
+		if ($includeImg && preg_match_all("/<img (.*?)>/s", $txt, $imgtmp)){
+			foreach($imgtmp[1] as $tmp){
+				$this->exarray($tmp, null, array ($item->itemid, $item->authorid, $item->title), true);
 			}
+		}
 
-			if( preg_match_all("/<%(image|popup|paint)\((.*?)\)%>/s", $txt, $imgpnt) )
-				@array_walk($imgpnt[2], array(&$this, "exarray"), array($item->itemid, $item->authorid));
-
-			$filelist = $this->imglists;
-			if(!$maxAmount)
-				$amount = count($filelist);
-			else
-				$amount = min($maxAmount, count($filelist));
+		$filelist = $this->imglists;
+		if (!$maxAmount)
+			$amount = count($filelist);
+		else
+			$amount = min($maxAmount, count($filelist));
 
 		if (!$amount) {
-			$img_tag = '<img src="' . htmlspecialchars($CONF['ActionURL'],ENT_QUOTES) . '?action=plugin&amp;name=TrimImage';
-			$img_tag .= '&amp;type=draw&amp;p=non&amp;wsize=' . $wsize . '&amp;hsize=' . $hsize . $exq;
-			$img_tag .= '" width="' . $wsize . '" height="' . $hsize . '" />';
+			$img_tag = '<img src="'.htmlspecialchars($CONF['ActionURL'], ENT_QUOTES).'?action=plugin&amp;name=TrimImage';
+			$img_tag .= '&amp;type=draw&amp;p=non&amp;wsize='.$wsize.'&amp;hsize='.$hsize.$exq;
+			$img_tag .= '" width="'.$wsize.'" height="'.$hsize.'" />';
 			echo $img_tag;
-		}
-
-
-		for ($i=0;$i<$amount;$i++) {
-			$src = '';
-			if( ! $this->phpThumbParams['config_cache_force_passthru'] ){
-				$src = $this->createImage($filelist[$i][0], $wsize, $hsize, $point, true);
-			}
-			if(!$src) {
-				$src = htmlspecialchars($CONF['ActionURL'],ENT_QUOTES)
-					. '?action=plugin&amp;name=TrimImage&amp;type=draw'
-					. '&amp;p=' . $filelist[$i][0] . '&amp;wsize=' . $wsize . '&amp;hsize=' . $hsize . ( $point ? '&amp;pnt=lefttop' : '');
-			}
-			echo '<img src="'.$src.'" width="'.$wsize.'" height="'.$hsize.'" alt="'.htmlspecialchars($filelist[$i][2]).'" title="'.htmlspecialchars($filelist[$i][2]).'"/>';
+		} else {
+			for ($i = 0; $i < $amount; $i ++) {
+				$src = '';
+				if (!$this->phpThumbParams['config_cache_force_passthru']) {
+					$src = $this->createImage($filelist[$i][0], $wsize, $hsize, $point, true);
+				}
+				if (!$src) {
+					$src = htmlspecialchars($CONF['ActionURL'], ENT_QUOTES).'?action=plugin&amp;name=TrimImage&amp;type=draw'.'&amp;p='.$filelist[$i][0].'&amp;wsize='.$wsize.'&amp;hsize='.$hsize. ($point ? '&amp;pnt=lefttop' : '');
+				}
+				
+				if($titlemode == 'item')
+					$title = ($filelist[$i][4]) ? $filelist[$i][4] : $filelist[$i][2];
+				else
+					$title = ($filelist[$i][2]) ? $filelist[$i][2] : $filelist[$i][4];
+				
+				echo '<img src="'.$src.'" '			
+					. ( $wsize ? 'width="'.$wsize.'"'  : '' )
+					. ( $hsize ? 'height="'.$hsize.'"' : '' )
+					. 'alt="'.htmlspecialchars($title, ENT_QUOTES)
+					. '" title="'.htmlspecialchars($title, ENT_QUOTES).'"/>';
+				}
 		}
 	}
 
-
-	function doAction($type)
-	{
-		$w = intRequestVar('wsize') ? intRequestVar('wsize') : 80;
-		$h = intRequestVar('hsize') ? intRequestVar('hsize') : 80;
+	function doAction($type) {
+		$w = is_numeric(requestVar('wsize')) ? requestVar('wsize') : 80;
+		$h = is_numeric(requestVar('hsize')) ? requestVar('hsize') : 80;
 		$isLefttop = (requestVar('pnt') == 'lefttop') ? true : false;
-		
+
 		switch ($type) {
-			case 'draw':
+			case 'draw' :
 				$this->createImage(requestVar('p'), $w, $h, $isLefttop);
 				break;
-			default:
+			default :
 				return 'No such action';
 				break;
 		}
 	}
-	
-	function createImage($p, $w, $h, $isLefttop, $cacheCheckOnly = false){
+
+	function createImage($p, $w, $h, $isLefttop, $cacheCheckOnly = false) {
 		$phpThumb = new phpThumb();
-		foreach($this->phpThumbParams as $paramKey => $paramValue ){
+		foreach ($this->phpThumbParams as $paramKey => $paramValue) {
 			$phpThumb->setParameter($paramKey, $paramValue);
 		}
-		
-		$phpThumb->setParameter('w', intval($w) );
-		$phpThumb->setParameter('h', intval($h) );
+
+		if($h) $phpThumb->setParameter('h', intval($h));
+		if($w) $phpThumb->setParameter('w', intval($w));
+
 		if ($p == 'non') {
 			$phpThumb->setParameter('new', 'FFFFFF');
 		} else {
-			$phpThumb->setParameter('src', '/' . $p);
-			$phpThumb->setParameter('zc', $isLefttop ? 2 : 1 );
+			$phpThumb->setParameter('src', '/'.$p);
+			if( $w && $h  )
+				$phpThumb->setParameter('zc', $isLefttop ? 2 : 1);
+			else
+				$phpThumb->setParameter('aoe', 1);
 		}
-		
+
 		// getCache	
 		$phpThumb->cache_filename = null;
 		$phpThumb->CalculateThumbnailDimensions();
 		$phpThumb->SetCacheFilename();
-		if( file_exists($phpThumb->cache_filename) ){
-			$nModified  = filemtime($phpThumb->cache_filename);
-			if( time() - $nModified < NP_TRIMIMAGE_CACHE_MAXAGE ){
+		if (file_exists($phpThumb->cache_filename)) {
+			$nModified = filemtime($phpThumb->cache_filename);
+			if (time() - $nModified < NP_TRIMIMAGE_CACHE_MAXAGE) {
 				global $CONF;
 				preg_match('/^'.preg_quote($this->phpThumbParams['config_document_root'], '/').'(.*)$/', $phpThumb->cache_filename, $matches);
 				$fileUrl = $CONF['MediaURL'].$matches[1];
-				if( $cacheCheckOnly ) return $fileUrl;
+				if ($cacheCheckOnly)
+					return $fileUrl;
 
 				header('Last-Modified: '.gmdate('D, d M Y H:i:s', $nModified).' GMT');
-				if (@serverVar('HTTP_IF_MODIFIED_SINCE') && ($nModified == strtotime(serverVar('HTTP_IF_MODIFIED_SINCE'))) && @serverVar('SERVER_PROTOCOL')) {
+				if (@ serverVar('HTTP_IF_MODIFIED_SINCE') 
+					&& ($nModified == strtotime(serverVar('HTTP_IF_MODIFIED_SINCE'))) 
+					&& @ serverVar('SERVER_PROTOCOL')
+				) {
 					header(serverVar('SERVER_PROTOCOL').' 304 Not Modified');
 					return true;
 				}
-				if ($getimagesize = @GetImageSize($phpThumb->cache_filename)) {
-					header('Content-Type: '.phpthumb_functions::ImageTypeToMIMEtype($getimagesize[2]));
-				} elseif (eregi('\.ico$', $phpThumb->cache_filename)) {
+				if ($getimagesize = @ GetImageSize($phpThumb->cache_filename)) {
+					header('Content-Type: '.phpthumb_functions :: ImageTypeToMIMEtype($getimagesize[2]));
+				}
+				elseif (eregi('\.ico$', $phpThumb->cache_filename)) {
 					header('Content-Type: image/x-icon');
 				}
-				if( $this->phpThumbParams['config_cache_force_passthru'] ){
-					@readfile($phpThumb->cache_filename);
+				if ($this->phpThumbParams['config_cache_force_passthru']) {
+					@ readfile($phpThumb->cache_filename);
 				} else {
 					header('Location: '.$fileUrl);
 				}
 				return true;
 			}
 		}
-		if( $cacheCheckOnly ){
-			unset($phpThumb);
+		if ($cacheCheckOnly) {
+			unset ($phpThumb);
 			return false;
 		}
-		
+
 		// generate
 		$phpThumb->GenerateThumbnail();
 
 		// putCache
-		if( !rand(0,20) ) $phpThumb->CleanUpCacheDirectory();
+		if (!rand(0, 20))
+			$phpThumb->CleanUpCacheDirectory();
 		$phpThumb->RenderToFile($phpThumb->cache_filename);
-		@chmod($phpThumb->cache_filename, 0666);
-		
+		@ chmod($phpThumb->cache_filename, 0666);
+
 		// to browser
 		$phpThumb->OutputThumbnail();
-		unset($phpThumb);
+		unset ($phpThumb);
 		return true;
 	}
 
-	function canEdit()
-	{
+	function canEdit() {
 		global $member, $manager;
-		if (!$member->isLoggedIn()) return 0;
+		if (!$member->isLoggedIn())
+			return 0;
 		return $member->isAdmin();
 	}
 
-
-	function createGlobalItemLink($itemid, $extra = '')
-	{
+	function createGlobalItemLink($itemid, $extra = '') {
 		global $CONF, $manager;
 		$itemid = intval($itemid);
 		if ($CONF['URLMode'] == 'pathinfo') {
-			$link = $CONF['ItemURL'] . '/item/' . $itemid;
+			$link = $CONF['ItemURL'].'/item/'.$itemid;
 		} else {
 			$blogid = getBlogIDFromItemID($itemid);
-			$b_tmp =& $manager->getBlog($blogid);
-			$blogurl = $b_tmp->getURL() ;
-			if(!$blogurl){
+			$b_tmp = & $manager->getBlog($blogid);
+			$blogurl = $b_tmp->getURL();
+			if (!$blogurl) {
 				$blogurl = $CONF['IndexURL'];
 			}
-			if(substr($blogurl, -4) != '.php'){
-				if(substr($blogurl, -1) != '/')
+			if (substr($blogurl, -4) != '.php') {
+				if (substr($blogurl, -1) != '/')
 					$blogurl .= '/';
 				$blogurl .= 'index.php';
 			}
-			$link = $blogurl . '?itemid=' . $itemid;
+			$link = $blogurl.'?itemid='.$itemid;
 		}
 		return addLinkParams($link, $extra);
 	}
 }
-?>
