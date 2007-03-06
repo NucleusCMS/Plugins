@@ -39,7 +39,6 @@
 	// get the plugin options; stored in the DB
     $pbl_config['enabled']       = $oPluginAdmin->plugin->getOption('enabled');
     $pbl_config['redirect']      = $oPluginAdmin->plugin->getOption('redirect');
-    $pbl_config['referrerblock'] = $oPluginAdmin->plugin->getOption('referrerblock');
     $pbl_config['ipblock']       = $oPluginAdmin->plugin->getOption('ipblock');
     $pbl_config['ipthreshold']   = $oPluginAdmin->plugin->getOption('ipthreshold');
     $pbl_config['BulkfeedsKey']   = $oPluginAdmin->plugin->getOption('BulkfeedsKey');
@@ -92,16 +91,26 @@
 			$action = 'testpage';
 			break;
 			
-		case 'addip':
-			$tplVars['message'] = pbl_addipblock();
+		case 'addipblock':
+			$tplVars['message'] = pbl_addIp();
 			$action = 'showipblock';
 			break;
 			
 		case 'deleteipblock':
-			$tplVars['message'] = pbl_deleteipblock();
+			$tplVars['message'] = pbl_deleteIp();
 			$action = 'showipblock';
 			break;
 
+		case 'addipwhite':
+			$tplVars['message'] = pbl_addIp('white');
+			$action = 'showipwhite';
+			break;
+		
+		case 'deleteipwhite':
+			$tplVars['message'] = pbl_deleteIp('white');
+			$action = 'showipwhite';
+			break;
+		
 		case 'htaccess':
 			$type = '';
 			if (isset ($_POST["type"])) {
@@ -170,8 +179,15 @@
 		case 'showipblock':
 			$content = $templateEngine->fetch('ipblock_header', NP_BLACKLIST_TEMPLATEDIR_INDEX);
 			echo $templateEngine->fill($content, $tplVars, null);
-			pbl_showipblock();
+			pbl_showIp();
 			$content = $templateEngine->fetch('ipblock_footer', NP_BLACKLIST_TEMPLATEDIR_INDEX);
+			break;
+			
+		case 'showipwhite':
+			$content = $templateEngine->fetch('ipwhite_header', NP_BLACKLIST_TEMPLATEDIR_INDEX);
+			echo $templateEngine->fill($content, $tplVars, null);
+			pbl_showIp('white');
+			$content = $templateEngine->fetch('ipwhite_footer', NP_BLACKLIST_TEMPLATEDIR_INDEX);
 			break;
 
 		case 'htaccess':

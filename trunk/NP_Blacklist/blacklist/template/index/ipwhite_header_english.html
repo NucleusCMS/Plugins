@@ -1,11 +1,11 @@
 <span style="color: red;">{{message}}</span>
-<h2>Show ip blacklist</h2>
+<h2>Show ip white list</h2>
 <p>Expression is allowed a front match or CIDR notation (###.###.###.###/##). 
 Example 1）10. -> from 10.0.0.0 to 10.255.255.255.255<br />
-Example 2）192.168.1.0/24 -> from 192.168.1.0 to 192.168.1.255</p>
+Example 2）192.168.1.0/24 -> from 192.168.1.0 to 192.168.1.255<p>
 <div class="pbform">
 	<form action="{{indexurl}}" method="post">
-		<input type="hidden" name="action" value="addipblock" />
+		<input type="hidden" name="action" value="addipwhite" />
 		<input type="hidden" name="ticket" value="{{ticket|}}" />
 		Add IP to block: 
 		<input class="pbltextinput" type="text" name="ipaddress" />
@@ -13,8 +13,8 @@ Example 2）192.168.1.0/24 -> from 192.168.1.0 to 192.168.1.255</p>
 	</form>
 </div>
 
-<h3>These ip-addresses are blocked</h3>
-
+<h3>These ip-addresses are permitted</h3>
+<p>Even if ip-addresses is listed on blacklist.</p>
 <table>
 	<tr>
 		<th>IP Address</th>

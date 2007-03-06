@@ -1,14 +1,27 @@
 <h3>バージョン履歴</h3>
+<ul>
+	<li>Version 1.1: (2006/03/**)</li>
+	<li>　[Added] IPホワイトリスト機能を追加</li>
+	<li>　[Fixed] DNSBLの参照が正常に行われていなかった問題を修正</li>
+	<li>　[Fixed] IPアドレスの判定が不適切であった問題を修正</li>
+	<li>　[Changed] 正規表現判定の/m修飾子を削除</li>
+	<li>　[Changed] ソースコードから不要部分を削除</li>
+</ul>
 
 <ul>
-	<li>Version 1.0.0: (2006/02/04)</li>
+	<li>Version 1.0: (2006/02/04)</li>
 	<li>　[Added] .htaccess snipets生成時にorder allow,denyとallow from allを追加</li>
 	<li>　[Added] spam判定時、$spamcheckにメッセージを残すようにした。</li>
 	<li>　[Added] インタフェイスの日本語化</li>
 	<li>　[Changed] Referrerによるブロック機能の廃止</li>
 	<li>　[Added] ログの自動ローテート機能を追加（最大７日分）</li>
 	<li>　[Changed] PreAddCommentとValidateFormへの対応を廃止</li>
+	<li>　[Fixed] Rewriteルールを生成の際に規定外の文字が混入していた問題を修正</li>
+	<li>　[Fixed] ブラウザがIEの場合に.htaccess生成ボタンがきちんと動作しない問題を修正</li>
+	<li>　[Fixed] touch()でエラーが表示される問題を修正</li>
+	<li>　[Fixed] mb_string関連のエラーが出る問題を修正しました。</li>
 </ul>
+
 <ul>
 	<li>Version 0.98 jp9: (2006/11/26)</li>
 	<li>　[Changed] 正規表現に/m修飾子を追加</li>

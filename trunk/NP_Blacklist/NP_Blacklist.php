@@ -1,9 +1,9 @@
 <?php
 
 /**
-  * NP_Blacklist(JP) ($Revision: 1.9 $)
+  * NP_Blacklist(JP) ($Revision: 1.10 $)
   * by hsur ( http://blog.cles.jp/np_cles )
-  * $Id: NP_Blacklist.php,v 1.9 2007-02-20 08:06:07 hsur Exp $
+  * $Id: NP_Blacklist.php,v 1.10 2007-03-06 20:54:37 hsur Exp $
   *
   * Based on NP_Blacklist 0.98
   * by xiffy
@@ -41,10 +41,10 @@ class NP_Blacklist extends NucleusPlugin {
 		return 'http://blog.cles.jp/np_cles/category/31/subcatid/11';
 	}
 	function getVersion() {
-		return '1.0.3';
+		return '1.1.0';
 	}
 	function getDescription() {
-		return '[$Revision: 1.9 $]<br />'.NP_BLACKLIST_description;
+		return '[$Revision: 1.10 $]<br />'.NP_BLACKLIST_description;
 	}
 	function supportsFeature($what) {
 		switch ($what) {
@@ -155,45 +155,6 @@ class NP_Blacklist extends NucleusPlugin {
 			} else {
 				$this->_redirect($this->getOption('redirect'));
 			}
-		}
-	}
-
-	// Obsolete
-	function event_PreAddComment(& $data) {
-		$comment = $data['comment'];
-		$result = $this->blacklist('comment', postVar('body')."\n".$comment['host']."\n".$comment['user']."\n".$comment['userid']);
-		if ($result) {
-			pbl_logspammer('comment: '.$result);
-			$this->_redirect($this->getOption('redirect'));
-		}
-	}
-
-	// Obsolete
-	function event_ValidateForm(& $data) {
-		if ($data['type'] == 'comment') {
-			$comment = $data['comment'];
-			$result = $this->blacklist('comment', postVar('body')."\n".$comment['host']."\n".$comment['user']."\n".$comment['userid']);
-			if ($result) {
-				pbl_logspammer('comment: '.$result);
-				$this->_redirect($this->getOption('redirect'));
-			}
-		} else {
-			if ($data['type'] == 'membermail') {
-				$result = $this->blacklist('membermail', postVar('frommail')."\n".postVar('message'));
-				if ($result) {
-					pbl_logspammer('membermail: '.$result);
-					$this->_redirect($this->getOption('redirect'));
-				}
-			}
-		}
-	}
-
-	// Obsolete
-	function event_PreSkinParse(& $data) {
-		$result = $this->blacklist('PreSkinParse', '');
-		if ($result) {
-			pbl_logspammer('PreSkinParse: '.$result);
-			$this->_redirect($this->getOption('redirect'));
 		}
 	}
 
@@ -310,22 +271,33 @@ class NP_Blacklist extends NucleusPlugin {
 
 	function _initSettings() {
 		$settingsDir = dirname(__FILE__).'/blacklist/settings/';
-		$settings = array ('blacklist.log', 'blockip.pbl', 'matched.pbl', 'blacklist.pbl', 'blacklist.txt', 'suspects.pbl',);
-		$personalBlacklist = $settingsDir.'personal_blacklist.pbl';
-		$personalBlacklistDist = $settingsDir.'personal_blacklist.pbl.dist';
+		$settings = array (
+			'blacklist.log', 
+			'blockip.pbl', 
+			'whiteip.pbl',
+			'matched.pbl', 
+			'blacklist.pbl', 
+			'blacklist.txt', 
+			'suspects.pbl',
+			'personal_blacklist.pbl',
+		);
 
 		// setup settings
 		if ($this->_is_writable($settingsDir)) {
+			// setup distfile			foreach (glob($settingsDir.'*.dist') as $distfile) {
+				$userFile = substr($distfile, 0, strlen($distfile)-5);
+				if (!file_exists($userFile)) {
+					if (copy($distfile, $userFile)) {
+						@chmod($userFile, 0666);
+						$this->_warn("'$userFile' ".NP_BLACKLIST_isCreated);
+					} else {
+						$this->_warn("'$userFile' ".NP_BLACKLIST_canNotCreate);
+					}
+				}
+			}
+			
 			foreach ($settings as $setting) {
 				@touch($settingsDir.$setting);
-			}
-			// setup personal blacklist
-			if (!file_exists($personalBlacklist)) {
-				if (copy($personalBlacklistDist, $personalBlacklist)) {
-					$this->_warn("'$personalBlacklist' ".NP_BLACKLIST_isCreated);
-				} else {
-					$this->_warn("'$personalBlacklist' ".NP_BLACKLIST_canNotCreate);
-				}
 			}
 		}
 
@@ -333,7 +305,6 @@ class NP_Blacklist extends NucleusPlugin {
 		foreach ($settings as $setting) {
 			$this->_is_writable($settingsDir.$setting);
 		}
-		$this->_is_writable($personalBlacklist);
 
 		// setup and check cache dir
 		$cacheDir = NP_BLACKLIST_CACHE_DIR;

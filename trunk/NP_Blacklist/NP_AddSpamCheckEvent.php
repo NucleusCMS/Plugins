@@ -2,9 +2,9 @@
 // vim: tabstop=2:shiftwidth=2
 
 /**
-  * NP_CommentSpamCheck ($Revision: 1.1 $)
+  * NP_CommentSpamCheck ($Revision: 1.2 $)
   * by hsur ( http://blog.cles.jp/np_cles )
-  * $Id: NP_AddSpamCheckEvent.php,v 1.1 2007-02-02 16:48:25 hsur Exp $
+  * $Id: NP_AddSpamCheckEvent.php,v 1.2 2007-03-06 20:54:37 hsur Exp $
 */
 
 /*
@@ -44,10 +44,10 @@ class NP_AddSpamCheckEvent extends NucleusPlugin {
 		return 'hsur';
 	}
 	function getURL() {
-		return 'http://blog.cles.jp/';
+		return 'http://blog.cles.jp/np_cles/';
 	}
 	function getVersion() {
-		return '1.1.0';
+		return '1.2.0';
 	}
 	function getDescription() {
 		return 'Add SpamCheck event';
@@ -62,53 +62,43 @@ class NP_AddSpamCheckEvent extends NucleusPlugin {
 	}
 
 	function getEventList() {
-		return array ('PreAddComment', 'ValidateForm');
-	}
-
-	function event_PreAddComment(& $data) {
-		global $manager, $member;
-		if ($member->isLoggedIn())
-			return;
-
-		// spamcheck
-		$spamcheck = array (
-			'type' => 'comment', 
-			'body' => postVar('body'), 
-			'author' => $data['comment']['user'], 
-			'url' => $data['comment']['userid'], 
-			'id' => intval($data['comment']['itemid']), 
-			'live' => true, 
-			'return' => true,
-			//SpamCheck API1 Compat
-			'data' => postVar('body')."\n".$data['comment']['user']."\n".$data['comment']['userid'],
-		);
-		$manager->notify('SpamCheck', array ('spamcheck' => & $spamcheck));
-
-		if (isset ($spamcheck['result']) && $spamcheck['result'] == true) {
-			if ($manager->pluginInstalled('NP_Blacklist')) {
-				$plugin = & $manager->getPlugin('NP_Blacklist');
-				$plugin->_redirect($plugin->getOption('redirect'));
-			} else {
-				$this->_showForbiddenMessage($spamcheck['message']);
-			}
-		}
+		return array ('ValidateForm');
 	}
 
 	function event_ValidateForm(& $data) {
 		global $manager, $member;
 		if ($member->isLoggedIn())
 			return;
+			
+		$spamcheck = array();
+		switch( $data['type'] ){
+			case 'membermail':
+				$spamcheck = array (
+					'type' => 'membermail', 
+					'data' => postVar('frommail')."\n".postVar('message'), 
+					'live' => true, 
+					'return' => true,
+				);
+				break;
+			case 'comment':
+				$spamcheck = array (
+					'type' => 'comment', 
+					'body' => postVar('body'), 
+					'author' => $data['comment']['user'], 
+					'url' => $data['comment']['userid'], 
+					'id' => intval($data['comment']['itemid']), 
+					'live' => true, 
+					'return' => true,
+					//SpamCheck API1 Compat
+					'data' => postVar('body')."\n".$data['comment']['user']."\n".$data['comment']['userid'],
+				);
+				break;
+			default:
+				return;
+		}
 
-		if ($data['type'] != 'membermail')
-			return;
-		$spamcheck = array (
-			'type' => 'membermail', 
-			'data' => postVar('frommail')."\n".postVar('message'), 
-			'live' => true, 
-			'return' => true,
-		);
 		$manager->notify('SpamCheck', array ('spamcheck' => & $spamcheck));
-		if (isset ($spamcheck['result']) && $spamcheck['result'] == true) {
+		if (isset($spamcheck['result']) && $spamcheck['result'] == true) {
 			if ($manager->pluginInstalled('NP_Blacklist')) {
 				$plugin = & $manager->getPlugin('NP_Blacklist');
 				$plugin->_redirect($plugin->getOption('redirect'));
