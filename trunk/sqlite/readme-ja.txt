@@ -2,7 +2,7 @@
 * MySQL-SQLite wrapper for Nucleus ver 0.8   *
 **********************************************
  
-Copyright (C) 2006年、Katsumi
+Copyright (C) 2006-2007年、Katsumi
 
 このプログラムはフリーソフトウェアです。あなたはこれを、フリーソフトウェ
 ア財団によって発行された GNU 一般公衆利用許諾契約書(バージョン2か、希

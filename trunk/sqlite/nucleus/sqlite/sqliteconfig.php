@@ -6,8 +6,9 @@ $SQLITECONF=array();
 $SQLITECONF['DBFILENAME']=$DIR_NUCLEUS.'sqlite/.dbsqlite';
 
 // Options
-$SQLITECONF['DEBUGMODE']=true;
+$SQLITECONF['DEBUGMODE']=false;
 $SQLITECONF['DEBUGREPORT']=false;
 $SQLITECONF['MEASURESPEED']=false;
+$SQLITECONF['INITIALIZE']=array('PRAGMA short_column_names=1;');
 
 ?>
