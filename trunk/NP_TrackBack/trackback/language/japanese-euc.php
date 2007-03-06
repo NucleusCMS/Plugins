@@ -36,8 +36,10 @@ define('_TB_tplTbMore', 'TB数表示形式(2件以上)');
 define('_TB_dateFormat', '日付の形式');
 define('_TB_dateFormat_VAL', "%Y/%m/%d %H:%I");
 
-define('_TB_Notify', 'ping受付時にメール送信するか?');
-define('_TB_NotifyEmail', 'ping受付時のメール送信先');
+define('_TB_ajaxEnabled', '管理画面でAjaxを有効にするか');
+define('_TB_NotifyEmail', 'ping受付時のメール送信先(;で区切って複数入力可能)');
+define('_TB_NotifyEmailBlog', 'ping受付時のメール送信先(;で区切って複数入力可能)');
+
 define('_TB_DropTable', 'プラグインの削除時にデータを削除するか?');
 define('_TB_HideUrl', '一覧表示の際に外部のURLをリダイレクトに変換するか?');
 define('_TB_ItemAcceptPing', 'TBを受付するか?');
@@ -47,4 +49,3 @@ define('_TB_AllowTrackBack', 'このブログでTBを受付するか?');
 
 define('_TB_isAcceptWOLink_VAL', 'ブログデフォルトに従う|default|はい|yes|いいえ|no');
 define('_TB_isAcceptWOLinkDef_VAL', 'はい|yes|いいえ(保留)|block|いいえ(無視)|ignore');
-?>

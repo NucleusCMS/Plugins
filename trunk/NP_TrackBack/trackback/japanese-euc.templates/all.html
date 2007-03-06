@@ -41,15 +41,18 @@
 <table>
 	<thead>
 		<tr>
+			<th>Date</th>
 			<th>Story</th>
 			<th>Title, Blog and Excerpt</th>
-			<th>Date</th>
 			<th colspan="2">Actions</th>
 		</tr>
 	</thead>
 	<tbody>
 		<?php while (list(,$item) = each ($items)): ?>
 		<tr onmouseover='focusRow(this);' onmouseout='blurRow(this);'>
+			<td>
+				<?php echo str_replace(' ', '&nbsp;', date("Y-m-d @ H:i",$item['timestamp']));?>
+			</td>
 			<td>
 				<a href="<? echo $item['story_url']; ?>"><?php echo $item['story'];?></a>
 			</td>
@@ -58,9 +61,6 @@
 				<strong><?php echo $item['title'];?></strong> 
 				<em>(<?php echo $item['blog_name'];?>)</em><br />
 				<?php echo $item['excerpt'];?>
-			</td>
-			<td>
-				<?php echo str_replace(' ', '&nbsp;', date("Y-m-d @ H:i",$item['timestamp']));?>
 			</td>
 			<td>
 				<a href="<?php echo htmlspecialchars($manager->addTicketToUrl($CONF['PluginURL'].'trackback/index.php?action=block&tb='.$item['id'].'&next=all&start='.$start),ENT_QUOTES);?>"><img alt="Block" border="0" src="<?php echo $plugindirurl?>silk/delete.png" /></a>

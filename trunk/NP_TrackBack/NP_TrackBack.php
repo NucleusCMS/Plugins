@@ -114,7 +114,7 @@
 						'ipblock'   => true,
 					);
 					global $manager;
-					$manager->notify('SpamCheck', array ('spamcheck' => & $spamcheck));
+					//$manager->notify('SpamCheck', array ('spamcheck' => & $spamcheck));
 					$spam = false;
 					if (isset($spamcheck['result']) && $spamcheck['result'] == true){
 						$spam = true;
@@ -451,8 +451,8 @@
 			);
 			
 			if ($member->isLoggedIn() && $member->isAdmin()){
-				$adminurl = $manager->addTicketToUrl($CONF['PluginURL'] . 'trackback/index.php?action=list&amp;id=' . intval($tb_id));
-				$pingformurl = $manager->addTicketToUrl($CONF['PluginURL'] . 'trackback/index.php?action=ping&amp;id=' . intval($tb_id));
+				$adminurl = htmlspecialchars($manager->addTicketToUrl($CONF['PluginURL'] . 'trackback/index.php?action=list&id=' . intval($tb_id)), ENT_QUOTES);
+				$pingformurl = htmlspecialchars($manager->addTicketToUrl($CONF['PluginURL'] . 'trackback/index.php?action=ping&id=' . intval($tb_id)), ENT_QUOTES);
 				$gVars['admin'] = '<a href="' . $adminurl . '" target="_blank">[admin]</a>';
 				$gVars['pingform'] = '<a href="' . $pingformurl . '" target="_blank">[pingform]</a>';
 			}
@@ -675,9 +675,6 @@
 			$desc   = $this->_cut_string($desc, 200);
 			$desc   = htmlspecialchars($desc, ENT_QUOTES);
 			
-			$timestamp = time();
-			$sourceaddr = ip2long(serverVar('REMOTE_ADDR'));
-			$key = md5( sprintf("%u %u %u %s", $timestamp, $sourceaddr, $itemid, __FILE__));
 			?>
 			<!--
 			<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -937,7 +934,9 @@
 			}
 //mod by cles
 			// check: accept pings.
-			if( $this->getBlogOption(getBlogIDFromItemID($tb_id), "AllowTrackBack") == 'yes' )
+			$blogId = getBlogIDFromItemID($tb_id);
+			
+			if( $this->getBlogOption($blogId, "AllowTrackBack") == 'yes' )
 				$isAcceptPing = ( $this->getItemOption($tb_id, 'ItemAcceptPing') == 'yes' ) ? true : false ;
 			else
 				$isAcceptPing = false;
@@ -948,7 +947,7 @@
 
 			// 1. Get attributes
 //modify start+++++++++
-			$b =& $manager->getBlog(getBlogIDFromItemID($tb_id));
+			$b =& $manager->getBlog($blogId);
 //modify end+++++++++
 			$url 		= requestVar('url');
 			$title 		= requestVar('title');
@@ -1149,10 +1148,12 @@
 			}
 	
 			// 7. Send notification e-mail if needed
-			if ($this->getOption('Notify') == 'yes' && $spam == false) 
+			$notifyAddrs = $this->getOption('NotifyEmail');
+			$notifyAddrs = ( $notifyAddrs ? $notifyAddrs . ';' : '') 
+							. $this->getBlogOption($blogId ,'NotifyEmailBlog');
+						
+			if ($notifyAddrs && $spam == false) 
 			{
-				$destAddress = $this->getOption('NotifyEmail');
-
 				
 				$vars = array (
 					'tb_id'    => $tb_id,
@@ -1184,8 +1185,9 @@
 				if (!class_exists('notification'))
 					include($DIR_LIBS . 'NOTIFICATION.php');
 				
-				$notify = new NOTIFICATION($destAddress);
+				$notify = new NOTIFICATION($notifyAddrs);
 				$notify->notify($mailto_title, $mailto_msg , $CONF['AdminEmail']);
+				
 //mod by cles+++++++++++	
 				if ($manager->pluginInstalled('NP_Cache')){
 					$p =& $manager->getPlugin('NP_Cache');
@@ -1195,6 +1197,9 @@
 				}
 //mod by cles end +++++++++++	
 			}
+
+			if( $block )
+				return 'Sorry, trackback ping is not accepted.';
 			return '';
 		}	
 
@@ -1680,12 +1685,13 @@
 		{
 			$links = array();
 			
-			if (preg_match_all('/<a ([^>]+)>/', $text, $array, PREG_SET_ORDER))
+			if (preg_match_all('/<[aA] +([^>]+)>/', $text, $array, PREG_SET_ORDER))
 			{
 				for ($i = 0; $i < count($array); $i++)
 				{
-					preg_match('/href="http:\/\/(.+?)"/', $array[$i][1], $matches);
-					$links['http://'.$matches[1]] = 1;
+					//if( preg_match('/s?https?:\/\/[-_.!~*\'()a-zA-Z0-9;\/?:@&=+$,%#]+/', $array[$i][1], $matches) )
+					if( preg_match('/s?https?:\/\/[-_.!~*\'()a-zA-Z0-9;\/:@&=+$,%]+/', $array[$i][1], $matches) )
+						$links[$matches[0]] = 1;
 				}
 			}
 			
@@ -2605,7 +2611,7 @@ function _strip_controlchar($string){	$string = preg_replace("/[\x01-\x08\x0b\x
 		function getName()   	  { 		return 'TrackBack';   }
 		function getAuthor() 	  { 		return 'rakaz + nakahara21 + hsur'; }
 		function getURL()    	  { 		return 'http://blog.cles.jp/np_cles/category/31/subcatid/3'; }
-		function getVersion()	  { 		return '2.0.3 jp7'; }
+		function getVersion()	  { 		return '2.0.3 jp8'; }
 		function getDescription() { 		return _TB_DESCRIPTION; }
 	
 //modify start+++++++++
@@ -2673,15 +2679,16 @@ function _strip_controlchar($string){	$string = preg_replace("/[\x01-\x08\x0b\x
 			$this->createOption('tplTbMore',   _TB_tplTbMore, 'text', "<%number%> Trackbacks");
 			$this->createOption('dateFormat',  _TB_dateFormat, 'text', _TB_dateFormat_VAL);
 	
-			$this->createOption('Notify',	   _TB_Notify,'yesno','no');
-			$this->createOption('NotifyEmail', _TB_NotifyEmail,'text','');	
-
+			$this->createOption('NotifyEmail', _TB_NotifyEmail,'text','');
 			$this->createOption('DropTable',   _TB_DropTable,'yesno','no');
 //mod by cles
 			$this->createOption('HideUrl',_TB_HideUrl,'yesno','yes');
+			$this->createOption('ajaxEnabled',_TB_ajaxEnabled,'yesno','no');
+
 			$this->createItemOption('ItemAcceptPing',_TB_ItemAcceptPing,'yesno','yes');
 			$this->createItemOption('isAcceptW/OLink',_TB_isAcceptWOLink,'select','default', _TB_isAcceptWOLink_VAL);
 
+			$this->createBlogOption('NotifyEmailBlog', _TB_NotifyEmailBlog,'text','');	
 			$this->createBlogOption('isAcceptW/OLinkDef',_TB_isAcceptWOLinkDef,'select','block', _TB_isAcceptWOLinkDef_VAL);
 			$this->createBlogOption('AllowTrackBack',_TB_AllowTrackBack,'yesno','yes');
 //mod by cles end
@@ -2742,5 +2749,3 @@ function _strip_controlchar($string){	$string = preg_replace("/[\x01-\x08\x0b\x
 		$this->notificationMailTitle = _TB_NORTIFICATION_MAIL_TITLE;
          }
 	}
-
-?>

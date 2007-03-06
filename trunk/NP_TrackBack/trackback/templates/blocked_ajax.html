@@ -1,0 +1,129 @@
+<?php global $manager; ?>
+<h2>
+	Blocked Trackbacks
+</h2>
+
+<ul>
+	<li><a href="<?php echo htmlspecialchars($manager->addTicketToUrl($CONF['PluginURL'].'trackback/index.php?action=blocked_clear&next=blocked'),ENT_QUOTES); ?>">繝悶Ο繝�繧ｯ縺輔ｌ縺溘ヨ繝ｩ繝�繧ｯ繝舌ャ繧ｯ縺ｮ繧ｯ繝ｪ繧｢</a></li>
+	<li><a href="<?php echo htmlspecialchars($manager->addTicketToUrl($CONF['PluginURL'].'trackback/index.php?action=blocked_spamclear&next=blocked'),ENT_QUOTES); ?>">spam蛻､螳壹＆繧後◆繝医Λ繝�繧ｯ繝舌ャ繧ｯ縺ｮ繧ｯ繝ｪ繧｢</a></li> 
+</ul>
+
+<div id="showingLabel">Showing 1 - 5 of <?php echo $count ; ?></div>
+
+<div style="float:left; width: 100%">
+<div id="viewPort" style="float:left; width: 620px">
+<table id="tb_grid" style="border:0; margin:0; width: 600px">
+	<thead>
+		<tr>
+			<th style="width:80px">Date</th>
+			<th style="width:120px">Story</th>
+			<th >Title, Blog and Excerpt</th>
+			<th style="width:20px">&#160;</th>
+			<th style="width:20px">&#160;</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr style="height:110px"  onmouseover='focusRow(this);' onmouseout='blurRow(this);'>
+			<td style="width:80px">&#160;</td>
+			<td style="width:120px">&#160;</td>
+			<td >&#160;</td>
+			<td style="width:20px">&#160;</td>
+			<td style="width:20px">&#160;</td>
+		</tr>
+		<tr style="height:110px"  onmouseover='focusRow(this);' onmouseout='blurRow(this);'>
+			<td style="width:80px">&#160;</td>
+			<td style="width:120px">&#160;</td>
+			<td >&#160;</td>
+			<td style="width:20px">&#160;</td>
+			<td style="width:20px">&#160;</td>
+		</tr>
+		<tr style="height:110px"  onmouseover='focusRow(this);' onmouseout='blurRow(this);'>
+			<td style="width:80px">&#160;</td>
+			<td style="width:120px">&#160;</td>
+			<td >&#160;</td>
+			<td style="width:20px">&#160;</td>
+			<td style="width:20px">&#160;</td>
+		</tr>
+		<tr style="height:110px"  onmouseover='focusRow(this);' onmouseout='blurRow(this);'>
+			<td style="width:80px">&#160;</td>
+			<td style="width:120px">&#160;</td>
+			<td >&#160;</td>
+			<td style="width:20px">&#160;</td>
+			<td style="width:20px">&#160;</td>
+		</tr>
+		<tr style="height:110px"  onmouseover='focusRow(this);' onmouseout='blurRow(this);'>
+			<td style="width:80px">&#160;</td>
+			<td style="width:120px">&#160;</td>
+			<td >&#160;</td>
+			<td style="width:20px">&#160;</td>
+			<td style="width:20px">&#160;</td>
+		</tr>
+		<tr style="height:110px"  onmouseover='focusRow(this);' onmouseout='blurRow(this);'>
+			<td style="width:80px">&#160;</td>
+			<td style="width:120px">&#160;</td>
+			<td >&#160;</td>
+			<td style="width:20px">&#160;</td>
+			<td style="width:20px">&#160;</td>
+		</tr>
+		<tr style="height:110px"  onmouseover='focusRow(this);' onmouseout='blurRow(this);'>
+			<td style="width:80px">&#160;</td>
+			<td style="width:120px">&#160;</td>
+			<td >&#160;</td>
+			<td style="width:20px">&#160;</td>
+			<td style="width:20px">&#160;</td>
+		</tr>
+		<tr style="height:110px"  onmouseover='focusRow(this);' onmouseout='blurRow(this);'>
+			<td style="width:80px">&#160;</td>
+			<td style="width:120px">&#160;</td>
+			<td >&#160;</td>
+			<td style="width:20px">&#160;</td>
+			<td style="width:20px">&#160;</td>
+		</tr>
+		<tr style="height:110px"  onmouseover='focusRow(this);' onmouseout='blurRow(this);'>
+			<td style="width:80px">&#160;</td>
+			<td style="width:120px">&#160;</td>
+			<td >&#160;</td>
+			<td style="width:20px">&#160;</td>
+			<td style="width:20px">&#160;</td>
+		</tr>
+		<tr style="height:110px"  onmouseover='focusRow(this);' onmouseout='blurRow(this);'>
+			<td style="width:80px">&#160;</td>
+			<td style="width:120px">&#160;</td>
+			<td >&#160;</td>
+			<td style="width:20px">&#160;</td>
+			<td style="width:20px">&#160;</td>
+		</tr>
+	</tbody>
+</table>
+</div>
+</div>
+<div style="clear:both"></div>
+
+<script>
+//<![CDATA[
+    function updateHeader( liveGrid, offset ) {
+	$('showingLabel').innerHTML = "Showing " + (offset+1) + " - " + (offset+liveGrid.metaData.getPageSize()) + " of " + liveGrid.metaData.getTotalRows();
+    }
+
+    function loadGrid() {
+	var width = $('content').offsetWidth
+	$('viewPort').style.width = width + 'px';
+	$('tb_grid').style.width = (width - 40) + 'px';
+
+	var max = <?php echo $count; ?>;
+	var params = ['action=ajax','type=blocked','ticket=' + '<?php echo $ticket ;?>']; 
+        var opts = { 
+		prefetchBuffer: true
+		,prefetchOffset: 50
+		,onscroll: updateHeader
+		,requestParameters: params
+		,sortAscendImg: '<?php echo $CONF['PluginURL'].'trackback/';?>images/sort_asc.gif'
+		,sortDescendImg: '<?php echo $CONF['PluginURL'].'trackback/';?>images/sort_desc.gif'                   
+		,columns: [ ["date", true], ["item", true], ["title", true], ["ban", false], ["del", false] ]
+	};
+        var liveGrid = new Rico.LiveGrid('tb_grid',5 , max, '<?php echo $CONF['PluginURL'].'trackback/';?>grid.php', opts);
+    }
+
+    window.onload = loadGrid;
+//]]>
+</script>

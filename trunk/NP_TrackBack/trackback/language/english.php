@@ -37,8 +37,10 @@ define('_TB_tplTbMore', 'Trackback count (more)');
 define('_TB_dateFormat', 'Date format');
 define('_TB_dateFormat_VAL', "%e/%m/%g");
 
-define('_TB_Notify', 'Send e-mail notification on ping receipt');
+define('_TB_ajaxEnabled', 'Enable Ajax ?');
 define('_TB_NotifyEmail', 'Which e-mail address to send these notification to?');
+define('_TB_NotifyEmailBlog', 'Which e-mail address to send these notification to?');
+
 define('_TB_DropTable', 'Clear the database when uninstalling');
 define('_TB_HideUrl', 'Hide external URL');
 define('_TB_ItemAcceptPing', 'Accept pings');
@@ -48,4 +50,3 @@ define('_TB_AllowTrackBack', 'Accept pings to this blog');
 
 define('_TB_isAcceptWOLink_VAL', 'default|default|yes|yes|no|no');
 define('_TB_isAcceptWOLinkDef_VAL', 'yes|yes|no (block)|block|no (ignore)|ignore');
-?>

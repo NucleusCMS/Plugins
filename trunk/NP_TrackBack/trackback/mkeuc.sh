@@ -1,6 +1,6 @@
 #!/bin/bash -x
 
-FILES=`find japanese-utf8.templates -name '*html'`
+FILES=`find japanese-utf8.templates -name '*ml'`
 
 for utf8file in $FILES
 do

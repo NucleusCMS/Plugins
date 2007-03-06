@@ -1,0 +1,38 @@
+<?echo '<'.'?xml version="1.0" encoding="UTF-8"?'.'>';?>
+<?php global $manager; ?>
+
+<ajax-response>
+	<response type="object" id='tb_grid_updater'>
+		<rows update_ui='true' >
+		<?php while (list(,$item) = each ($items)): ?>
+		<tr>
+			<td>
+				<?php echo str_replace(' ', '&#160;', date("Y-m-d\nH:i:s",$item['timestamp']));?>
+			</td>
+			<td>
+				<a href="<? echo $item['story_url']; ?>"><?php echo $item['story'];?></a>
+			</td>
+			<td>
+				<a href="<?php echo $item['url'];?>"><img alt="Visit" border="0" src="<?php echo $plugindirurl?>silk/house_go.png" /></a>
+				<strong><?php echo $item['title'];?></strong>
+				<?php echo $item['spam'] ? 
+					'<img alt="spam" border="0" src="' . $plugindirurl . 'silk/delete.png" />' : 
+					'';?>
+				<?php echo $item['link'] ? 
+					'' : 
+					'<img alt="NOT Linked" border="0" src="' . $plugindirurl . 'silk/link_break.png" />';?>
+				<br />
+				<?php echo $item['excerpt'];?>
+				<em>(<?php echo $item['blog_name'];?>)</em>
+			</td>
+			<td>
+				<a href="<?php echo htmlspecialchars($manager->addTicketToUrl($CONF['PluginURL'].'trackback/index.php?action=unblock&tb='.$item['id'].'&next=blocked'),ENT_QUOTES);?>"><img alt="Unblock" border="0" src="<?php echo $plugindirurl;?>silk/accept.png" /></a>
+			</td>
+			<td>
+				<a href="<?php echo htmlspecialchars($manager->addTicketToUrl($CONF['PluginURL'].'trackback/index.php?action=delete&tb='.$item['id'].'&next=blocked'),ENT_QUOTES);?>"><img alt="Delete" border="0" src="<?php echo $plugindirurl;?>silk/cross.png" /></a>
+			</td>
+		</tr>
+		<?php endwhile; ?>
+		</rows>	
+	</response>
+</ajax-response>

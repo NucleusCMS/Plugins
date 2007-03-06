@@ -9,11 +9,6 @@
 	// Send out Content-type
 	sendContentType('application/xhtml+xml', 'admin-trackback', _CHARSET);	
 
-	// Compatiblity with Nucleus < = 2.0
-	if (!function_exists('sql_table')) { function sql_table($name) { return 'nucleus_' . $name; } }
-	
-
-
 	$oPluginAdmin = new PluginAdmin('TrackBack');
 
 	if (!($member->isLoggedIn() && $member->isAdmin()))
@@ -48,13 +43,17 @@
 
 	$mTemplate = new Trackback_Template();
 	$mTemplate->set ('CONF', $CONF);
-	$mTemplate->set ('plugid', $plug->getID());	$mTemplate->set ('plugindirurl', $oPluginAdmin->plugin->getAdminURL());
+	$mTemplate->set ('plugid', $plug->getID());
+	$mTemplate->set ('plugindirurl', $oPluginAdmin->plugin->getAdminURL());
 	$mTemplate->template('templates/menu.html');
 	echo $mTemplate->fetch();
 
 	$oTemplate = new Trackback_Template();
 	$oTemplate->set ('CONF', $CONF);
 	$oTemplate->set ('plugindirurl', $oPluginAdmin->plugin->getAdminURL());
+	$oTemplate->set ('ticket', $manager->_generateTicket());
+		$ajaxEnabled = ($oPluginAdmin->plugin->getOption('ajaxEnabled') == 'yes') ? true : false;
+	$oTemplate->set ('ajaxEnabled', $ajaxEnabled);
 
 	switch($action) {
 
@@ -204,9 +203,7 @@
 			break;
 
 		case 'blocked':
-			$start  = intRequestVar('start') ? intRequestVar('start') : 0;
-			$amount = intRequestVar('amount') ? intRequestVar('amount') : 25;
-
+		case 'all':	
 			$rres = mysql_query ("
 				SELECT
 					COUNT(*) AS count
@@ -215,16 +212,24 @@
 					".sql_table('item')." AS i
 				WHERE
 					t.tb_id = i.inumber AND
-					t.block = 1
-			");				
+					t.block = " . (( $action == 'all') ? 0 : 1) );				
 						
 			if ($row = mysql_fetch_array($rres))
 				$count = $row['count'];
 			else
 				$count = 0;
-					
-			$rres = mysql_query ("
-				SELECT
+			$oTemplate->set('count', $count);
+
+			if($ajaxEnabled){
+				if( $action == 'all') 
+					$oTemplate->template('templates/all_ajax.html');
+				else			
+					$oTemplate->template('templates/blocked_ajax.html');
+			} else {				$start  = intRequestVar('start') ? intRequestVar('start') : 0;
+				$amount = intRequestVar('amount') ? intRequestVar('amount') : 25;
+
+				$rres = mysql_query ("
+					SELECT
 					i.ititle AS story,
 					i.inumber AS story_id,
 					t.id AS id,
@@ -232,135 +237,56 @@
 					t.blog_name AS blog_name,
 					t.excerpt AS excerpt,
 					t.url AS url,
-					-- UNIX_TIMESTAMP(t.timestamp) AS timestamp,
 					t.timestamp AS timestamp,
 					t.spam AS spam,
 					t.link AS link
-				FROM
+					FROM
 					".sql_table('plugin_tb')." AS t,
 					".sql_table('item')." AS i
-				WHERE
+					WHERE
 					t.tb_id = i.inumber AND
-					t.block = 1
-				ORDER BY
+					t.block = " . (( $action == 'all') ? 0 : 1) ."
+					ORDER BY
 					timestamp DESC
-				LIMIT
-					".$start.",".$amount."
-			");				
-			
-			$items = array();
-
-			while ($rrow = mysql_fetch_array($rres))
-			{
-				$rrow['title'] 		= $oPluginAdmin->plugin->_cut_string($rrow['title'], 50);
-				$rrow['title'] 		= $oPluginAdmin->plugin->_strip_controlchar($rrow['title']);
-				$rrow['title'] 		= htmlspecialchars($rrow['title']);
-//				$rrow['title'] 		= _CHARSET == 'UTF-8' ? $rrow['title'] : $oPluginAdmin->plugin->_utf8_to_entities($rrow['title']);
-
-				$rrow['blog_name'] 	= $oPluginAdmin->plugin->_cut_string($rrow['blog_name'], 50);
-				$rrow['blog_name'] 	= $oPluginAdmin->plugin->_strip_controlchar($rrow['blog_name']);
-				$rrow['blog_name'] 	= htmlspecialchars($rrow['blog_name']);
-//				$rrow['blog_name'] 	= _CHARSET == 'UTF-8' ? $rrow['blog_name'] : $oPluginAdmin->plugin->_utf8_to_entities($rrow['blog_name']);
-
-				$rrow['excerpt'] 	= $oPluginAdmin->plugin->_cut_string($rrow['excerpt'], 800);
-				$rrow['excerpt'] 	= $oPluginAdmin->plugin->_strip_controlchar($rrow['excerpt']);
-				$rrow['excerpt'] 	= htmlspecialchars($rrow['excerpt']);
-//				$rrow['excerpt'] 	= _CHARSET == 'UTF-8' ? $rrow['excerpt'] : $oPluginAdmin->plugin->_utf8_to_entities($rrow['excerpt']);
-
-				$rrow['url'] 		= htmlspecialchars($rrow['url'], ENT_QUOTES);
-				$rrow['timestamp'] 		= htmlspecialchars($rrow['timestamp'], ENT_QUOTES);
+					LIMIT
+					".$start.",".$amount);				
 				
-				$blog = & $manager->getBlog(getBlogIDFromItemID($item['itemid']));
-				$rrow['story_url'] = $oPluginAdmin->plugin->_createItemLink($rrow['story_id'], $blog);
-				$rrow['story'] = htmlspecialchars(strip_tags($rrow['story']), ENT_QUOTES);
-
-				$items[] = $rrow;
-			}
-			
-			$oTemplate->set ('amount', $amount);
-			$oTemplate->set ('count', $count);
-			$oTemplate->set ('start', $start);
-			$oTemplate->set ('items', $items);
-			$oTemplate->template('templates/blocked.html');			
-			break;
-
-		case 'all':
-			$start  = intRequestVar('start') ? intRequestVar('start') : 0;
-			$amount = intRequestVar('amount') ? intRequestVar('amount') : 25;
-
-			$rres = mysql_query ("
-				SELECT
-					COUNT(*) AS count
-				FROM
-					".sql_table('plugin_tb')." AS t,
-					".sql_table('item')." AS i
-				WHERE
-					t.tb_id = i.inumber AND
-					t.block = 0
-			");				
-						
-			if ($row = mysql_fetch_array($rres))
-				$count = $row['count'];
-			else
-				$count = 0;
+				$items = array();
+				
+				while ($rrow = mysql_fetch_array($rres)){
+					$rrow['title'] 		= $oPluginAdmin->plugin->_cut_string($rrow['title'], 50);
+					$rrow['title'] 		= $oPluginAdmin->plugin->_strip_controlchar($rrow['title']);
+					$rrow['title'] 		= htmlspecialchars($rrow['title']);
 					
-			$rres = mysql_query ("
-				SELECT
-					i.ititle AS story,
-					i.inumber AS story_id,
-					t.id AS id,
-					t.title AS title,
-					t.blog_name AS blog_name,
-					t.excerpt AS excerpt,
-					t.url AS url,
-					UNIX_TIMESTAMP(t.timestamp) AS timestamp
-				FROM
-					".sql_table('plugin_tb')." AS t,
-					".sql_table('item')." AS i
-				WHERE
-					t.tb_id = i.inumber AND
-					t.block = 0
-				ORDER BY
-					timestamp DESC
-				LIMIT
-					".$start.",".$amount."
-			");				
-			
-			$items = array();
-
-			while ($rrow = mysql_fetch_array($rres))
-			{
-				$rrow['title'] 		= $oPluginAdmin->plugin->_cut_string($rrow['title'], 50);
-				$rrow['title'] 		= $oPluginAdmin->plugin->_strip_controlchar($rrow['title']);
-				$rrow['title'] 		= htmlspecialchars($rrow['title']);
-//				$rrow['title'] 		= _CHARSET == 'UTF-8' ? $rrow['title'] : $oPluginAdmin->plugin->_utf8_to_entities($rrow['title']);
-
-				$rrow['blog_name'] 	= $oPluginAdmin->plugin->_cut_string($rrow['blog_name'], 50);
-				$rrow['blog_name'] 	= $oPluginAdmin->plugin->_strip_controlchar($rrow['blog_name']);
-				$rrow['blog_name'] 	= htmlspecialchars($rrow['blog_name']);
-//				$rrow['blog_name'] 	= _CHARSET == 'UTF-8' ? $rrow['blog_name'] : $oPluginAdmin->plugin->_utf8_to_entities($rrow['blog_name']);
-
-				$rrow['excerpt'] 	= $oPluginAdmin->plugin->_cut_string($rrow['excerpt'], 800);
-				$rrow['excerpt'] 	= $oPluginAdmin->plugin->_strip_controlchar($rrow['excerpt']);
-				$rrow['excerpt'] 	= htmlspecialchars($rrow['excerpt']);
-//				$rrow['excerpt'] 	= _CHARSET == 'UTF-8' ? $rrow['excerpt'] : $oPluginAdmin->plugin->_utf8_to_entities($rrow['excerpt']);
-
-				$rrow['url'] 		= htmlspecialchars($rrow['url'], ENT_QUOTES);
-
-				$blog = & $manager->getBlog(getBlogIDFromItemID($item['itemid']));
-				$rrow['story_url'] = $oPluginAdmin->plugin->_createItemLink($rrow['story_id'], $blog);
-				$rrow['story'] = htmlspecialchars(strip_tags($rrow['story']), ENT_QUOTES);
-
-				$items[] = $rrow;
+					$rrow['blog_name'] 	= $oPluginAdmin->plugin->_cut_string($rrow['blog_name'], 50);
+					$rrow['blog_name'] 	= $oPluginAdmin->plugin->_strip_controlchar($rrow['blog_name']);
+					$rrow['blog_name'] 	= htmlspecialchars($rrow['blog_name']);
+					
+					$rrow['excerpt'] 	= $oPluginAdmin->plugin->_cut_string($rrow['excerpt'], 800);
+					$rrow['excerpt'] 	= $oPluginAdmin->plugin->_strip_controlchar($rrow['excerpt']);
+					$rrow['excerpt'] 	= htmlspecialchars($rrow['excerpt']);
+					
+					$rrow['url'] 		= htmlspecialchars($rrow['url'], ENT_QUOTES);
+					$rrow['timestamp'] 		= htmlspecialchars($rrow['timestamp'], ENT_QUOTES);
+					
+					$blog = & $manager->getBlog(getBlogIDFromItemID($item['itemid']));
+					$rrow['story_url'] = $oPluginAdmin->plugin->_createItemLink($rrow['story_id'], $blog);
+					$rrow['story'] = htmlspecialchars(strip_tags($rrow['story']), ENT_QUOTES);
+					
+					$items[] = $rrow;
+				}
+				
+				$oTemplate->set('amount', $amount);
+				$oTemplate->set('start', $start);
+				$oTemplate->set('items', $items);
+				
+				if( $action == 'all') 
+					$oTemplate->template('templates/all.html');
+				else			
+					$oTemplate->template('templates/blocked.html');
 			}
+			break;
 			
-			$oTemplate->set ('amount', $amount);
-			$oTemplate->set ('count', $count);
-			$oTemplate->set ('start', $start);
-			$oTemplate->set ('items', $items);
-			$oTemplate->template('templates/all.html');			
-			break;		
-		
 		case 'list':
 			$id     = requestVar('id');
 			$start  = intRequestVar('start') ? intRequestVar('start') : 0;
@@ -511,7 +437,6 @@
 	// Create the admin area page
 	echo $oTemplate->fetch();
 	
-	echo '<hr noshade="noshade" size="1" /><div align="right">Powered by <a href="http://www.famfamfam.com/lab/icons/silk/">Silk icon</a></div>';
+	echo '<div align="right">Powered by <a href="http://www.famfamfam.com/lab/icons/silk/">Silk icon</a></div>';
 	$oPluginAdmin->end();	
 
-?>

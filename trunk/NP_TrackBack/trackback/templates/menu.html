@@ -1,4 +1,8 @@
 <?php global $manager?>
+
+<script type="text/javascript" src="<?php echo $CONF['PluginURL'].'trackback/js/'?>prototype.js"></script>
+<script type="text/javascript" src="<?php echo $CONF['PluginURL'].'trackback/js/'?>rico.js"></script>
+
 <h2>Trackback</h2>
 
 <ul>
@@ -24,6 +28,6 @@
 	</li>
     <li>
 		<img border="0" src="<?php echo $plugindirurl?>silk/plugin_edit.png" />
-		<a href="<?php echo htmlspecialchars($manager->addTicketToUrl($CONF['AdminURL'].'index.php?action=pluginoptions&plugid='.$plugid);?>">Plugin Options</a>
+		<a href="<?php echo htmlspecialchars($manager->addTicketToUrl($CONF['AdminURL'].'index.php?action=pluginoptions&plugid='.$plugid),ENT_QUOTES);?>">Plugin Options</a>
 	</li>
 </ul>

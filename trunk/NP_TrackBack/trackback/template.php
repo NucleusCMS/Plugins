@@ -33,5 +33,3 @@ class Trackback_Template {
 		}
     }
 }
-
-?>

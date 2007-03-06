@@ -1,0 +1,124 @@
+<?php global $manager; ?>
+<h2>
+	All trackbacks
+</h2>
+
+<div id="showingLabel"><?php echo $count ; ?>件中 1 - 5 件目を表示しています</div>
+
+<div style="width: 100%">
+<div id="viewPort" style="float:left; width: 420px">
+<table id="tb_grid" style="border:0; margin:0; width: 400px">
+	<thead>
+		<tr>
+			<th style="width:80px">Date</th>
+			<th style="width:120px">Story</th>
+			<th >Title, Blog and Excerpt</th>
+			<th style="width:20px">&#160;</th>
+			<th style="width:20px">&#160;</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr style="height:110px"  onmouseover='focusRow(this);' onmouseout='blurRow(this);'>
+			<td style="width:80px">&#160;</td>
+			<td style="width:120px">&#160;</td>
+			<td >&#160;</td>
+			<td style="width:20px">&#160;</td>
+			<td style="width:20px">&#160;</td>
+		</tr>
+		<tr style="height:110px"  onmouseover='focusRow(this);' onmouseout='blurRow(this);'>
+			<td style="width:80px">&#160;</td>
+			<td style="width:120px">&#160;</td>
+			<td >&#160;</td>
+			<td style="width:20px">&#160;</td>
+			<td style="width:20px">&#160;</td>
+		</tr>
+		<tr style="height:110px"  onmouseover='focusRow(this);' onmouseout='blurRow(this);'>
+			<td style="width:80px">&#160;</td>
+			<td style="width:120px">&#160;</td>
+			<td >&#160;</td>
+			<td style="width:20px">&#160;</td>
+			<td style="width:20px">&#160;</td>
+		</tr>
+		<tr style="height:110px"  onmouseover='focusRow(this);' onmouseout='blurRow(this);'>
+			<td style="width:80px">&#160;</td>
+			<td style="width:120px">&#160;</td>
+			<td >&#160;</td>
+			<td style="width:20px">&#160;</td>
+			<td style="width:20px">&#160;</td>
+		</tr>
+		<tr style="height:110px"  onmouseover='focusRow(this);' onmouseout='blurRow(this);'>
+			<td style="width:80px">&#160;</td>
+			<td style="width:120px">&#160;</td>
+			<td >&#160;</td>
+			<td style="width:20px">&#160;</td>
+			<td style="width:20px">&#160;</td>
+		</tr>
+		<tr style="height:110px"  onmouseover='focusRow(this);' onmouseout='blurRow(this);'>
+			<td style="width:80px">&#160;</td>
+			<td style="width:120px">&#160;</td>
+			<td >&#160;</td>
+			<td style="width:20px">&#160;</td>
+			<td style="width:20px">&#160;</td>
+		</tr>
+		<tr style="height:110px"  onmouseover='focusRow(this);' onmouseout='blurRow(this);'>
+			<td style="width:80px">&#160;</td>
+			<td style="width:120px">&#160;</td>
+			<td >&#160;</td>
+			<td style="width:20px">&#160;</td>
+			<td style="width:20px">&#160;</td>
+		</tr>
+		<tr style="height:110px"  onmouseover='focusRow(this);' onmouseout='blurRow(this);'>
+			<td style="width:80px">&#160;</td>
+			<td style="width:120px">&#160;</td>
+			<td >&#160;</td>
+			<td style="width:20px">&#160;</td>
+			<td style="width:20px">&#160;</td>
+		</tr>
+		<tr style="height:110px"  onmouseover='focusRow(this);' onmouseout='blurRow(this);'>
+			<td style="width:80px">&#160;</td>
+			<td style="width:120px">&#160;</td>
+			<td >&#160;</td>
+			<td style="width:20px">&#160;</td>
+			<td style="width:20px">&#160;</td>
+		</tr>
+		<tr style="height:110px"  onmouseover='focusRow(this);' onmouseout='blurRow(this);'>
+			<td style="width:80px">&#160;</td>
+			<td style="width:120px">&#160;</td>
+			<td >&#160;</td>
+			<td style="width:20px">&#160;</td>
+			<td style="width:20px">&#160;</td>
+		</tr>
+	</tbody>
+</table>
+</div>
+</div>
+<div style="clear:both"></div>
+
+<script>
+//<![CDATA[
+    function updateHeader( liveGrid, offset ) {
+	$('showingLabel').innerHTML = liveGrid.metaData.getTotalRows() + "件中 " + (offset+1) + " - " + (offset+liveGrid.metaData.getPageSize()) + "件目を表示しています。";
+    }
+
+    function loadGrid() {
+	var width = $('content').offsetWidth
+	$('viewPort').style.width = width  + 'px';
+	$('tb_grid').style.width =  ( width - 40 ) + 'px';
+
+	var max = <?php echo $count; ?>;
+	var params = ['action=ajax','type=all','ticket=' + '<?php echo $ticket ;?>']; 
+        var opts = { 
+		prefetchBuffer: true
+		,prefetchOffset: 50
+		,onscroll: updateHeader
+		,requestParameters: params
+		,sortAscendImg: '<?php echo $CONF['PluginURL'].'trackback/';?>images/sort_asc.gif'
+		,sortDescendImg: '<?php echo $CONF['PluginURL'].'trackback/';?>images/sort_desc.gif'                   
+		,columns: [ ["date", true], ["item", true], ["title", true], ["ban", false], ["del", false] ]
+	};
+        var liveGrid = new Rico.LiveGrid('tb_grid',5 , max, '<?php echo $CONF['PluginURL'].'trackback/';?>grid.php', opts);
+    }
+
+    window.onload = loadGrid;
+//]]>
+</script>
