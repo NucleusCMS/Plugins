@@ -13,9 +13,17 @@
  * @author    Original Author nakahara21
  * @copyright 2005-2006 nakahara21
  * @license   http://www.gnu.org/licenses/gpl.txt  GNU GENERAL PUBLIC LICENSE Version 2, June 1991
- * @version   2.66
+ * @version   2.66.4
  * @link      http://japan.nucleuscms.org/wiki/plugins:showblogs
  *
+ * 2.66.4 add function doIf()
+ *        USAGE : <%if(ShowBlogs,page,PageNo.)%>TRULE OUTPUT<%endif%>
+ *                <%if(ShowBlogs,tpl|amt|bmd|psw|srt|stk|stp|cmd|acd|cst,
+ *                    TemplateName|Amount|Blog mode|page switch type|Sort|
+ *                    Stick ID|StickyTemplate|Categpry mode|AD code mode|
+ *                    Category stick mode)%><%emdif%>
+ * 2.66.3 fix display offset
+ * 2.66.2 fix display Item when $q_amount=0
  * 2.66.1 fix sticky mode
  * 2.66   default argument bug fix
  * 2.65   add AD code control
@@ -58,7 +66,7 @@ class NP_ShowBlogs extends NucleusPlugin
 
 	function getVersion()
 	{
-		return '2.66.1';
+		return '2.66.4';
 	}
 
 	function getDescription()
@@ -127,6 +135,75 @@ class NP_ShowBlogs extends NucleusPlugin
 // </mod by shizuki>
 	}
 
+	function doIf($key, $value)
+	{
+		if ($key == 'page') {
+			if ($value) {
+				$v = explode('/', $value);
+				if ($v[1] == 1 && !$this->currPage) {
+					$this->currPage = 1;
+				}
+				switch ($v[0]) {
+					case '=':
+						if ($this->currPage == $v[1]) {
+							return TRUE;
+						}
+						break;
+					case '<':
+						if ($this->currPage < $v[1]) {
+							return TRUE;
+						}
+						break;
+					case '>':
+						if ($this->currPage > $v[1]) {
+							return TRUE;
+						}
+						break;
+					case '<=':
+						if ($this->currPage <= $v[1]) {
+							return TRUE;
+						}
+						break;
+					case '>=':
+						if ($this->currPage >= $v[1]) {
+							return TRUE;
+						}
+						break;
+					default:
+						if ($this->currPage == 1 || !$this->currPage) {
+							return TRUE;
+						}
+						break;
+				}
+			} else {
+				if ($this->currPage == 1 || !$this->currPage) {
+					return TRUE;
+				}
+			}
+		}
+		$args = explode('|', $key);
+		$vals = explode('|', $value);
+		if (count($args) != count($vals)) {
+			return FALSE;
+		}
+		$loop = count($args);
+		for ($i = 0; $i < $loop; $i++) {
+			$vars[$args[$i]] = $vals[$i];
+		}
+		$template      = $vars['tpl'] ? $vars['tpl'] : 'default/index';
+		$amount        = $vars['amt'] ? $vars['amt'] : 10;
+		$bmode         = $vars['bmd'] ? $vars['bmd'] : '';
+		$type          = $vars['psw'] ? $vars['psw'] : 1;
+		$sort          = $vars['srt'] ? $vars['srt'] : 'DESC';
+		$sticky        = $vars['stk'] ? $vars['stk'] : '';
+		$sticktemplate = $vars['stp'] ? $vars['stp'] : '';
+		$catmode       = $vars['cmd'] ? $vars['cmd'] : 'all';
+		$showAdCode    = $vars['acd'] ? $vars['acd'] : 1;
+		$catStick      = $vars['cst'] ? $vars['cst'] : 0;
+		$this->doSkinVar($this->skinType, $template, $amount, $bmode, $type, $sort, $sticky, $sticktemplate, $catmode, $showAdCode, $catStick);
+		return FALSE;
+	}
+
 	function doSkinVar($skinType,
 					   $template      = 'default/index',
 					   $amount        = 10,              // amount/page
@@ -140,7 +217,11 @@ class NP_ShowBlogs extends NucleusPlugin
 					   $catStick      = 0                // show sticky item when category selected ?
 					  )
 	{
-		global $manager, $CONF, $blog, $blogid, $catid, $itemid, $archive, $subcatid;
+		global $manager;
+		if ($skinType == 'item' && !$manager->pluginInstalled('NP_TagEX')) {
+			return;
+		}
+		global $CONF, $blog, $blogid, $catid, $itemid, $archive, $subcatid;
 
 		if (!$template) {
 			$template = 'default/index';
@@ -167,7 +248,6 @@ class NP_ShowBlogs extends NucleusPlugin
 				}
 				break;
 		}
-
 		if (preg_match("/^(<>)?([0-9\/]+)$/", $bmode, $matches)) {
 			if ($matches[1]) {
 				$hide = explode("/", $matches[2]);
@@ -213,6 +293,25 @@ class NP_ShowBlogs extends NucleusPlugin
 			$catmode = 'all';
 		}
 
+		if (!$template) {
+			$template = 'default/index';
+		}
+		if (!$amount) {
+			$amount = 10;
+		}
+		if (!isset($type)) {
+			$type = 1;
+		}
+		if (!$sort) {
+			$sort = 'DESC';
+		}
+		if (!$showAdCode) {
+			$showAdCode = 1;
+		}
+		if (!$catStick) {
+			$catStick = 0;
+		}
+
 		if ($blog) {
 			$b =& $blog; 
 		} else {
@@ -228,7 +327,7 @@ class NP_ShowBlogs extends NucleusPlugin
 		} elseif (isset($hide[0]) && $bmode == 'all') {
 			foreach ($hide as $val) {
 				if (!is_numeric($val)) {
-					$val = getBlogIDFromName(intval($val));
+					$val = getBlogIDFromName($val);
 				}
 				$where .= ' AND i.iblog != ' . intval($val);
 			}
@@ -236,7 +335,7 @@ class NP_ShowBlogs extends NucleusPlugin
 		} elseif (isset($show[0]) && $bmode == 'all') {
 			foreach ($show as $val) {
 				if (!is_numeric($val)) {
-					$val = getBlogIDFromName(intval($val));
+					$val = getBlogIDFromName($val);
 				}
 				$w[] = intval($val);
 			}
@@ -244,10 +343,10 @@ class NP_ShowBlogs extends NucleusPlugin
 			$where .= ' AND i.iblog in (' . implode(',', $w) . ')';
 		}
 
-		if (isset($hidecat[0]) && $catmode == 'all') {
+		if (isset($hideCat[0]) && $catmode == 'all') {
 			foreach($hideCat as $val){
 				if(!is_numeric($val)){
-					$val = getCatIDFromName(intval($val));
+					$val = getCatIDFromName($val);
 				}
 				$where .= ' AND i.icat != ' . intval($val);
 			}
@@ -255,7 +354,7 @@ class NP_ShowBlogs extends NucleusPlugin
 		} elseif (isset($showCat[0]) && $catmode == 'all') {
 			foreach ($showCat as $val) {
 				if (!is_numeric($val)) {
-					$val = getBlogIDFromName(intval($val));
+					$val = getBlogIDFromName($val);
 				}
 				$w[] = intval($val);
 			}
@@ -452,7 +551,7 @@ class NP_ShowBlogs extends NucleusPlugin
 		}
 		$q_startpos++;
 		$q_amount--;
-		if ($q_amount < 0) return;
+		if ($q_amount <= 0) return;
 		$onlyone_query = $showQuery . ' LIMIT ' . intval($q_startpos) . ', 1';
 		$b->showUsingQuery($template, $onlyone_query, 0, 1, 1); 
 		if (mysql_num_rows(sql_query($onlyone_query)) && empty($ads) && $this->showAdCode > 0) {
@@ -469,6 +568,7 @@ class NP_ShowBlogs extends NucleusPlugin
 	function event_InitSkinParse($data)
 	{
 		global $CONF, $manager;
+		$this->skinType = $data['type'];
 		$usePathInfo = ($CONF['URLMode'] == 'pathinfo');
 		if (serverVar('REQUEST_URI') == '') {
 			$uri = (serverVar('QUERY_STRING')) ?
@@ -477,10 +577,17 @@ class NP_ShowBlogs extends NucleusPlugin
 			$uri = serverVar('REQUEST_URI');
 		}
 		$page_str = ($usePathInfo) ? 'page/' : 'page=';
-		if ($manager->pluginInstalled('NP_CustomURL') || $manager->pluginInstalled('NP_Magical')) {
+		if ( $manager->pluginInstalled('NP_CustomURL') ||
+			 $manager->pluginInstalled('NP_Magical') ||
+			 $manager->pluginInstalled('NP_MagicalURL2') ) {
 			$page_str = 'page_';
 		}
-		list($org_uri, $currPage) = explode($page_str, $uri, 2);
+		if (strpos($uri, 'page/')) {
+			list($org_uri, $currPage) = explode('page/', $uri, 2);
+		} elseif (strpos($uri, 'page_')) {
+			list($org_uri, $currPage) = explode('page_', $uri, 2);
+		}
+//		list($org_uri, $currPage) = explode($page_str, $uri, 2);
 		if (getVar('page')) {
 			$currPage = intGetVar('page');
 		}
@@ -576,9 +683,6 @@ class NP_ShowBlogs extends NucleusPlugin
 			}
 		}
 
-		if (strstr ($pagelink, '//')) {
-			$pagelink = preg_replace("/([^:])\/\//", "$1/", $pagelink);
-		}
 		$uri = parse_url($pagelink);
 		if (!$usePathInfo) {
 			if ($pagelink == $CONF['BlogURL']) { // add
@@ -593,8 +697,13 @@ class NP_ShowBlogs extends NucleusPlugin
 				$page_str  = 'page=';
 			} else {
 				$pagelink .= '/';
-				if (strstr ($pagelink, '//')) $link = preg_replace("/([^:])\/\//", "$1/", $pagelink);
 			}
+		}
+		if (strstr ($pagelink, '//')) {
+			$pagelink = preg_replace("/([^:])\/\//", "$1/", $pagelink);
+		}
+		if (substr($pagelink, -5) == '.html') {
+			$pagelink = substr($pagelink, 0, -5) . '_';
 		}
 
 		if ($currentpage > 0) {
@@ -666,7 +775,9 @@ class NP_ShowBlogs extends NucleusPlugin
 			} elseif ($type >= 2) {
 				$buf .= "&laquo;Prev |";
 			}
-			$buf .= "\n";
+			if (intval($type) == 1) {
+				$buf .= "\n";
+			}
 			if (intval($type) == 2) {
 				$sepstr = '&middot;';
 				$buf   .= "|";
@@ -687,7 +798,7 @@ class NP_ShowBlogs extends NucleusPlugin
 								$buf .= "...|\n";
 							}
 						} else {
-							$buf .= ' <a href="' . $i_pagelink . '" title=\"Page No.' . $i . '">'
+							$buf .= ' <a href="' . $i_pagelink . '" title="Page No.' . $i . '">'
 								  . $i . '</a> |' . "\n";
 						}
 					}
