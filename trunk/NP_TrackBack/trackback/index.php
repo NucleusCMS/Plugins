@@ -237,7 +237,7 @@
 					t.blog_name AS blog_name,
 					t.excerpt AS excerpt,
 					t.url AS url,
-					t.timestamp AS timestamp,
+					UNIX_TIMESTAMP(t.timestamp) AS timestamp,
 					t.spam AS spam,
 					t.link AS link
 					FROM

@@ -2611,7 +2611,7 @@ function _strip_controlchar($string){	$string = preg_replace("/[\x01-\x08\x0b\x
 		function getName()   	  { 		return 'TrackBack';   }
 		function getAuthor() 	  { 		return 'rakaz + nakahara21 + hsur'; }
 		function getURL()    	  { 		return 'http://blog.cles.jp/np_cles/category/31/subcatid/3'; }
-		function getVersion()	  { 		return '2.0.3 jp8.1'; }
+		function getVersion()	  { 		return '2.0.3 jp8.2'; }
 		function getDescription() { 		return _TB_DESCRIPTION; }
 	
 //modify start+++++++++
