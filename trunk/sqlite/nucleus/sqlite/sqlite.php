@@ -37,46 +37,18 @@
 //
 //  Version 0.8.1
 //    -Execute "PRAGMA short_column_names=1" first.
-//    -Avoid loading outside php file in some specfic environment.
+//    -Avoid executing outside php file in some very specfic environment.
 //    -Avoid executing multiple queries using ";" as delimer.
+//    -Add check routine for the installed SQLite
 
-global $HTTP_GET_VARS, $HTTP_POST_VARS, $HTTP_COOKIE_VARS, $HTTP_ENV_VARS, $HTTP_POST_FILES, $HTTP_SESSION_VARS;
-$aVarsToCheck = array('HTTP_GET_VARS', 'HTTP_POST_VARS', 'HTTP_COOKIE_VARS', 'HTTP_ENV_VARS', 'HTTP_SESSION_VARS', 'HTTP_POST_FILES', 'HTTP_SERVER_VARS', 'GLOBALS', 'argv', 'argc', '_GET', '_POST', '_COOKIE', '_ENV', '_SESSION', '_SERVER', '_FILES', 'DIR_LIBS');
+// Check SQLite installed
 
-foreach ($aVarsToCheck as $varName)
-{
-	if (phpversion() >= '4.1.0')
-	{
-		if (   isset($_GET[$varName])
-			|| isset($_POST[$varName])
-			|| isset($_COOKIE[$varName])
-			|| isset($_ENV[$varName])
-			|| isset($_SESSION[$varName])
-			|| isset($_FILES[$varName])
-		){
-			die('Sorry. An error occurred.');
-		}
-	} else {
-		if (   isset($HTTP_GET_VARS[$varName])
-			|| isset($HTTP_POST_VARS[$varName])
-			|| isset($HTTP_COOKIE_VARS[$varName])
-			|| isset($HTTP_ENV_VARS[$varName])
-			|| isset($HTTP_SESSION_VARS[$varName])
-			|| isset($HTTP_POST_FILES[$varName])
-		){
-			die('Sorry. An error occurred.');
-		}
-	}
-}
+if (!function_exists('sqlite_open')) exit('Sorry, SQLite is not installed in the server.');
 
 // Initializiation stuff
-if (!isset($DIR_NUCLEUS)) $DIR_NUCLEUS=realpath('nucleus/');
-if (substr($DIR_NUCLEUS,-1)!='/') $DIR_NUCLEUS.='/';
-if (!file_exists($DIR_NUCLEUS.'sqlite/sqliteconfig.php')) exit;
-include ($DIR_NUCLEUS.'sqlite/sqliteconfig.php');
+require_once dirname(__FILE__) . '/sqliteconfig.php';
 $SQLITE_DBHANDLE=sqlite_open($SQLITECONF['DBFILENAME']);
-if (!file_exists($DIR_NUCLEUS.'sqlite/sqlitequeryfunctions.php')) exit;
-include ($DIR_NUCLEUS.'sqlite/sqlitequeryfunctions.php');
+require_once dirname(__FILE__) . '/sqlitequeryfunctions.php';
 $SQLITECONF['VERSION']='0.8.1';
 
 function sqlite_createQueryFunction($queryf,$globalf){
@@ -146,8 +118,6 @@ function sqlite_DebugMessage($text=''){
 }
 
 // nucleus_mysql_XXXX() functions follow.
-// These functions will be defined only when SQLite is installed in server.
-if (function_exists('sqlite_open')) {
 
 function nucleus_mysql_connect($p1=null,$p2=null,$p3=null,$p4=null,$p5=null){
 	// All prameters are ignored.
@@ -900,8 +870,6 @@ function nucleus_mysql_fetch_field($p1,$p2=null){
 	return $o;
 
 }
-
-}//if (function_exists('sqlite_open'))
 
 // This function is called instead of _execute_queries() in backp.php
 function sqlite_restore_execute_queries(&$query){
