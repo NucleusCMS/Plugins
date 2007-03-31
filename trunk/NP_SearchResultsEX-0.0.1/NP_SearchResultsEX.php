@@ -239,12 +239,16 @@ class NP_SearchResultsEX extends NucleusPlugin
 		$page_str = ($usePathInfo) ? 'page/' : 'page=';
 		$blogID = intval($b->getID());
 		$installedCustomURL = ($manager->pluginInstalled('NP_CustomURL'));
+		$installedMagical   = ($manager->pluginInstalled('NP_Magical') || $manager->pluginInstalled('NP_MagicalURL2'));
 		if ($installedCustomURL) {
 		    $plugCustomURL = $tplugin =& $manager->getPlugin('NP_CustomURL');
 		    $customFlag = ($plugCustomURL->getBlogOption(intval($blogID), 'use_customurl') == 'yes');
 			$redirectFlag = ($plugCustomURL->getBlogOption(intval($blogID), 'redirect_normal') == 'yes');
 		    $redirectSFlag = ($plugCustomURL->getBlogOption(intval($blogID), 'redirect_search') == 'yes');
 		    $page_str = 'page_';
+		}
+		if ($installedMagical) {
+			$page_str = 'page_';
 		}
 		list($pagelink, $currentpage) = explode($page_str, $uri);
 		if (getVar('page')) $currentpage = intGetVar('page');
@@ -257,7 +261,7 @@ class NP_SearchResultsEX extends NucleusPlugin
 			$que_str = mb_eregi_replace("'", 'qqquuuooottt', $que_str);
 			$que_str = mb_eregi_replace('&', 'aaammmppp', $que_str);
 			$que_str = urlencode($que_str);
-			$pagelink .= 'search' . $que_str . '/';
+			$pagelink .= '/search/' . $que_str . '/';
 		} else {
 		    $pagelink .= '?query=' . $query;
 		    if (is_numeric(getVar('amount')) && intGetVar('amount') >= 0) {
@@ -265,7 +269,13 @@ class NP_SearchResultsEX extends NucleusPlugin
 		    }
 		    $pagelink .= '&amp;blogid=' . $blogID;
 		}
+		if ($installedMagical) {
+			if (substr($pagelink, -5) == '.html') {
+				$pagelink = substr($pagelink, 0, -5) . '_';
+			}
+		}
 		$uri = parse_url($pagelink);
+
 		if (!$usePathInfo) {
 			if ($pagelink == $CONF['BlogURL']) { // add
 				$pagelink .= '?';
@@ -510,4 +520,3 @@ class NP_SearchResultsEX extends NucleusPlugin
 	}
 } 
 
-?>

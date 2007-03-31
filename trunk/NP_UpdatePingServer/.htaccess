@@ -1,0 +1,6 @@
+<FilesMatch "^RPCS$">
+    ForceType application/x-httpd-php
+</FilesMatch>
+<FilesMatch "^changes.xml$">
+    ForceType application/x-httpd-php
+</FilesMatch>

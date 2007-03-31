@@ -13,10 +13,9 @@
  * @author     Original Author nakahara21
  * @copyright  2005-2006 nakahara21
  * @license     http://www.gnu.org/licenses/gpl.txt  GNU GENERAL PUBLIC LICENSE Version 2, June 1991
- * @version    0.993
+ * @version    0.992
  * @link       http://japan.nucleuscms.org/wiki/plugins:itemnaviex
  *
- * 0.994  createBlogidLink($defBlogid) -> $defBlog->getURL()
  * 0.993  Henceforth to template
  * 0.992  display mode '0' fix
  * 0.991  add sub-blog home mode
@@ -48,14 +47,22 @@ class NP_ItemNaviEX extends NucleusPlugin
 
 	function getVersion()
 	{
-		return '0.994'; 
+		return '0.993'; 
 	}
 
 	function getDescription()
 	{
-		$description = 'Add link to prev item and next item. '
-					 . 'Usage: &lt;%ItemNaviEX%&gt; or &lt;%ItemNaviEX(0)%&gt;'
-					 . ' or &lt;%ItemNaviEX(1)%&gt; or  &lt;%ItemNaviEX(2)%&gt;';
+		// include language file for this plugin 
+		$language = ereg_replace( '[\\|/]', '', getLanguageName()); 
+		if (file_exists($this->getDirectory() . $language . '.php')) {
+			include_once($this->getDirectory() . $language . '.php'); 
+		} else {
+			include_once($this->getDirectory() . 'english.php');
+		}
+		$description = _NP_INEX_DESC;
+//		$description = 'Add link to prev item and next item. '
+//					 . 'Usage: &lt;%ItemNaviEX%&gt; or &lt;%ItemNaviEX(0)%&gt;'
+//					 . ' or &lt;%ItemNaviEX(1)%&gt; or  &lt;%ItemNaviEX(2)%&gt;';
 		return $description;
 	}
 
@@ -195,19 +202,21 @@ class NP_ItemNaviEX extends NucleusPlugin
 		$naviUnit         = array();
 		$subNaviUnit      = array();
 		$this->linkparams = array();
+		$nextLabel        = $this->getOption('PNNextLabel');
+		$prevLabel        = $this->getOption('PNPrevLabel');
 //store Home =====================================
-// comment out this block when HOME is sub-blog top
-		if ($showHome == 1) {
-			$defBlogid  = intval($CONF['DefaultBlog']);
-			$defBlog    = $manager->getBlog($defBlogid)
-			$naviUnit[] = array(
-				0 => 'Home',
-//				1 => createBlogidLink($defBlogid),
-				1 => $defBlog->getURL(),
-				2 => createArchiveListLink($blogid)
-			);
-		}
-
+//*// comment out this block when HOME is sub-blog top
+      if ($showHome == 1) {
+//         $defBlogid  =intval($CONF['DefaultBlog']);
+         $tempBlog =& $manager->getBlog(intval($CONF['DefaultBlog']));
+         $naviUnit[] = array(
+            0 => 'Home',
+//            1 => createBlogidLink($defBlogid),
+            1 => $tempBlog->getURL(),
+            2 => createArchiveListLink($blogid)
+         );
+      }
+//*/
 //store Blog =====================================
 		if ($showHome == 1 && ($blogid <> $CONF['DefaultBlog'])) {
 			$naviUnit[] = array(
@@ -285,7 +294,7 @@ class NP_ItemNaviEX extends NucleusPlugin
 				$alink          = createItemLink($ares[1], $this->linkparams);
 				$subNaviUnit[1] = '<a href="'
 								. htmlspecialchars($alink, ENT_QUOTES, _CHARSET)
-								. '" rel="prev"> &laquo; '
+								. '" rel="prev"> ' . $prevLabel . ' '
 								. shorten($ares[0], 14, '...')
 								. '</a>';
 			}
@@ -302,7 +311,7 @@ class NP_ItemNaviEX extends NucleusPlugin
 								. htmlspecialchars($alink, ENT_QUOTES, _CHARSET)
 								. '" rel="next"> '
 								. shorten($ares[0], 14, '...')
-								. ' &raquo;</a>';
+								. ' ' . $nextLabel . '</a>';
 			}
 
 		}
@@ -310,7 +319,8 @@ class NP_ItemNaviEX extends NucleusPlugin
 //store ArchiveList =====================================
 		if ($skinType == 'archivelist' || $skinType == 'archive') {
 			$naviUnit[] = array(
-				0 => 'ArchiveList',
+				0 => $this->getOption('archivelinkLabel'),
+//				0 => 'ArchiveList',
 				1 => createArchiveListLink($blogid, $this->linkparams)
 			);
 		}
@@ -358,7 +368,7 @@ class NP_ItemNaviEX extends NucleusPlugin
 				$subNaviUnit[1] = '<a href="'
 								. htmlspecialchars($prev_alink, ENT_QUOTES, _CHARSET)
 								. '" class="prevlink" rel="prev">'
-								. ' &laquo; '
+								. ' ' . $prevLabel . ' '
 								. htmlspecialchars($prev_date, ENT_QUOTES, _CHARSET)
 								. '</a>';
 //				$abuf .= '<a href="'.$prev_alink.'" class="prevlink" rel="prev">'.$prev_date.'</a>';
@@ -389,7 +399,7 @@ class NP_ItemNaviEX extends NucleusPlugin
 								. htmlspecialchars($next_alink, ENT_QUOTES, _CHARSET)
 								. '" class="nextlink" rel="next">'
 								. htmlspecialchars($next_date, ENT_QUOTES, _CHARSET)
-								. ' &raquo;</a>';
+								. ' ' . $nextLabel . '</a>';
 //				$a2buf = ' | <a href="'.$next_alink.'" class="nextlink" rel="next">'.$next_date.'</a>';
 //			} else {
 //				$today_link = createBlogidLink($b->getID(), $this->linkparams);
@@ -411,15 +421,23 @@ class NP_ItemNaviEX extends NucleusPlugin
 //		echo '</div>';
 //		echo '</span>';
 ///
-		$subNaviData['subnavi'] = implode(' :: ', $subNaviUnit);
+
+/*
+<%subnavi%>     --> prev. and next link
+<%archivedata%> --> ArchiveList link
+*/
+
+		$subNaviData['subnavi'] = implode($this->getOption('PNSeparator'), $subNaviUnit);
 		if ($skinType != 'archivelist' && $skinType != 'archive' && $skinType != 'item') {
-			$subNaviData['archivedata'] .= '<a href="'
-									 . $naviUnit[$endKey][2]
-									 . '">&raquo; ArchiveList</a>';
+			if (!empty($naviUnit)) {
+				$subNaviData['archivedata'] .= '<a href="'
+										 . $naviUnit[$endKey][2]
+										 . '">' . $this->getOption('archivelinkLabel') . '</a>';
+			}
 		}
 		$subnaviTemplate              = $this->getOption('subnaviTemplate');
-//		$navigateData['subnaviblock'] = TEMPLATE::fill($subnaviTemplate, $subNaviData);
-		echo TEMPLATE::fill($subnaviTemplate, $subNaviData);
+		$navigateData['subnaviblock'] = TEMPLATE::fill($subnaviTemplate, $subNaviData);
+//		echo TEMPLATE::fill($subnaviTemplate, $subNaviData);
 //*/
 // Print mainNavi
 		unset($naviUnit[$endKey][1]);
@@ -427,7 +445,7 @@ class NP_ItemNaviEX extends NucleusPlugin
 
 //		echo '<span class="breadcrumbslist">', @join(' &gt; ', $naviVar);
 
-		$topicPathData['topicpath'] = implode(' &gt; ', $naviVar);
+		$topicPathData['topicpath'] = implode($this->getOption('topicPathSeparator'), $naviVar);
 
 //add Taginfo =====================================
 // display selected TAGs whith link mod by shizuki
@@ -455,17 +473,28 @@ class NP_ItemNaviEX extends NucleusPlugin
 //				echo ' (Tag for "'.$tagPlugin->_rawdecode(requestVar('tag')).'")';
 //				echo ' (Tag for "' . @join(' / ', $taglist) . '")';
 //				echo '</small>';
+/*
+<%tags%> --> selected TAGs with own link
+*/
 				$tagsData['tags']         = implode(' / ', $taglist);
 				$tagListTemplate          = $this->getOption('tagListTemplate');
 				$topicPathData['taglist'] = TEMPLATE::fill($tagListTemplate, $tagsData);
 //*/
 			}
 		}
+/*
+<%topicpath%> --> topicpath
+<%taglist%>   --> selected TAG list
+*/
 		$topicPathTemplate              = $this->getOption('topicPathTemplate');
-//		$navigateData['topicpathblock'] = TEMPLATE::fill($topicPathTemplate, $topicPathData);
-		echo TEMPLATE::fill($topicPathTemplate, $topicPathData);
-//		$navigateBlockTemplate          = $this->getOption('navigateBlockTemplate');
-//		echo TEMPLATE::fill($navigateBlockTemplate, $navigateData);
+		$navigateData['topicpathblock'] = TEMPLATE::fill($topicPathTemplate, $topicPathData);
+//		echo TEMPLATE::fill($topicPathTemplate, $topicPathData);
+		$navigateBlockTemplate          = $this->getOption('ItemNaviTemplate');
+/*
+<%subnaviblock%>
+<%topicpathblock%>
+*/
+		echo TEMPLATE::fill($navigateBlockTemplate, $navigateData);
 //*/
 //		echo '</span>';
 
@@ -528,16 +557,26 @@ class NP_ItemNaviEX extends NucleusPlugin
 
 	function install()
 	{
-///*
-		$this->createOption('subnaviTemplate','subnaviTemplate','text',
-		' <div style="text-align:right;"><%archivedata%><%subnavi%></div>');
-		$this->createOption('topicPathTemplate','topicPathTemplate','text',
-		'<div style="text-align:left;"><%topicpath%><%taglist%></div>');
-		$this->createOption('tagListTemplate','tagListTemplate','text',
-		' <small style="font-family:Tahoma;"><%tags%></small>');
-//		$this->createOption('navigateBlockTemplate','navigateBlockTemplate','text',
-//		' <div class="itemnaviex"><%subnaviblock%><%topicpathblock%></div>');
-//*/
+		// include language file for this plugin 
+		$language = ereg_replace( '[\\|/]', '', getLanguageName()); 
+		if (file_exists($this->getDirectory() . $language . '.php')) {
+			include_once($this->getDirectory() . $language . '.php'); 
+		} else {
+			include_once($this->getDirectory() . 'english.php');
+		}
+		$sub  = '<div style="text-align:right;"><%archivedata%><%subnavi%></div>';
+		$path = '<div style="text-align:left;"><%topicpath%><%taglist%></div>';
+		$tags = ' (Selected TAG(s) : <small style="font-family:Tahoma;"><%tags%></small>)';
+		$navi = '<div class="itemnaviex"><%subnaviblock%><%topicpathblock%></div>';
+		$this->createOption('subnaviTemplate',    _INEXOP_SUB,  'text', $sub);
+		$this->createOption('PNSeparator',        _INEXOP_PNSP, 'tect', ' :: ');
+		$this->createOption('PNNextLabel',        _INEXOP_PNNX, 'tect', '&raquo;');
+		$this->createOption('PNPrevLabel',        _INEXOP_PNPR, 'tect', '&laquo;');
+		$this->createOption('topicPathTemplate',  _INEXOP_PATH, 'text', $path);
+		$this->createOption('topicPathSeparator', _INEXOP_PSEP, 'text', ' &gt; ');
+		$this->createOption('tagListTemplate',    _INEXOP_TAGS, 'text', $tags);
+		$this->createOption('ItemNaviTemplate',   _INEXOP_NAVI, 'text', $navi);
+		$this->createOption('archivelinkLabel',   _INEXOP_ALBL, 'text', '&raquo; ArchiveList');
 	}
 
 }

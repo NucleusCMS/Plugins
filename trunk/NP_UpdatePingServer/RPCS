@@ -1,0 +1,10 @@
+<?php
+$CONF = array();
+require_once('./config.php');
+
+include_once($DIR_LIBS . 'MANAGER.php');
+global $manager;
+
+$pluginObject =& $manager->getPlugin('NP_UpdatePingServer');
+$pluginObject->doAction('updateping');
+

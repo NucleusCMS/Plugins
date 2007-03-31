@@ -38,7 +38,7 @@ class NP_CustomURL extends NucleusPlugin
 
 	function getVersion()
 	{
-		return '0.3.5c';
+		return '0.3.6b';
 	}
 
 	function getDescription()
@@ -849,6 +849,12 @@ class NP_CustomURL extends NucleusPlugin
 						$exLink          = TRUE;
 					}
 				break;
+				case 'special':
+					if (isset($v_path[$i]) && is_string($v_path[$i])) {
+						$_REQUEST['special'] = $v_path[$i];
+						$exLink          = TRUE;
+					}
+				break;
 				// for trackback
 				case 'trackback':
 					if (isset($v_path[$i]) && is_string($v_path[$i])) {
@@ -928,7 +934,7 @@ class NP_CustomURL extends NucleusPlugin
 						);
 		$siteMapPlugin = $this->pluginCheck('GoogleSitemap');
 		if (!$siteMapPlugin) {
-			$siteMapPlugin = $this->pluginCheck('SearchenginesSitemapsGenerator');
+			$siteMapPlugin = $this->pluginCheck('SEOSitemaps');
 		}
 		if ($siteMapPlugin) {
 			$pcSitemaps = $siteMapPlugin->getAllBlogOptions('PcSitemap');
@@ -1200,8 +1206,9 @@ class NP_CustomURL extends NucleusPlugin
 				if ($useCustomURL[$blogid] == 'no') {
 					return;
 				}
-				$objPath = $OP_ArchivesKey . '/';
-				$bid = $blogid;
+				$objPath = $OP_ArchivesKey . '/';;
+				$bid     = intval($params['blogid']);
+				$burl    = $this->_generateBlogLink($bid);
 			break;
 			case 'archive':
 				if ($useCustomURL[$blogid] == 'no') {
@@ -1215,8 +1222,9 @@ class NP_CustomURL extends NucleusPlugin
 				} else {
 					$arc = sprintf('%04d',           $y);
 				}
-				$objPath = $OP_ArchiveKey . '/' . $arc . '/';
-				$bid     = $blogid;
+				$objPath = $OP_ArchiveKey . '/' . $arc . '/';;
+				$bid     = intval($params['blogid']);
+				$burl = $this->_generateBlogLink($bid);
 			break;
 			case 'blog':
 				if (!is_numeric($params['blogid'])) {
@@ -1283,7 +1291,7 @@ class NP_CustomURL extends NucleusPlugin
 		foreach($tempdeb as $k => $v){
 			$analyzePlugin = (strtolower($v['class']) == 'np_analyze');
 			$sitemapPlugin = (strtolower($v['class']) == 'np_googlesitemap' || 
-							  strtolower($v['class']) == 'np_searchenginessitemapsgenerator');
+							  strtolower($v['class']) == 'np_seositemaps');
 			if ($analyzePlugin || $sitemapPlugin) {
 				$denyPlugin = TRUE;
 			}
@@ -1306,7 +1314,8 @@ class NP_CustomURL extends NucleusPlugin
 			$isItem      = (substr($data['url'], -5, 5) == '.html');
 			$isDirectory = (substr($data['url'], -1) == '/');
 			$puri        = parse_url($data['url']);
-			if ($isArchives && !$isItem && !$isDirectory && !$puri['query']) {
+//			if (($isArchives && !$puri['query']) || (!$isItem && !$isDirectory && !$puri['query'])) {
+			if (!$isItem && !$isDirectory && !$puri['query']) {
 				$data['url'] .= '/';
 			}
 			$data['completed'] = TRUE;

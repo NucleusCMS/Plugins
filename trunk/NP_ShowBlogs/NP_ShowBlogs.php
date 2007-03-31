@@ -66,7 +66,7 @@ class NP_ShowBlogs extends NucleusPlugin
 
 	function getVersion()
 	{
-		return '2.66.4';
+		return '2.66.5';
 	}
 
 	function getDescription()
@@ -331,7 +331,7 @@ class NP_ShowBlogs extends NucleusPlugin
 				}
 				$where .= ' AND i.iblog != ' . intval($val);
 			}
-			$catblogname = 1;
+//			$catblogname = 1;
 		} elseif (isset($show[0]) && $bmode == 'all') {
 			foreach ($show as $val) {
 				if (!is_numeric($val)) {
@@ -339,27 +339,28 @@ class NP_ShowBlogs extends NucleusPlugin
 				}
 				$w[] = intval($val);
 			}
-			$catblogname = (count($w) > 1) ? 1 : 0;
+//			$catblogname = (count($w) > 1) ? 1 : 0;
 			$where .= ' AND i.iblog in (' . implode(',', $w) . ')';
 		}
 
 		if (isset($hideCat[0]) && $catmode == 'all') {
 			foreach($hideCat as $val){
-				if(!is_numeric($val)){
-					$val = getCatIDFromName($val);
+				if(is_numeric($val)){
+					$where .= ' AND i.icat != ' . intval($val);
 				}
-				$where .= ' AND i.icat != ' . intval($val);
 			}
 			$catblogname = 1;
 		} elseif (isset($showCat[0]) && $catmode == 'all') {
 			foreach ($showCat as $val) {
 				if (!is_numeric($val)) {
-					$val = getBlogIDFromName($val);
+					$w[] = intval($val);
 				}
-				$w[] = intval($val);
 			}
-			$catblogname = (count($w) > 1) ? 1 : 0;
+//			$catblogname = (count($w) > 1) ? 1 : 0;
 			$where .= ' AND i.icat in (' . implode(',', $w) . ')';
+		}
+		if ($bmode == 'all') {
+			$catblogname = 1;
 		}
 //		$stickWhere = $where;
 
