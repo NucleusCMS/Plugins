@@ -102,6 +102,18 @@ class NP_SearchResultsEX extends NucleusPlugin
 	                   $maxresults = '')                 // max results
     {
 		global $manager, $CONF, $blog, $query, $amount, $startpos;
+		if (!$template) {
+		    $template   = 'default/index';
+		}
+		if (!$p_amount) {
+		    $p_amount   = 10;
+		}
+		if (!$type) {
+		    $type   = 1;
+		}
+		if (!$bmode) {
+		    $bmode   = 'all';
+		}
 		$this->maxamount = ($maxresults) ? $maxresults : 0;
 
 //        if (!$manager->pluginInstalled('NP_ExtensibleSearch') && getNucleusVersion() < ???) {
