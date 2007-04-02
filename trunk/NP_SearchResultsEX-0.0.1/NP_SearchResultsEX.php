@@ -13,30 +13,41 @@ class NP_SearchResultsEX extends NucleusPlugin
 
 	function getURL()
 	{
-	    return 'http://shizuki.kinezumi.net/NucleusCMS/Plugins/SearchResultsEX/';
+	    $url = 'http://shizuki.kinezumi.net/'
+	    	 . 'NucleusCMS/Plugins/SearchResultsEX/';
+	    return $url;
 	}
 
 	function getVersion()
 	{
-	    return '0.03';
+	    return '0.05';
 	}
 
 	function getDescription()
 	{
-		return 'This plugin replace &lt;%searchresults()%&gt; with page switch<br />
-		Usage: &lt;%SearchResultsEX(default/index,15,,2,500)%&gt;<br />
-		Requered NP_ExtensibleSearch'; 
+		$desc = 'This plugin replace &lt;%searchresults()%&gt; '
+			  . 'with page switch<br />'
+			  . 'Usage: &lt;%SearchResultsEX(Template,15,,2,500)%&gt;<br />'
+			  . 'Requered NP_ExtensibleSearch for Extensible searchresults.';
+		return $desc;
 	} 
 
 	function getEventList()
 	{
-	    return array('PreSearchResults');
+	    global $manager;
+	    $event_arr = array(
+	    					'InitSkinParse'
+	    				   );
+	    if ($manager->pluginInstalled('NP_ExtensibleSearch')) {
+	    	$event_arr[] = 'PreSearchResults';
+	    }
+	    return $event_arr;
 	}
 
-	function getPluginDep()
-	{
-	    return array('NP_ExtensibleSearch');
-	}
+//	function getPluginDep()
+//	{
+//	    return array('NP_ExtensibleSearch');
+//	}
 
 	function supportsFeature($what)
 	{
@@ -50,12 +61,31 @@ class NP_SearchResultsEX extends NucleusPlugin
 
 	function install()
 	{
+		$this->createOption("commentsearch",
+							"Comments are included in a search target"
+						  . "(Need 'NP_ExtensibleSearch').",
+							"yesno",
+							"yes");
+		$this->createOption("trackbacksearch",
+							"TrackBacks are included in a search target"
+						  . "(Need 'NP_ExtensibleSearch').",
+							"yesno",
+							"yes");
+		$this->createOption("tagsearch",
+							"Tags are included in a search target"
+						  . "(Need 'NP_ExtensibleSearch').",
+							"yesno",
+							"no");
 		$this->createOption("srex_ads1",
-		                    "[Ads code] code displayed under first and second item of the page",
+		                    "[Ads code 1] "
+		                  . "Ads code where it's caught between "
+		                  . "1st and 2nd entry and shown",
 		                    "textarea",
 		                    "");
 		$this->createOption("srex_ads2",
-		                    "[Ads code] code displayed under second and third item of the page",
+		                    "[Ads code 1] "
+		                  . "Ads code where it's caught between "
+		                  . "2nd and 3rd entry and shown",
 		                    "textarea",
 		                    "");
 	}
@@ -70,20 +100,30 @@ class NP_SearchResultsEX extends NucleusPlugin
 
 		$sqlquery  = 'SELECT i.inumber as itemid FROM ';
 		$tables    = sql_table('item') . ' as i ';
-		$where_str = 'xxx.cm.cbody';
-//	if ($manager->pluginInstalled('NP_TagEX')) {
-//		$tables    .= ' left join ' . sql_table('plug_tagex') . ' as tag on i.inumber = tag.inum';
-//		$where_str .= ',xxx.tag.itags';
-//	}
-		if ($manager->pluginInstalled('NP_TrackBack')) {
-			$tables    .= ' left join '.sql_table('plugin_tb').' as t on i.inumber = t.tb_id';
-			$where_str .= ',xxx.t.title,xxx.t.excerpt';
+		$where_str = '';
+		if ($this->getOption('commentsearch') == 'yes') {
+		    	$tables    .= ' left join ' . sql_table('comment') . ' as cm'
+		    			 	. ' on i.inumber = cm.citem ';
+		    	$where_str .= 'xxx.cm.cbody';
 		}
-		$sqlquery .= $tables . ' left join ' . sql_table('comment')
-		           . ' as cm on i.inumber = cm.citem ';
+		
+		if ($this->getOption('tagsearch') == 'yes' &&
+			$manager->pluginInstalled('NP_TagEX')) {
+				$tables    .= ' left join ' . sql_table('plug_tagex') . ' as tag'
+							. ' on i.inumber = tag.inum';
+				$where_str .= ', xxx.tag.itags';
+		}
+		if ($this->getOption('trackbacksearch') == 'yes' &&
+			$manager->pluginInstalled('NP_TrackBack')) {
+				$tables    .= ' left join ' . sql_table('plugin_tb') . ' as t'
+							. ' on i.inumber = t.tb_id';
+				$where_str .= ', xxx.t.title, xxx.t.excerpt';
+		}
+		$sqlquery .= $tables;
 		$where     = $searchclass->boolean_sql_where($where_str);
 		$where     = strtr($where, array('i.xxx.'=> ''));
-		$sqlquery .= ' WHERE i.idraft = 0 and i.itime <= ' . mysqldate($blog -> getCorrectTime())
+		$sqlquery .= ' WHERE i.idraft = 0'
+				   . ' and i.itime <= ' . mysqldate($blog -> getCorrectTime())
 				   . ' and i.iblog in (' . implode(',', $blogs) . ') '
 				   . ' and ' . $where;
 		$res       = sql_query($sqlquery);
@@ -116,20 +156,17 @@ class NP_SearchResultsEX extends NucleusPlugin
 		}
 		$this->maxamount = ($maxresults) ? $maxresults : 0;
 
-//        if (!$manager->pluginInstalled('NP_ExtensibleSearch') && getNucleusVersion() < ???) {
-//            return;	// Future
-//        }
-		$type = floatval($type);
+		$type    = floatval($type);
 		$typeExp = intval(($type - floor($type))*10); //0 or 1 or 9
 		list($pageamount, $offset) = sscanf($p_amount, '%d(%d)');
 		if (!$pageamount) $pageamount = 10;
 		if (preg_match("/^(<>)?([0-9\/]+)$/",$bmode,$matches)) {
 			if ($matches[1]) {
-				$hide = explode("/",$matches[2]);
+				$hide = explode("/", $matches[2]);
 				$show = array();
 			} else {
 				$hide = array();
-				$show = explode("/",$matches[2]);
+				$show = explode("/", $matches[2]);
 			}
 			$bmode = 'all';
 		}
@@ -142,16 +179,27 @@ class NP_SearchResultsEX extends NucleusPlugin
 
 		if ($template == 'form') {
 			$q = getVar('query');
-			echo '<form method="get" action="' . createBlogidLink($nowbid) . '">' . "\n";
-			echo "\t" . '<div class="searchform">' . "\n";
-			echo "\t\t";
-			echo '<input name="query" class="formfield" size="10" maxlength="60"';
-			echo ' accesskey="4" value="' . $q . '" />' . "\n";
-			echo "\t\t" . '<br />' . "\n";
-			echo "\t\t" . '<input type="submit" value="' . _SEARCHFORM_SUBMIT . '" ';
-			echo 'class="formbutton" />' . "\n";
-			echo "\t" . '</div>' . "\n";
-			echo '</form>' . "\n";
+			$search_form = '<form '
+						 .     'method="get" '
+						 .     'action="' . createBlogidLink($nowbid) . '" '
+						 . ">\n"
+						 . "\t" . '<div class="searchform">' . "\n"
+						 . "\t\t<input "
+						 .         'name="query" '
+						 .         'class="formfield" '
+						 .         'size="10" '
+						 .         'maxlength="60" '
+						 .         'accesskey="4" '
+						 .         'value="' . $q . '" '
+						 .      "/>\n\t\t<br />\n"
+						 . "\t\t<input "
+						 .         'type="submit" '
+						 .         'value="' . _SEARCHFORM_SUBMIT . '" '
+						 .         'class="formbutton" '
+						 .      "/>\n"
+						 . "\t</div>\n"
+						 . "</form>\n";
+			echo $search_form;
 			return;
 		}
 
@@ -172,47 +220,77 @@ class NP_SearchResultsEX extends NucleusPlugin
 				}
 				$w[] = intval($val);
 			}
-			$s_blogs .= ' and i.iblog in ('.implode(",",$w).')';
+			$s_blogs .= ' and i.iblog in (' . implode(",", $w) . ')';
 		}
 // Origin NP_ExtensibleSearch by Andy
 		$highlight = '';
-//		if ($manager->pluginInstalled('NP_ExtensibleSearch')) {
-			$explugin  =& $manager->getPlugin('NP_ExtensibleSearch');
-			$sqlquery  = $explugin->getSqlQuery(htmlspecialchars($query), $amount, $highlight);
-//		} elseif (getNucleusVersion() >= ???) {
-//			$sqlquery  = getSqlQuery($query, $amount, $highlight);
-//		}
-		$que_arr   = explode(' ORDER BY', $sqlquery, 2);
-		$sqlquery  = implode($s_blogs.' ORDER BY', $que_arr);
+		$query     = htmlspecialchars($query);
+		if ($manager->pluginInstalled('NP_ExtensibleSearch')) {
+			$explugin =& $manager->getPlugin('NP_ExtensibleSearch');
+			$sqlquery =  $explugin->getSqlQuery($query, $amount, $highlight);
+		} else { //if (getNucleusVersion() >= ???) {
+			$sqlquery = getSqlSearch($query, $amount, $highlight);
+		}
+		$que_arr  = explode(' ORDER BY', $sqlquery, 2);
+		$sqlquery = implode($s_blogs . ' ORDER BY', $que_arr);
 		if (!$sqlquery) {
 			// no query -> show everything
-			$extraquery = '';
-			$amountfound = $b->readLogAmount($template, $maxresults, $extraQuery, $query, 1, 1);
+			$exQuery = '';
+			$amfound = $b->readLogAmount($template, $maxresults, $exQuery, $query, 1, 1);
 		} else {
-//			if ($manager->pluginInstalled('NP_ExtensibleSearch')) {
-				$entries = $explugin->getArray($sqlquery);
-//			} elseif (getNucleusVersion() >= ???) {
-//				$entries  = $???????->getArray($sqlquery);
-//			}
-			if (count($entries) > 0) {
-				$page_switch = $this->PageSwitch($type, $pageamount, $offset, $entries, $b);
-				if ($typeExp != 9) echo $page_switch;
-				$this->_showUsingQuery($template, $sqlquery, $highlight, $startpos, $pageamount, $b); 
-				if ($type >= 1 && $typeExp != 1) echo $page_switch;
+			$res     = sql_query($sqlquery);
+			$entries = array();
+			while ($itemid = mysql_fetch_row($res)) {
+				array_push($entries, $itemid[0]);
+			}
+			$allAmount = count($entries);
+			if ($allAmount > 0) {
+			    $switchParam = array (
+			    					   $type,
+			    					   $pageamount,
+			    					   $offset,
+			    					   $entries,
+			    					   $b
+			    					  );
+				$page_switch = $this->PageSwitch($switchParam);
+				if ($typeExp != 9) {
+				    echo $page_switch;
+				}
+			    $showParams = array (
+			    					  $template,
+			    					  $sqlquery,
+			    					  $highlight,
+			    					  $startpos,
+			    					  $pageamount,
+			    					  $b
+			    					 );
+				$this->_showUsingQuery($showParams); 
+				if ($type >= 1 && $typeExp != 1) {
+				    echo $page_switch;
+				}
 			} else {
 				$template =& $manager->getTemplate($template);
 				$vars = array(
-				'query'      => htmlspecialchars($query),
-				'blogid'   => $nowbid
-				);
-				echo TEMPLATE::fill($template['SEARCH_NOTHINGFOUND'],$vars);
+							   'query'    => $query,
+							   'blogid'   => $nowbid
+							  );
+				echo TEMPLATE::fill($template['SEARCH_NOTHINGFOUND'], $vars);
 			}
 		}
 	}
 
-	function _showUsingQuery($template, $showQuery, $highlight, $q_startpos, $q_amount, $b)
+	function _showUsingQuery($showParams)
 	{
-		$onlyone_query = $showQuery . ' LIMIT ' . intval($q_startpos) .', 1';
+		$template      = $showParams[0];
+		$showQuery     = $showParams[1];
+		$highlight     = $showParams[2];
+		$q_startpos    = $showParams[3];
+		$q_amount      = $showParams[4];
+		$b             = $showParams[5];
+		$onlyone_query = $showQuery
+					   . ' LIMIT '
+					   . intval($q_startpos)
+					   . ', 1';
 		$b->showUsingQuery($template, $onlyone_query, intval($highlight), 1, 1); 
 		echo $this->getOption('srex_ads1');
 
@@ -221,7 +299,10 @@ class NP_SearchResultsEX extends NucleusPlugin
 		if ($q_amount < 0) {
 		    return;
 		}
-		$onlyone_query = $showQuery . ' LIMIT ' . intval($q_startpos) .', 1';
+		$onlyone_query = $showQuery
+					   . ' LIMIT '
+					   . intval($q_startpos)
+					   . ', 1';
 		$b->showUsingQuery($template, $onlyone_query, intval($highlight), 1, 1); 
 		if (mysql_num_rows(sql_query($onlyone_query))) {
 			echo $this->getOption('srex_ads2');
@@ -231,63 +312,90 @@ class NP_SearchResultsEX extends NucleusPlugin
 		$q_amount--;
 		if ($q_amount < 0) {
 		    return;
-		}		$second_query = $showQuery . ' LIMIT ' . intval($q_startpos) . ',' . intval($q_amount);
+		}
+		$second_query = $showQuery
+					  . ' LIMIT '
+					  . intval($q_startpos)
+					  . ',' . intval($q_amount);
 		$b->showUsingQuery($template, $second_query, intval($highlight), 1, 1);
 	}
 
-	function PageSwitch($type, $pageamount, $offset, $entries, $b)
-	{	// Orign NP_ShowBlogs by Taka + nakahara21
-		global $CONF, $manager, $startpos, $query;
-		$startpos = intval($startpos);
-		$pageamount = intval($pageamount);
-		$offset = intval($offset);
+	function event_InitSkinParse($data)
+	{
+		global $CONF, $manager;
+		$this->skinType = $data['type'];
 		$usePathInfo = ($CONF['URLMode'] == 'pathinfo');
 		if (serverVar('REQUEST_URI') == '') {
 			$uri = (serverVar('QUERY_STRING')) ?
-				serverVar('SCRIPT_NAME') . serverVar('QUERY_STRING') : serverVar('SCRIPT_NAME');
+				serverVar('SCRIPT_NAME') . serverVar('QUERY_STRING') :
+				serverVar('SCRIPT_NAME');
 		} else { 
 			$uri = serverVar('REQUEST_URI');
 		}
 		$page_str = ($usePathInfo) ? 'page/' : 'page=';
-		$blogID = intval($b->getID());
-		$installedCustomURL = ($manager->pluginInstalled('NP_CustomURL'));
-		$installedMagical   = ($manager->pluginInstalled('NP_Magical') || $manager->pluginInstalled('NP_MagicalURL2'));
-		if ($installedCustomURL) {
-		    $plugCustomURL = $tplugin =& $manager->getPlugin('NP_CustomURL');
-		    $customFlag = ($plugCustomURL->getBlogOption(intval($blogID), 'use_customurl') == 'yes');
-			$redirectFlag = ($plugCustomURL->getBlogOption(intval($blogID), 'redirect_normal') == 'yes');
-		    $redirectSFlag = ($plugCustomURL->getBlogOption(intval($blogID), 'redirect_search') == 'yes');
-		    $page_str = 'page_';
-		}
-		if ($installedMagical) {
+		if ( $manager->pluginInstalled('NP_CustomURL') ||
+			 $manager->pluginInstalled('NP_Magical') ||
+			 $manager->pluginInstalled('NP_MagicalURL2') ) {
 			$page_str = 'page_';
 		}
-		list($pagelink, $currentpage) = explode($page_str, $uri);
-		if (getVar('page')) $currentpage = intGetVar('page');
-		$currentpage = intval($currentpage);
-		$pagelink = createBlogidLink($blogID);
-		if ($installedCustomURL && $customFlag && $redirectSFlag) {
-			$que_str = $query;
-			$que_str = htmlspecialchars($que_str);
-			$que_str = mb_eregi_replace('/', 'ssslllaaassshhh', $que_str);
-			$que_str = mb_eregi_replace("'", 'qqquuuooottt', $que_str);
-			$que_str = mb_eregi_replace('&', 'aaammmppp', $que_str);
-			$que_str = urlencode($que_str);
-			$pagelink .= '/search/' . $que_str . '/';
-		} else {
-		    $pagelink .= '?query=' . $query;
-		    if (is_numeric(getVar('amount')) && intGetVar('amount') >= 0) {
-		        $pagelink .= '&amp;amount=' . intGetVar('amount');
-		    }
-		    $pagelink .= '&amp;blogid=' . $blogID;
+		if (strpos($uri, 'page/')) {
+			list($org_uri, $currPage) = explode('page/', $uri, 2);
+		} elseif (strpos($uri, 'page_')) {
+			list($org_uri, $currPage) = explode('page_', $uri, 2);
 		}
-		if ($installedMagical) {
-			if (substr($pagelink, -5) == '.html') {
-				$pagelink = substr($pagelink, 0, -5) . '_';
+//		list($org_uri, $currPage) = explode($page_str, $uri, 2);
+		if (getVar('page')) {
+			$currPage = intGetVar('page');
+		}
+		$_GET['page']   = intval($currPage);
+		$this->currPage = intval($currPage);
+		$this->pagestr  = $page_str;
+	}
+
+	function PageSwitch($switchParam)
+	{
+		global $CONF, $manager, $startpos, $query;
+// initialize
+		extract($switchParam);
+		$type          = intval($switchParam[0]);
+		$pageamount    = intval($switchParam[1]);
+		$offset        = intval($switchParam[2]);
+		$entries       = $switchParam[3];
+		$b             = $switchParam[4];
+		$startpos      = 0;
+		$nowblogid     = $b->getID();
+		$usePathInfo   = ($CONF['URLMode'] == 'pathinfo');
+		$page_str      = $this->pagestr;
+		$currentpage   = $this->currPage; 
+		$useCustomURL  = ($manager->pluginInstalled('NP_CustomURL'));
+		$useMagicalURL = ($manager->pluginInstalled('NP_Magical') || $manager->pluginInstalled('NP_MagicalURL2'));
+		if ($useCustomURL) {
+			$plugCustomURL =& $manager->getPlugin('NP_CustomURL');
+			$customFlag    = ($plugCustomURL->getBlogOption(intval($nowblogid), 'use_customurl') == 'yes');
+			$redirectSFlag = ($plugCustomURL->getBlogOption(intval($nowblogid), 'redirect_search') == 'yes');
+		}
+
+// createBaseURL
+		$pagelink = createBlogidLink($nowblogid);
+		if ($useCustomURL && $customFlag && $redirectSFlag) {
+			$que_str    = $query;
+			$que_str    = htmlspecialchars($que_str);
+			$que_str    = mb_eregi_replace('/', 'ssslllaaassshhh', $que_str);
+			$que_str    = mb_eregi_replace("'", 'qqquuuooottt', $que_str);
+			$que_str    = mb_eregi_replace('&', 'aaammmppp', $que_str);
+			$que_str    = urlencode($que_str);
+			$search_str = '/search/' . $que_str . '/';
+		} else {
+			if ($useMagicalURL && substr($pagelink, -5) == '.html') {
+				$pagelink   = substr($pagelink, 0, -5) . '_';
 			}
+			$search_str = '?query=' . $query;
+			if (is_numeric(getVar('amount')) && intGetVar('amount') >= 0) {
+				$search_str .= '&amp;amount=' . intGetVar('amount');
+			}
+			$search_str .= '&amp;blogid=' . $nowblogid;
 		}
 		$uri = parse_url($pagelink);
-
 		if (!$usePathInfo) {
 			if ($pagelink == $CONF['BlogURL']) { // add
 				$pagelink .= '?';
@@ -298,122 +406,156 @@ class NP_SearchResultsEX extends NucleusPlugin
 		} elseif ($usePathInfo && substr($pagelink, -1) != '/') {
 			if ($uri['query']) {
 				$pagelink .= '&amp;';
-				$page_str = 'page=';
+				$page_str  = 'page=';
 			} else {
-				$pagelink .= '/';
-				if (strstr ($pagelink, '//')) $link = preg_replace("/([^:])\/\//", "$1/", $pagelink);
+				if ($useMagicalURL && substr($pagelink, -1) == '_') {
+					$pagelink = $pagelink;
+				} else {
+					$pagelink .= '/';
+				}
 			}
 		}
+		if (strstr ($pagelink, '//')) {
+			$pagelink = preg_replace("/([^:])\/\//", "$1/", $pagelink);
+		}
+		if (strpos($pagelink, '?')) {
+			$search_str = str_replace('?', '&amp;', $search_str);
+		}
 
+// Process pages
 		if ($currentpage > 0) {
 			$startpos = ($currentpage - 1) * $pageamount;
 		} else {
 			$currentpage = 1;
 		}
-
 		$totalamount = 0;
-		if  (is_array($entries)) {
+		if (is_array($entries)) {
 			$totalamount = count($entries);
 		}
-		$totalamount = intval($totalamount);
-
-		if (!empty($this->maxamount) && $this->maxamount < $totalamount) $totalamount = intval($this->maxamount);
-		$totalpages = ceil($totalamount/$pageamount);
-		$totalpages = intval($totalpages);
-		if ($startpos > $totalamount) {
-			$currentpage = $totalpages;
-			$startpos = $totalamount-$pageamount;
+		if (!empty($this->maxamount) && $this->maxamount < $totalamount) {
+			$totalamount = intval($this->maxamount);
 		}
+		$totalamount = intval($totalamount);
 		if ($offset) {
-			$startpos += $offset;
+			$startpos    += $offset;
 			$totalamount -= $offset;
 		}
-		$totalpages = ceil($totalamount/$pageamount);
+		$totalpages  = ceil($totalamount / $pageamount);
+		$totalpages  = intval($totalpages);
 		if ($startpos > $totalamount) {
 			$currentpage = $totalpages;
-			$startpos = $totalamount-$pageamount;
+			$startpos    = $totalamount - $pageamount;
 		}
-		$prevpage = ($currentpage > 1) ? $currentpage - 1 : 0;
-		$nextpage = $currentpage + 1;
-		$firstpagelink = $pagelink . $page_str . '1';
-		if ($page_str = 'page_') {
-			$firstpagelink .= '.html';
+
+// Create pageswitch
+		$prevpage = ($currentpage > 1) ? intval($currentpage) - 1 : 0;
+		$nextpage = intval($currentpage) + 1;
+		if ($useCustomURL && $customFlag && $redirectSFlag) {
+			$lastpagelink = $pagelink . $search_str . $page_str . '1.html';
+		} elseif (($useMagicalURL && substr($pagelink, -1) == '_') || $useCustomURL) {
+			$lastpagelink = $pagelink . $page_str . '1.html' . $search_str;
+		} else {
+			$lastpagelink = $pagelink . $page_str . '1' . $search_str;
 		}
-		$lastpagelink = $pagelink . $page_str . $totalpages;
-		if ($page_str = 'page_') {
-			$firstpagelink .= '.html';
+		if ($useCustomURL && $customFlag && $redirectSFlag) {
+			$lastpagelink = $pagelink . $search_str . $page_str . $totalpages . '.html';
+		} elseif (($useMagicalURL && substr($pagelink, -1) == '_') || $useCustomURL) {
+			$lastpagelink = $pagelink . $page_str . $totalpages . '.html' . $search_str;
+		} else {
+			$lastpagelink = $pagelink . $page_str . $totalpages . $search_str;
 		}
 
 		if ($type >= 1) {
-			$buf .= '<div class="pageswitch">'."\n";
-			if ($prevpage) {
-				$buf .= "<link rel=\"first\" title=\"first page\" href=\"{$firstpagelink}\" />\n";
-				$prevpagelink = $pagelink . $page_str . $prevpage;
-			if ($page_str = 'page_') {
-				$firstpagelink .= '.html';
-			}
-				$buf .= "\n<a href=\"{$prevpagelink}\" title=\"Previous page\" rel=\"Prev\">&laquo;Prev</a> |";
+			$buf .= '<div class="pageswitch">' . "\n";
+//			$buf .= "<a rel=\"first\" title=\"first page\" href=\"{$firstpagelink}\">&lt;TOP&gt;</a> | \n";
+			if (!empty($prevpage)) {
+				if ($useCustomURL && $customFlag && $redirectSFlag) {
+					$prevpagelink = $pagelink . $search_str . $page_str . $prevpage . '.html';
+				} elseif (($useMagicalURL && substr($pagelink, -1) == '_') || $useCustomURL) {
+					$prevpagelink = $pagelink . $page_str . $prevpage . '.html' . $search_str;
+				} else {
+					$prevpagelink = $pagelink . $page_str . $prevpage . $search_str;
+				}
+				$buf .= '<a href="' . $prevpagelink . '" title="Previous page" rel="Prev">&laquo;Prev</a> |';
 			} elseif ($type >= 2) {
-				$buf .= "\n&laquo;Prev |";
+				$buf .= "&laquo;Prev |";
+			}
+			if (intval($type) == 1) {
+				$buf .= "\n";
 			}
 			if (intval($type) == 2) {
 				$sepstr = '&middot;';
-				$buf .= "|";
+				$buf   .= "|";
 				for ($i=1; $i<=$totalpages; $i++) {
-					$i_pagelink = $pagelink . $page_str . $i;
-					if ($page_str = 'page_') {
-						$firstpagelink .= '.html';
+					if ($useCustomURL && $customFlag && $redirectSFlag) {
+						$i_pagelink = $pagelink . $search_str . $page_str . $i . '.html';
+					} elseif (($useMagicalURL && substr($pagelink, -1) == '_') || $useCustomURL) {
+						$i_pagelink = $pagelink . $page_str . $i . '.html' . $search_str;
+					} else {
+						$i_pagelink = $pagelink . $page_str . $i . $search_str;
 					}
 					if ($i == $currentpage) {
-						$buf .= " <strong>{$currentpage}</strong> |\n";
+						$buf .= ' <strong>' . $i . '</strong> |' . "\n";
 					} elseif ($totalpages<10 || $i<4 || $i>$totalpages-3) {
-						$buf .= " <a href=\"{$i_pagelink}\" title=\"Page No.{$i}\">{$i}</a> |\n";
+						$buf .= ' <a href="' . $i_pagelink . '" title="Page No.' . $i . '">'
+								. $i . '</a> |' . "\n";
 					} else {
 						if ($i<$currentpage-1 || $i>$currentpage+1) {
-							if (($i==4 && ($currentpage>5 || $currentpage==1)) || $i==$currentpage+2) {
-								$buf = rtrim($buf);
+							if (($i == 4 && ($currentpage > 5 || $currentpage == 1)) || $i == $currentpage + 2) {
+								$buf  = rtrim($buf);
 								$buf .= "...|\n";
 							}
 						} else {
-							$buf .= " <a href=\"{$i_pagelink}\" title=\"Page No.{$i}\">{$i}</a> |";
+							$buf .= ' <a href="' . $i_pagelink . '" title="Page No.' . $i . '">'
+									. $i . '</a> |' . "\n";
 						}
 					}
 				}
 				$buf = rtrim($buf);
 			}
 			if (intval($type) == 3) {
-				$buf .= "|";
+				$buf .= '|';
 				$sepstr = '&middot;';
-				for ($i=1; $i<=$totalpages; $i++) {
-					$i_pagelink = $pagelink . $page_str . $i;
-					$i_pagelink .= '.html';
+				for ($i = 1; $i <= $totalpages; $i++) {
+					if ($useCustomURL && $customFlag && $redirectSFlag) {
+						$i_pagelink = $pagelink . $search_str . $page_str . $i . '.html';
+					} elseif (($useMagicalURL && substr($pagelink, -1) == '_') || $useCustomURL) {
+						$i_pagelink = $pagelink . $page_str . $i . '.html' . $search_str;
+					} else {
+						$i_pagelink = $pagelink . $page_str . $i . $search_str;
+					}
 					$paging = 5;
 					if ($i == $currentpage) {
-						$buf .= " <strong>{$i}</strong> {$sepstr}\n";
-					} elseif ($totalpages < 10 || (($i < ($currentpage + $paging)) && (($currentpage - $paging) < $i))) {
-						$buf .= " <a href=\"{$i_pagelink}\" title=\"Page No.{$i}\">{$i}</a> {$sepstr}\n";
+						$buf .= ' <strong>' . $i . '</strong> ' . $sepstr . "\n";
+					} elseif ($totalpages < 10 || ($i < ($currentpage + $paging) && ($currentpage - $paging) < $i)) {
+						$buf .= ' <a href="' . $i_pagelink . '" title="Page No.' . $i . '">'
+								. $i . '</a> ' . $sepstr . "\n";
 					} elseif ($currentpage - $paging == $i) {
 						$buf = rtrim($buf);
 						$buf .= ' ...'."\n";
 					} elseif ($currentpage + $paging == $i) {
 						$buf = rtrim($buf);
-						$buf = preg_replace("/$sepstr$/","",$buf);
+						$buf = preg_replace('/$sepstr$/', '', $buf);
 						$buf .= "... |\n";
 					}
 				}
 			}
 			if ($totalpages >= $nextpage) {
-				$nextpagelink = $pagelink . $page_str . $nextpage;
-				if ($page_str = 'page_') {
-					$firstpagelink .= '.html';
+				if ($useCustomURL && $customFlag && $redirectSFlag) {
+					$nextpagelink = $pagelink . $search_str . $page_str . $nextpage . '.html';
+				} elseif (($useMagicalURL && substr($pagelink, -1) == '_') || $useCustomURL) {
+					$nextpagelink = $pagelink . $page_str . $nextpage . '.html' . $search_str;
+				} else {
+					$nextpagelink = $pagelink . $page_str . $nextpage . $search_str;
 				}
-				$buf .= "| <a href=\"{$nextpagelink}\" title=\"Next page\" rel=\"Next\">Next&raquo;</a>\n";
-				$buf .= "<link rel=\"last\" title=\"Last page\" href=\"{$lastpagelink}\" />\n";
+				$buf .= '| <a href="' . $nextpagelink . '" title="Next page" rel="Next">Next&raquo;</a>' . "\n";
+
 			} elseif ($type >= 2) {
 				$buf .= "| Next&raquo;\n";
 			}
+//			$buf .= " | <a rel=\"last\" title=\"Last page\" href=\"{$lastpagelink}\">&lt;LAST&gt;</a>\n";
 			$buf .= "</div>\n";
-			return $buf;
+			return array('buf' => $buf, 'startpos' => intval($startpos));
 		}
 	}
 
