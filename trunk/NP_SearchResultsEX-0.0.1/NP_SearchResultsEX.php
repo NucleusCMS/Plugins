@@ -20,7 +20,7 @@ class NP_SearchResultsEX extends NucleusPlugin
 
 	function getVersion()
 	{
-	    return '0.05';
+	    return '0.06';
 	}
 
 	function getDescription()
@@ -155,12 +155,11 @@ class NP_SearchResultsEX extends NucleusPlugin
 		    $bmode   = 'all';
 		}
 		$this->maxamount = ($maxresults) ? $maxresults : 0;
-
 		$type    = floatval($type);
 		$typeExp = intval(($type - floor($type))*10); //0 or 1 or 9
 		list($pageamount, $offset) = sscanf($p_amount, '%d(%d)');
 		if (!$pageamount) $pageamount = 10;
-		if (preg_match("/^(<>)?([0-9\/]+)$/",$bmode,$matches)) {
+		if (preg_match("/^(<>)?([0-9\/]+)$/", $bmode, $matches)) {
 			if ($matches[1]) {
 				$hide = explode("/", $matches[2]);
 				$show = array();
@@ -170,6 +169,7 @@ class NP_SearchResultsEX extends NucleusPlugin
 			}
 			$bmode = 'all';
 		}
+
 		if ($blog) {
 			$b =& $blog; 
 		} else {
@@ -224,13 +224,14 @@ class NP_SearchResultsEX extends NucleusPlugin
 		}
 // Origin NP_ExtensibleSearch by Andy
 		$highlight = '';
-		$query     = htmlspecialchars($query);
+		$query     = $this->_hsc($query);
 		if ($manager->pluginInstalled('NP_ExtensibleSearch')) {
 			$explugin =& $manager->getPlugin('NP_ExtensibleSearch');
 			$sqlquery =  $explugin->getSqlQuery($query, $amount, $highlight);
 		} else { //if (getNucleusVersion() >= ???) {
-			$sqlquery = getSqlSearch($query, $amount, $highlight);
+			$sqlquery = $b->getSqlSearch($query, $amount, $highlight);
 		}
+
 		$que_arr  = explode(' ORDER BY', $sqlquery, 2);
 		$sqlquery = implode($s_blogs . ' ORDER BY', $que_arr);
 		if (!$sqlquery) {
@@ -254,7 +255,7 @@ class NP_SearchResultsEX extends NucleusPlugin
 			    					  );
 				$page_switch = $this->PageSwitch($switchParam);
 				if ($typeExp != 9) {
-				    echo $page_switch;
+				    echo $page_switch['buf'];
 				}
 			    $showParams = array (
 			    					  $template,
@@ -266,7 +267,7 @@ class NP_SearchResultsEX extends NucleusPlugin
 			    					 );
 				$this->_showUsingQuery($showParams); 
 				if ($type >= 1 && $typeExp != 1) {
-				    echo $page_switch;
+				    echo $page_switch['buf'];
 				}
 			} else {
 				$template =& $manager->getTemplate($template);
@@ -296,7 +297,7 @@ class NP_SearchResultsEX extends NucleusPlugin
 
 		$q_startpos++;
 		$q_amount--;
-		if ($q_amount < 0) {
+		if ($q_amount <= 0) {
 		    return;
 		}
 		$onlyone_query = $showQuery
@@ -315,8 +316,8 @@ class NP_SearchResultsEX extends NucleusPlugin
 		}
 		$second_query = $showQuery
 					  . ' LIMIT '
-					  . intval($q_startpos)
-					  . ',' . intval($q_amount);
+					  . intval($q_startpos) . ','
+					  . intval($q_amount);
 		$b->showUsingQuery($template, $second_query, intval($highlight), 1, 1);
 	}
 
@@ -379,7 +380,7 @@ class NP_SearchResultsEX extends NucleusPlugin
 		$pagelink = createBlogidLink($nowblogid);
 		if ($useCustomURL && $customFlag && $redirectSFlag) {
 			$que_str    = $query;
-			$que_str    = htmlspecialchars($que_str);
+			$que_str    = $this->_hsc($que_str);
 			$que_str    = mb_eregi_replace('/', 'ssslllaaassshhh', $que_str);
 			$que_str    = mb_eregi_replace("'", 'qqquuuooottt', $que_str);
 			$que_str    = mb_eregi_replace('&', 'aaammmppp', $que_str);
@@ -393,7 +394,9 @@ class NP_SearchResultsEX extends NucleusPlugin
 			if (is_numeric(getVar('amount')) && intGetVar('amount') >= 0) {
 				$search_str .= '&amp;amount=' . intGetVar('amount');
 			}
-			$search_str .= '&amp;blogid=' . $nowblogid;
+			if (strpos($pagelink, 'blogid=' . $nowblogid) === FALSE) {
+				$search_str .= '&amp;blogid=' . $nowblogid;
+			}
 		}
 		$uri = parse_url($pagelink);
 		if (!$usePathInfo) {
@@ -563,79 +566,133 @@ class NP_SearchResultsEX extends NucleusPlugin
 	{	// Orign NP_ChoppedDisc.php by nakahara21
 		global $CONF, $manager, $member, $catid;
 
-		$item_id = intval($item->itemid);
-		$que = 'SELECT %s as result FROM %s WHERE %s = %d';
-		$Searched['Item'] = strip_tags($item->body).strip_tags($item->more);
-		$res = sql_query(sprintf($que, cbody, sql_table('comment'), citem, $item_id));
-		while ($cm = mysql_fetch_object($res)) {
-			$Searched['comment'] .= strip_tags($cm->result);
-		}
-//		$res = quickQuery(sprintf($que, title, sql_table('plugin_tb'), tb_id, $item_id));
-//		$Searched['Trackback_title'] = strip_tags($res);
-		$res = sql_query(sprintf($que, excerpt, sql_table('plugin_tb'), tb_id, $item_id));
-		while ($tb = mysql_fetch_object($res)) {
-			$Searched['Trackback'] .= strip_tags($tb->result);
-		}
-		$que_arr = $this->getQueryStrings();
-		foreach($Searched as $sKey => $sValue) {
-			$i = 1;
-			foreach($que_arr as $qValue) {
-				if (!(mb_substr_count($sValue, htmlspecialchars($qValue)))) $i++;
+// Paese setting
+		$item_id     = intval($item->itemid);
+		$resultQuery = 'SELECT '
+					 . '      %s as result '
+					 . 'FROM '
+					 . '      %s '
+					 . 'WHERE '
+					 . '      %s = ' . $item_id;
+
+// Parse item
+		$results['Item'] = strip_tags($item->body).strip_tags($item->more);
+
+// Parse commets
+		if ($this->getOption("commentsearch")) {
+			$cmntQuery = sprintf($resultQuery, cbody, sql_table('comment'), 'citem');
+			$response  = sql_query($cmntQuery);
+			while ($cmnt = mysql_fetch_object($response)) {
+				$results['comment'] .= strip_tags($cmnt->result);
 			}
-			if ($i > count($que_arr)) {
-				$sValue = '';
+		}
+
+// Parse trackback
+		if ($this->getOption("trackbacksearch") &&
+			$manager->pluginInstalled('NP_TrackBack')) {
+//			$titlQuery = sprintf($resultQuery, title, sql_table('plugin_tb'), 'tb_id');
+//			$response  = quickQuery($titlQuery);
+//			$results['Trackback_title'] = strip_tags($response);
+			
+			$trbkQuery =sprintf($resultQuery, excerpt, sql_table('plugin_tb'), 'tb_id');
+			$response  = sql_query($trbkQuery);
+			while ($tb = mysql_fetch_object($response)) {
+				$results['Trackback'] .= strip_tags($tb->result);
 			}
-			if ($sValue) {
+		}
+		$queryStrings = $this->getQueryStrings();
+		foreach($results as $resKey => $resValue) {
+			$strCount = 1;
+			foreach($queryStrings as $queryValue) {
+				if (!(mb_substr_count($resValue, $this->_hsc($queryValue)))) {
+					$strCount++;
+				}
+			}
+			if ($strCount > count($queryStrings)) {
+				$resValue = '';
+			}
+			if ($resValue) {
 				if ($addHighlight) {
 					$i = 0;
-					foreach($que_arr as $qValue) {
-						$pattern = "<span class='highlight_{$i}'>{$qValue}</span>";
-						$sValue = mb_eregi_replace(htmlspecialchars($qValue), $pattern, $sValue);
+					foreach($queryStrings as $queryValue) {
+						mb_regex_encoding(_CHARSET);
+						$pattern  = "<span class='highlight_{$i}'>{$queryValue}</span>";
+						$resValue = mb_eregi_replace($this->_hsc($queryValue), $pattern, $resValue);
 						$i++;
-						if ($i == 10) $i = 0;
+						if ($i == 10) {
+							$i = 0;
+						}
 					}
-					$str_array = mb_split('</span>', $sValue);
-					$num = count($str_array);
-					$lastKey = $num +(-1);
+					$str_array = mb_split('</span>', $resValue);
+					$num       = count($str_array);
+					$lastKey   = $num +(-1);
+					$resWidth  = 0;
+					$check     = FALSE;
 					foreach($str_array as $key => $value) {
-						$tmpStr = mb_split("<span class='highlight", $value);
+						$tmpStr    = mb_split("<span class='highlight", $value);
 						$tmpStr[0] = mb_eregi_replace('&lt;', '<', $tmpStr[0]);
 						$tmpStr[0] = mb_eregi_replace('&gt;', '>', $tmpStr[0]);
 						$tmpStr[0] = mb_eregi_replace('&amp;', '&', $tmpStr[0]);
-						//$tmpStr[0] = mb_eregi_replace('&nbsp;', ' ', $tmpStr[0]);
-						$lastp = mb_strwidth($tmpStr[0], _CHARSET);
+//						$tmpStr[0] = mb_eregi_replace('&nbsp;', ' ', $tmpStr[0]);
+						$lastp     = mb_strwidth($tmpStr[0], _CHARSET);
 						if ($key == 0) {
 							if ($lastp > 20) {
-								$temp_s = '...'.mb_substr($tmpStr[0], -20, 20, _CHARSET);
+								$temp_s = '...'
+										. mb_substr($tmpStr[0], -20, 20, _CHARSET);
 							} else {
 								$temp_s = $tmpStr[0];
 							}
+							$resWidth += 20;
 						} elseif ($key > 0 && $key < $lastKey) {
 							if ($lastp > 30) {
-								$temp_s = mb_substr($tmpStr[0], 0, 10, _CHARSET).'...'.mb_substr($tmpStr[0], -10, 10, _CHARSET);
+								$temp_s = mb_substr($tmpStr[0], 0, 10, _CHARSET)
+										. '...'
+										. mb_substr($tmpStr[0], -10, 10, _CHARSET);
 							} else {
 								$temp_s = $tmpStr[0];
 							}
+							$resWidth += 30;
 						} elseif ($key == $lastKey) {
 							if ($lastp > 20) {
-								$temp_s = mb_substr($tmpStr[0], 0, 20, _CHARSET).'...';
+								$temp_s = mb_substr($tmpStr[0], 0, 20, _CHARSET)
+										. '...';
 							} else {
 								$temp_s = $tmpStr[0];
 							}
+							$resWidth += 20;
 						}
 						if ($key != $lastKey) {
-							$str_array[$key] = htmlspecialchars($temp_s, ENT_QUOTES) . "<span class='highlight" . $tmpStr[1];
+							$str_array[$key] = $this->_hsc($temp_s)
+											 . "<span class='highlight"
+											 . $tmpStr[1];
 						} else {
-							$str_array[$key] = htmlspecialchars($temp_s, ENT_QUOTES);
+							$str_array[$key] = $this->_hsc($temp_s);
+						}
+						if ($maxLength < $resWidth && !$check) {
+							$strKey = $key;
+							$check  = TRUE;
 						}
 					}
-					$sValue = '<span class="queryPosition">in ' . htmlspecialchars($sKey);
-					$sValue .= '</span><div class="queryResults">' . @join('</span>', $str_array) . '</div>';
+					if ($strKey > 0) {
+						$str_array = array_slice($str_array, 0, $strKey);
+						$str_array[$strKey] = $str_array[$strKey] . '...';
+					}
+					$resValue = '<span class="queryPosition">in '
+							  . $this->_hsc($resKey)
+							  . '</span>'
+							  . '<div class="queryResults">'
+							  . @implode('</span>', $str_array)
+							  . '</div>';
 				} else {
-					$sValue = '<span class="queryPosition">in ' . htmlspecialchars($sKey) . '</span><div class="queryResults">';
-					$sValue .= htmlspecialchars(shorten($sValue, $maxLength, '...'), ENT_QUOTES) . '</div>';
+					$tmpValue = '<span class="queryPosition">in '
+							  . $this->_hsc($resKey)
+							  . '</span>'
+							  . '<div class="queryResults">'
+							  . $this->_hsc(shorten($resValue, $maxLength, '...'))
+							  . '</div>';
+					$resValue = $tmpValue;
 				}
-				echo $sValue;
+				echo $resValue;
 			}
 		}
 	}
@@ -672,5 +729,11 @@ class NP_SearchResultsEX extends NucleusPlugin
 		}
 		return $str;
 	}
+
+	function _hsc($str)
+	{
+		return htmlspecialchars($str, ENT_QUOTES, _CHARSET);
+	}
+
 } 
 
