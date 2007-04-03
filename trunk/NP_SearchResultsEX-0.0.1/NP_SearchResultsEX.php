@@ -20,7 +20,7 @@ class NP_SearchResultsEX extends NucleusPlugin
 
 	function getVersion()
 	{
-	    return '0.06';
+	    return '0.08';
 	}
 
 	function getDescription()
@@ -62,18 +62,18 @@ class NP_SearchResultsEX extends NucleusPlugin
 	function install()
 	{
 		$this->createOption("commentsearch",
-							"Comments are included in a search target"
-						  . "(Need 'NP_ExtensibleSearch').",
+							"Comments are included in a search target",
+//						  . "(Need 'NP_ExtensibleSearch').",
 							"yesno",
 							"yes");
 		$this->createOption("trackbacksearch",
-							"TrackBacks are included in a search target"
-						  . "(Need 'NP_ExtensibleSearch').",
+							"TrackBacks are included in a search target",
+//						  . "(Need 'NP_ExtensibleSearch').",
 							"yesno",
 							"yes");
 		$this->createOption("tagsearch",
-							"Tags are included in a search target"
-						  . "(Need 'NP_ExtensibleSearch').",
+							"Tags are included in a search target",
+//						  . "(Need 'NP_ExtensibleSearch').",
 							"yesno",
 							"no");
 		$this->createOption("srex_ads1",
@@ -93,9 +93,9 @@ class NP_SearchResultsEX extends NucleusPlugin
 	function event_PreSearchResults(&$data)
 	{	// Orign NP_CommentSearch by Andy
 		global $blog, $manager;
-		$blogs       = $data['blogs'];
-		$query       = $data['query'];
-		$items       = & $data['items'];
+		$blogs       =  $data['blogs'];
+		$query       =  $data['query'];
+		$items       =& $data['items'];
 		$searchclass =& new SEARCH($query);
 
 		$sqlquery  = 'SELECT i.inumber as itemid FROM ';
@@ -111,17 +111,17 @@ class NP_SearchResultsEX extends NucleusPlugin
 			$manager->pluginInstalled('NP_TagEX')) {
 				$tables    .= ' left join ' . sql_table('plug_tagex') . ' as tag'
 							. ' on i.inumber = tag.inum';
-				$where_str .= ', xxx.tag.itags';
+				$where_str .= ',xxx.tag.itags';
 		}
 		if ($this->getOption('trackbacksearch') == 'yes' &&
 			$manager->pluginInstalled('NP_TrackBack')) {
 				$tables    .= ' left join ' . sql_table('plugin_tb') . ' as t'
 							. ' on i.inumber = t.tb_id';
-				$where_str .= ', xxx.t.title, xxx.t.excerpt';
+				$where_str .= ',xxx.t.title,xxx.t.excerpt';
 		}
 		$sqlquery .= $tables;
 		$where     = $searchclass->boolean_sql_where($where_str);
-		$where     = strtr($where, array('i.xxx.'=> ''));
+		$where     = strtr($where, array('i.xxx.' => ''));
 		$sqlquery .= ' WHERE i.idraft = 0'
 				   . ' and i.itime <= ' . mysqldate($blog -> getCorrectTime())
 				   . ' and i.iblog in (' . implode(',', $blogs) . ') '
@@ -140,8 +140,8 @@ class NP_SearchResultsEX extends NucleusPlugin
 	                   $type       = 1,                  // page switch type
 	                   $bmode      = 'all',              // blog mode
 	                   $maxresults = '')                 // max results
-    {
-		global $manager, $CONF, $blog, $query, $amount, $startpos;
+	{
+		global $manager, $CONF, $blog, $query, $amount;
 		if (!$template) {
 		    $template   = 'default/index';
 		}
@@ -222,16 +222,17 @@ class NP_SearchResultsEX extends NucleusPlugin
 			}
 			$s_blogs .= ' and i.iblog in (' . implode(",", $w) . ')';
 		}
+		$manager->notify('PreBlogContent',array('blog' => &$b, 'type' => 'searchresults'));
 // Origin NP_ExtensibleSearch by Andy
 		$highlight = '';
 		$query     = $this->_hsc($query);
 		if ($manager->pluginInstalled('NP_ExtensibleSearch')) {
 			$explugin =& $manager->getPlugin('NP_ExtensibleSearch');
 			$sqlquery =  $explugin->getSqlQuery($query, $amount, $highlight);
-		} else { //if (getNucleusVersion() >= ???) {
-			$sqlquery = $b->getSqlSearch($query, $amount, $highlight);
+		} else {
+//			$sqlquery = $b->getSqlSearch($query, $amount, $highlight);
+			$sqlquery = $this->getSqlQuery($b, $query, $amount, $highlight);
 		}
-
 		$que_arr  = explode(' ORDER BY', $sqlquery, 2);
 		$sqlquery = implode($s_blogs . ' ORDER BY', $que_arr);
 		if (!$sqlquery) {
@@ -239,32 +240,29 @@ class NP_SearchResultsEX extends NucleusPlugin
 			$exQuery = '';
 			$amfound = $b->readLogAmount($template, $maxresults, $exQuery, $query, 1, 1);
 		} else {
-			$res     = sql_query($sqlquery);
-			$entries = array();
-			while ($itemid = mysql_fetch_row($res)) {
-				array_push($entries, $itemid[0]);
-			}
+			$entries   = $this->getArray($sqlquery);
 			$allAmount = count($entries);
 			if ($allAmount > 0) {
 			    $switchParam = array (
-			    					   $type,
-			    					   $pageamount,
-			    					   $offset,
-			    					   $entries,
-			    					   $b
-			    					  );
+			    					  $type,
+			    					  $pageamount,
+			    					  $offset,
+			    					  $entries,
+			    					  $b
+			    					 );
 				$page_switch = $this->PageSwitch($switchParam);
 				if ($typeExp != 9) {
 				    echo $page_switch['buf'];
+//				    print_r($page_switch);
 				}
 			    $showParams = array (
-			    					  $template,
-			    					  $sqlquery,
-			    					  $highlight,
-			    					  $startpos,
-			    					  $pageamount,
-			    					  $b
-			    					 );
+			    					 $template,
+			    					 $sqlquery,
+			    					 $highlight,
+			    					 $page_switch['startpos'],
+			    					 $pageamount,
+			    					 $b
+			    					);
 				$this->_showUsingQuery($showParams); 
 				if ($type >= 1 && $typeExp != 1) {
 				    echo $page_switch['buf'];
@@ -272,12 +270,91 @@ class NP_SearchResultsEX extends NucleusPlugin
 			} else {
 				$template =& $manager->getTemplate($template);
 				$vars = array(
-							   'query'    => $query,
-							   'blogid'   => $nowbid
-							  );
+							  'query'    => $query,
+							  'blogid'   => $nowbid
+							 );
 				echo TEMPLATE::fill($template['SEARCH_NOTHINGFOUND'], $vars);
 			}
 		}
+		$manager->notify('PostBlogContent',array('blog' => &$b, 'type' => 'searchresults'));
+	}
+
+//*
+	function getSqlQuery($b, $query, $amountMonths = 0, &$highlight, $mode = '')
+	{
+		$searchclass =& new SEARCH($query);
+		$highlight   = $searchclass->inclusive;
+		if ($searchclass->inclusive == '') {
+			return '';
+		}
+		$select  = $searchclass->boolean_sql_select('ititle,ibody,imore');
+		$blogs   = $searchclass->blogs;
+		$blogs[] = $b->getID();
+		$blogs   = array_unique($blogs);
+
+		$sqlquery = $b->getSqlSearch($query, $amount, $highlight);
+		if (preg_match('/^(SELECT COUNT\(\*\) as result)/', $sqlquery)) {
+			$mode = 1;
+		}
+		$items    = $this->getArray($sqlquery);
+		$sqldata  = array(
+						  'blogs' => &$blogs,
+						  'items' => &$items,
+						  'query' => $query
+						 );
+		$this->event_PreSearchResults($sqldata);
+
+		if ($mode == '') {
+			$sqlquery = 'SELECT '
+					  . '      i.inumber   as itemid, '
+					  . '      i.ititle    as title, '
+					  . '      i.ibody     as body, '
+					  . '      m.mname     as author, '
+					  . '      m.mrealname as authorname, '
+					  . '      i.itime, '
+					  . '      i.imore     as more, '
+					  . '      m.mnumber   as authorid, '
+					  . '      m.memail    as authormail, '
+					  . '      m.murl      as authorurl, '
+					  . '      c.cname     as category, '
+					  . '      i.icat      as catid, '
+					  . '      i.iclosed   as closed '
+					  . 'FROM '
+					  .        sql_table('item')   .   ' as i, '
+					  .        sql_table('member')  .  ' as m, '
+					  .        sql_table('category') . ' as c '
+					  . 'WHERE '
+					  . '      i.iauthor = m.mnumber '
+					  . ' and  i.icat    = c.catid';
+			if ($items) {
+				$sqlquery .= ' and i.inumber in (' . implode(',', $items) . ')';
+			} else {
+				$sqlquery .= ' and 1=2 ';
+			}
+			if ($select) {
+				$sqlquery .= ' ORDER BY score DESC';
+			} else {
+				$sqlquery .= ' ORDER BY i.itime DESC ';
+			}
+		} else {
+				$sqlquery = 'SELECT COUNT(*) FROM ' . sql_table('item') . ' as i WHERE ';
+			if ($items) {
+				$sqlquery .= ' and i.inumber in (' . implode(',', $items) . ')';
+			} else {
+				$sqlquery .= ' and 1=2 ';
+			}
+		}
+		return $sqlquery;
+	}
+//*/
+
+	function getArray($query) {
+		$res = sql_query($query);
+		$array = array();
+		while ($itemid = mysql_fetch_row($res)) {
+			array_push($array, $itemid[0]);
+		}
+		return $array;
 	}
 
 	function _showUsingQuery($showParams)
@@ -355,7 +432,7 @@ class NP_SearchResultsEX extends NucleusPlugin
 
 	function PageSwitch($switchParam)
 	{
-		global $CONF, $manager, $startpos, $query;
+		global $CONF, $manager, $query;
 // initialize
 		extract($switchParam);
 		$type          = intval($switchParam[0]);
@@ -385,7 +462,7 @@ class NP_SearchResultsEX extends NucleusPlugin
 			$que_str    = mb_eregi_replace("'", 'qqquuuooottt', $que_str);
 			$que_str    = mb_eregi_replace('&', 'aaammmppp', $que_str);
 			$que_str    = urlencode($que_str);
-			$search_str = '/search/' . $que_str . '/';
+			$search_str = 'search/' . $que_str . '/';
 		} else {
 			if ($useMagicalURL && substr($pagelink, -5) == '.html') {
 				$pagelink   = substr($pagelink, 0, -5) . '_';
