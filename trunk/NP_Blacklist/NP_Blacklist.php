@@ -1,9 +1,9 @@
 <?php
 
 /**
-  * NP_Blacklist(JP) ($Revision: 1.10 $)
+  * NP_Blacklist(JP) ($Revision: 1.11 $)
   * by hsur ( http://blog.cles.jp/np_cles )
-  * $Id: NP_Blacklist.php,v 1.10 2007-03-06 20:54:37 hsur Exp $
+  * $Id: NP_Blacklist.php,v 1.11 2007-04-07 05:56:40 hsur Exp $
   *
   * Based on NP_Blacklist 0.98
   * by xiffy
@@ -28,7 +28,7 @@
   * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
 */
 
-include_once(dirname(__FILE__)."/blacklist/blacklist_lib.php");
+require_once(dirname(__FILE__)."/blacklist/blacklist_lib.php");
 
 class NP_Blacklist extends NucleusPlugin {
 	function getName() {
@@ -41,10 +41,10 @@ class NP_Blacklist extends NucleusPlugin {
 		return 'http://blog.cles.jp/np_cles/category/31/subcatid/11';
 	}
 	function getVersion() {
-		return '1.1.0';
+		return '1.1.1';
 	}
 	function getDescription() {
-		return '[$Revision: 1.10 $]<br />'.NP_BLACKLIST_description;
+		return '[$Revision: 1.11 $]<br />'.NP_BLACKLIST_description;
 	}
 	function supportsFeature($what) {
 		switch ($what) {
@@ -108,7 +108,6 @@ class NP_Blacklist extends NucleusPlugin {
 
 	// handle SpamCheck event
 	function event_SpamCheck(& $data) {
-		global $DIR_PLUGINS;
 		if (isset ($data['spamcheck']['result']) && $data['spamcheck']['result'] == true) {
 			// Already checked... and is spam
 			return;
@@ -137,7 +136,7 @@ class NP_Blacklist extends NucleusPlugin {
 					break;
 			}
 		}
-		$ipblock = ($data['spamcheck']['ipblock']) || ($data['spamcheck']['live']);
+		$ipblock = ($data['spamcheck']['ipblock'] == true ) || ($data['spamcheck']['live'] == true);
 
 		// Check for spam
 		$result = $this->blacklist($data['spamcheck']['type'], $data['spamcheck']['data'], $ipblock);
@@ -159,7 +158,7 @@ class NP_Blacklist extends NucleusPlugin {
 	}
 
 	function blacklist($type, $testString, $ipblock = true) {
-		global $DIR_PLUGINS, $member;
+		global $member;
 		if ($this->resultCache)
 			return $this->resultCache.'[Cached]';
 

@@ -1,6 +1,4 @@
 <?php
-    require_once("blacklist_lib.php");
-	
     //
     // Nucleus Admin section;
     // Created by Xiffy

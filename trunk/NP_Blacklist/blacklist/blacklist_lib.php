@@ -19,7 +19,7 @@
 //
 // Modified by hsur
 // http://blog.cles.jp
-// $Id: blacklist_lib.php,v 1.9 2007-03-06 20:54:37 hsur Exp $
+// $Id: blacklist_lib.php,v 1.10 2007-04-07 05:56:37 hsur Exp $
 
 define('__WEBLOG_ROOT', dirname(dirname(realpath(__FILE__))));
 define('__EXT', '/blacklist');
@@ -52,13 +52,14 @@ function pbl_checkforspam($text, $ipblock = false, $ipthreshold = 10, $logrule =
 	// check whether a string contains spam
 	// if it does, we return the rule that was matched first
 
-	// whitelist	if (pbl_checkIp('white')) {
+	// whitelist
+	if (pbl_checkIp('white')) {
 		return '';
 	}
 	
 	// first line of defense; block notorious spammers
 	if ($ipblock) {
-		if (pbl_checkIp()) {
+		if (pbl_checkIp()){
 			return "<b>".NP_BLACKLIST_ipBlocked."</b>: ".serverVar('REMOTE_ADDR')." (".serverVar('REMOTE_HOST').")";
 		}
 	}
@@ -117,11 +118,11 @@ function pbl_checkforspam($text, $ipblock = false, $ipthreshold = 10, $logrule =
 		return NP_BLACKLIST_ipListed." {$listedrbl[0]} ".NP_BLACKLIST_found." (Referer:{$ref})";
 	}
 
-	if ($text && ($listedrbl = check_for_domainrbl($text))) {
+	if ($text && $listedrbl = check_for_domainrbl($text)) {
 		if ($ipblock) {
 			pbl_suspectIP($ipthreshold);
 		}
-		return (NP_BLACKLIST_urlListed." {$listedrbl[0]} ({$listedrbl[1]})".NP_BLACKLIST_found);
+		return NP_BLACKLIST_urlListed." {$listedrbl[0]} ({$listedrbl[1]})".NP_BLACKLIST_found;
 	}
 
 	// w00t! it's probably not spam!
@@ -390,13 +391,13 @@ function check_for_domainrbl($comment_text) {
 function pbl_checkIp($type = 'block') {
 	$remote_ip = trim(serverVar('REMOTE_ADDR'));
 	$filename = __WEBLOG_ROOT.__EXT.'/settings/'.$type.'ip.pbl';
-	$block = false;
+	$match = false;
 	// already in ipblock?
 	if (file_exists($filename)) {
-		$fp = fopen(__WEBLOG_ROOT.__EXT."/settings/blockip.pbl", "r");
+		$fp = fopen($filename, "r");
 		while ($line = trim(fgets($fp, 255))) {
 			if (pbl_netMatch($line, $remote_ip)) {
-				$block = true;
+				$match = true;
 			}
 		}
 		fclose($fp);
@@ -405,7 +406,7 @@ function pbl_checkIp($type = 'block') {
 		fwrite($fp, "");
 		fclose($fp);
 	}
-	return $block;
+	return $match;
 }
 
 function pbl_logRule($expression) {
@@ -440,7 +441,8 @@ function pbl_suspectIP($threshold, $remote_ip = '', $type = 'block') {
 	if($type == 'white'){
 		$threshold = false;
 	}
-		$blockfile = __WEBLOG_ROOT.__EXT.'/settings/'.$type.'ip.pbl';
+	
+	$blockfile = __WEBLOG_ROOT.__EXT.'/settings/'.$type.'ip.pbl';
 	$filename = __WEBLOG_ROOT.__EXT.'/settings/suspects.pbl';
 	$count = 0;
 
@@ -585,6 +587,8 @@ function pbl_resetfile($type) {
 			$files = pbl_getlogfiles();
 			foreach( $files as $file )
 				@ unlink($file);
+			@ touch(__WEBLOG_ROOT.__EXT."/settings/blacklist.log");
+			@ chmod(__WEBLOG_ROOT.__EXT."/settings/blacklist.log", 0666);
 			break;
 		case 'ip' :
 			$filename = __WEBLOG_ROOT.__EXT."/settings/blockip.pbl";
