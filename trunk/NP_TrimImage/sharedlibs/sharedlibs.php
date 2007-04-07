@@ -2,10 +2,10 @@
 // vim: tabstop=2:shiftwidth=2
 
 /**
-  * sharedlibs.php ($Revision: 1.1 $)
+  * sharedlibs.php ($Revision: 1.2 $)
   * 
   * by hsur ( http://blog.cles.jp/np_cles )
-  * $Id: sharedlibs.php,v 1.1 2006-12-02 20:01:50 hsur Exp $
+  * $Id: sharedlibs.php,v 1.2 2007-04-07 04:10:22 hsur Exp $
 */
 
 /*
@@ -49,4 +49,3 @@ if (!defined('NP_SHAREDLIBS_LOADED')) {
 
 	define('NP_SHAREDLIBS_LOADED', true);
 }
-?>

@@ -275,16 +275,23 @@ fltr = filter system. Call as an array as follows:
          where <value> is the weighting value for the matrix
          (range -10 to 10, default 6)
          Availble in PHP5 with bundled GD only.
-       - "lvl" (Levels) [ex: &fltr[]=lvl|<channel>|<min>|<max>
+       - "lvl" (Levels)
+         [ex: &fltr[]=lvl|<channel>|<method>|<threshold>
          where <channel> can be one of 'r', 'g', 'b', 'a' (for
          Red, Green, Blue, Alpha respectively), or '*' for all
-         channels based on average grayscale value (default).
-         <min> and <max> are the clip points for the levels
-         and are set to clip 0.1% of each end by default.
-         (range = 0-255) and are set to clip 0.1% of each end
-         by default. Use -1 for min and/or max to invoke auto-
-         detect mode. Using default parameters (&fltr[]=lvl)
-         is similar to Auto Contrast in Adobe Photoshop.
+         RGB channels (default) based on grayscale average.
+         ImageMagick methods can support multiple channels
+         (eg "lvl|rg|3") but internal methods cannot (they will
+         use first character of channel string as channel)
+         <method> can be one of:
+         0=Internal RGB;
+         1=Internal Grayscale;
+         2=ImageMagick Contrast-Stretch (default)
+         3=ImageMagick Normalize (may appear over-saturated)
+         <threshold> is how much of brightest/darkest pixels
+         will be clipped in percent (default = 0.1%)
+         Using default parameters (&fltr[]=lvl) is similar to
+         Auto Contrast in Adobe Photoshop.
        - "wb" (White Balance) [ex: &fltr[]=wb|<c>]
          where <c> is the target hex color to white balance
          on, this color is what "should be" white, or light
@@ -292,6 +299,11 @@ fltr = filter system. Call as an array as follows:
          any gray color can theoretically be used. If <c> is
          omitted the filter guesses based on brightest pixels
          in each of RGB
+         OR <c> can be the percent of white clipping used
+         to calculate auto-white-balance (default = 0.1%)
+         NOTE: "wb" in default settings already gives an effect
+         similar to "lvl", there is usually no need to use "lvl"
+         if "wb" is already used.
        - "hist" (Histogram)
          [ex: &fltr[]=hist|<b>|<c>|<w>|<h>|<a>|<o>|<x>|<y>]
          Where <b> is the color band(s) to display, from back
@@ -449,6 +461,11 @@ md5s = MD5 hash of the source image -- if this parameter is
        Alignment: L=left,R=right,T=top,B=bottom,C=center
        BL,BR,TL,TR use the appropriate direction if the
        image is landscape or portrait.
+ dpi = Dots Per Inch - input DPI setting when importing from
+       vector image format such as PDF, WMF, etc
+ sia = Save Image As - default filename to save generated
+       image as. Specify the base filename, the extension
+       (eg: ".png") will be automatically added
 maxb = MAXimum Byte size - output quality is auto-set to
        fit thumbnail into "maxb" bytes  (compression
        quality is adjusted for JPEG, bit depth is adjusted
@@ -556,10 +573,18 @@ General Notes:
 
 * Filters handled by ImageMagick or GD:
   - brit;cont;ds;sat;gray;clr;sep;gam;neg;th;rcd;flip;edge;
-    emb;lvl;blur;gblr;usm;
+    emb;lvl;blur;gblr;usm;wb;
 * Filters handled only by ImageMagick:
   - none yet
 * Filters handled only by GD + PHP5:
   - sblr;mean;smth;
 * Filters handled only by GD2:
-  - bvl;wmi;wmt;over;wb;hist;fram;drop;mask;elip;ric;bord;
+  - bvl;wmi;wmt;over;hist;fram;drop;mask;elip;ric;bord;
+
+
+===============
+Thanks & Links:
+===============
+
+* Original image used in phpThumb logo provided by
+  Mark James: http://www.famfamfam.com/lab/icons/

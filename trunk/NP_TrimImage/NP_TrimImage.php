@@ -2,10 +2,10 @@
 // vim: tabstop=2:shiftwidth=2
 
 /**
-  * NP_TrimImage ($Revision: 1.9 $)
+  * NP_TrimImage ($Revision: 1.10 $)
   * by nakahara21 ( http://nakahara21.com/ )
   * by hsur ( http://blog.cles.jp/np_cles/ )
-  * $Id: NP_TrimImage.php,v 1.9 2007-03-06 20:55:44 hsur Exp $
+  * $Id: NP_TrimImage.php,v 1.10 2007-04-07 04:10:16 hsur Exp $
   *
   * Based on NP_TrimImage 1.0 by nakahara21
   * http://nakahara21.com/?itemid=512
@@ -61,9 +61,11 @@
 //	    	add alt/title attribute
 //	    	bug fix
 //  2.2:	support <img /> tag. 
-// 			doTemplateVar() bug fix.
-// 			Add ENT_QUOTES to htmlspecialchars()
-// 			Add ExtractImageMode
+// 				doTemplateVar() bug fix.
+// 				Add ENT_QUOTES to htmlspecialchars()
+// 				Add ExtractImageMode
+//  2.2.1:	update phpThumb() 1.7.7 . 
+//  		 bug fix	
 
 define('NP_TRIMIMAGE_FORCE_PASSTHRU', true); //passthru(standard)
 //define('NP_TRIMIMAGE_FORCE_PASSTHRU', false); //redirect(advanced)
@@ -89,7 +91,7 @@ class NP_TrimImage extends NucleusPlugin {
 	}
 
 	function getVersion() {
-		return '2.2.0';
+		return '2.2.1';
 	}
 
 	function supportsFeature($what) {
@@ -104,7 +106,8 @@ class NP_TrimImage extends NucleusPlugin {
 	function getDescription() {
 		return 'Trim image in items, and embed these images.';
 	}
-			function getEventList() {
+		
+	function getEventList() {
 		return array ('PostAddItem', 'PostUpdateItem', 'PostDeleteItem',);
 	}
 	
@@ -306,7 +309,7 @@ class NP_TrimImage extends NucleusPlugin {
 	function exarray($imginfo, $key, $params, $isImg = false) {
 		global $CONF;
 		if ($isImg){
-			if( preg_match_all('/(src|width|height|alt)=\"(.*?)\"/i', $imginfo, $matches) ) {
+			if( preg_match_all('/(src|width|height|alt|title)=\"(.*?)\"/i', $imginfo, $matches) ) {
 				$index = 0;
 				$param = array();
 				foreach( $matches[1] as $type ){
@@ -317,7 +320,7 @@ class NP_TrimImage extends NucleusPlugin {
 					$imginfo = substr( $param['src'], strlen($CONF['MediaURL']) )
 					. '|' . $param['width']
 					. '|' . $param['height']
-					. '|' . $param['alt'];
+					. '|' . ( $param['title'] ? $param['tiltle'] : $param['alt']);
 				}
 			} else {
 				return;
@@ -425,7 +428,14 @@ class NP_TrimImage extends NucleusPlugin {
 		if($w) $phpThumb->setParameter('w', intval($w));
 
 		if ($p == 'non') {
-			$phpThumb->setParameter('new', 'FFFFFF');
+			$bghexcolor = 'FFFFFF';
+			if ($phpThumb->gdimg_source = phpthumb_functions::ImageCreateFunction($phpThumb->w, $phpThumb->h)) {
+				$phpThumb->setParameter('is_alpha', true);
+				ImageAlphaBlending($phpThumb->gdimg_source, false);
+				ImageSaveAlpha($phpThumb->gdimg_source, true);
+				$new_background_color = phpthumb_functions::ImageHexColorAllocate($phpThumb->gdimg_source, $bghexcolor, false, 127);
+				ImageFilledRectangle($phpThumb->gdimg_source, 0, 0, $phpThumb->w, $phpThumb->h, $new_background_color);
+			}
 		} else {
 			$phpThumb->setParameter('src', '/'.$p);
 			if( $w && $h  )

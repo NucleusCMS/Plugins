@@ -147,7 +147,7 @@ class phpthumb_functions {
 				'Supported filetypes'    => ''
 			);
 			$phpinfo_array = phpthumb_functions::phpinfo_array();
-			foreach ($phpinfo_array as $dummy => $line) {
+			foreach ($phpinfo_array as $line) {
 				$line = trim(strip_tags($line));
 				foreach ($exif_info as $key => $value) {
 					if (strpos($line, $key) === 0) {
@@ -446,7 +446,7 @@ class phpthumb_functions {
 			$keys = array('status', 'the_request', 'status_line', 'method', 'content_type', 'handler', 'uri', 'filename', 'path_info', 'args', 'boundary', 'no_cache', 'no_local_copy', 'allowed', 'send_bodyct', 'bytes_sent', 'byterange', 'clength', 'unparsed_uri', 'mtime', 'request_time');
 			if ($apacheLookupURIobject = @apache_lookup_uri($filename)) {
 				$apacheLookupURIarray = array();
-				foreach ($keys as $dummy => $key) {
+				foreach ($keys as $key) {
 					$apacheLookupURIarray[$key] = @$apacheLookupURIobject->$key;
 				}
 				return $apacheLookupURIarray;
@@ -545,7 +545,7 @@ class phpthumb_functions {
 	function nonempty_min() {
 		$arg_list = func_get_args();
 		$acceptable = array();
-		foreach ($arg_list as $dummy => $arg) {
+		foreach ($arg_list as $arg) {
 			if ($arg) {
 				$acceptable[] = $arg;
 			}
@@ -642,11 +642,11 @@ class phpthumb_functions {
 			return $url;
 		}
 		$parse_url = @parse_url($url);
-
 		$pathelements = explode('/', $parse_url['path']);
 		$CleanPathElements = array();
+		$TranslationMatrix = array(' '=>'%20');
 		foreach ($pathelements as $key => $pathelement) {
-			$CleanPathElements[] = strtr($pathelement, array(' '=>'+'));
+			$CleanPathElements[] = strtr($pathelement, $TranslationMatrix);
 		}
 		foreach ($CleanPathElements as $key => $value) {
 			if (!$value) {
@@ -658,7 +658,7 @@ class phpthumb_functions {
 		$CleanQueries = array();
 		foreach ($queries as $key => $query) {
 			@list($param, $value) = explode('=', $query);
-			$CleanQueries[] = strtr($param, array(' '=>'+')).($value ? '='.strtr($value, array(' '=>'+')) : '');
+			$CleanQueries[] = strtr($param, $TranslationMatrix).($value ? '='.strtr($value, $TranslationMatrix) : '');
 		}
 		foreach ($CleanQueries as $key => $value) {
 			if (!$value) {
@@ -759,6 +759,9 @@ class phpthumb_functions {
 		$endoffset = count($directory_elements);
 		for ($i = $startoffset; $i <= $endoffset; $i++) {
 			$test_directory = implode(DIRECTORY_SEPARATOR, array_slice($directory_elements, 0, $i));
+			if (!$test_directory) {
+				continue;
+			}
 			if (!@is_dir($test_directory)) {
 				if (@file_exists($test_directory)) {
 					// directory name already exists as a file
@@ -774,7 +777,46 @@ class phpthumb_functions {
 		return true;
 	}
 
+
+	function GetAllFilesInSubfolders($dirname) {
+		$AllFiles = array();
+		$dirname = rtrim(realpath($dirname), '/\\');
+		if ($dirhandle = @opendir($dirname)) {
+			while ($file = readdir($dirhandle)) {
+				$fullfilename = $dirname.DIRECTORY_SEPARATOR.$file;
+				if (is_file($fullfilename)) {
+					$AllFiles[] = $fullfilename;
+				} elseif (is_dir($fullfilename)) {
+					if (($file == '.') || ($file == '..')) {
+						continue;
+					}
+					$subfiles = phpthumb_functions::GetAllFilesInSubfolders($fullfilename);
+					foreach ($subfiles as $filename) {
+						$AllFiles[] = $filename;
+					}
+				} else {
+					// ignore?
+				}
+			}
+			closedir($dirhandle);
+		}
+		sort($AllFiles);
+		return array_unique($AllFiles);
+	}
+
+
+	function SanitizeFilename($filename) {
+		$filename = ereg_replace('[^'.preg_quote(' !#$%^()+,-.;<>=@[]_{}').'a-zA-Z0-9]', '_', $filename);
+		if (phpthumb_functions::version_compare_replacement(phpversion(), '4.1.0', '>=')) {
+			$filename = trim($filename, '.');
+		}
+		return $filename;
+	}
+
 }
+
+
+////////////// END: class phpthumb_functions //////////////
 
 
 if (!function_exists('gd_info')) {
@@ -797,7 +839,7 @@ if (!function_exists('gd_info')) {
 				'XBM Support'        => false
 			);
 			$phpinfo_array = phpthumb_functions::phpinfo_array();
-			foreach ($phpinfo_array as $dummy => $line) {
+			foreach ($phpinfo_array as $line) {
 				$line = trim(strip_tags($line));
 				foreach ($gd_info as $key => $value) {
 					//if (strpos($line, $key) !== false) {

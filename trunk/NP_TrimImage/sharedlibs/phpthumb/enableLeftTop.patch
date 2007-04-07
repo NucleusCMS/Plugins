@@ -50,3 +50,28 @@ Zoom-Cropの際に、sx,syを評価するようにするパッチ
  			} else {
  				// image fits perfectly, no cropping needed
  			}
+
+--- phpthumb.functions.php.orig	2007-01-30 17:12:14.901206122 +0900
++++ phpthumb.functions.php	2007-01-30 17:12:23.220804722 +0900
+@@ -416,7 +416,9 @@
+ 			switch ($execfunction) {
+ 				case 'passthru':
+ 					ob_start();
+-					$execfunction($command);
++					// modified by cles
++					//$execfunction($command);
++					@$execfunction($command);
+ 					$returnvalue = ob_get_contents();
+ 					ob_end_clean();
+ 					break;
+@@ -426,7 +428,9 @@
+ 				case 'exec':
+ 				default:
+ 					ob_start();
+-					$returnvalue = $execfunction($command);
++					// modified by cles
++					//$returnvalue = $execfunction($command);
++					$returnvalue = @$execfunction($command);
+ 					ob_end_clean();
+ 					break;
+ 			}

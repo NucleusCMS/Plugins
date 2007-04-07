@@ -254,6 +254,14 @@ A: phpThumb fits the rotated image into the 'w' and 'h' dimensions.
    (in actual fact the canvas size is enlarged to fit the rotated image in it).
 
 
+Q: phpThumb.demo.check.php says Safe Mode is off for Master but on for Local,
+   and I checked php.ini and it's already set off. How do I disable safe mode?
+A: Your PHP was probably installed as an Apache module. If so, you have to set
+     php_admin_value safe_mode "Off"
+   in your domain settings (usually between <VirtualHost> tags in httpd.conf).
+   Then you have to restart Apache.
+
+
 Q: How can I purge cached files when I delete the source image?
 A: You can either let phpThumb's built-in cache purging features (see phpThumb.config.php)
    take effect, or you can manually walk through your source images to delete and find

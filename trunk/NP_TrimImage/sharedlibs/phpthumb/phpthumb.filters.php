@@ -523,11 +523,13 @@ class phpthumb_filters {
 	}
 
 
-	function HistogramStretch(&$gdimg, $band='*', $min=-1, $max=-1) {
+	function HistogramStretch(&$gdimg, $band='*', $method=0, $threshold=0.1) {
 		// equivalent of "Auto Contrast" in Adobe Photoshop
-
+		// method 0 stretches according to RGB colors. Gives a more conservative stretch.
+		// method 1 band stretches according to grayscale which is color-biased (59% green, 30% red, 11% blue). May give a punchier / more aggressive stretch, possibly appearing over-saturated
 		$Analysis = phpthumb_filters::HistogramAnalysis($gdimg, true);
-		$keys = array('r'=>'red', 'g'=>'green', 'b'=>'blue', 'a'=>'alpha', '*'=>'gray');
+		$keys = array('r'=>'red', 'g'=>'green', 'b'=>'blue', 'a'=>'alpha', '*'=>(($method == 0) ? 'all' : 'gray'));
+		$band = substr($band, 0, 1);
 		if (!isset($keys[$band])) {
 			return false;
 		}
@@ -535,35 +537,44 @@ class phpthumb_filters {
 
 		// If the absolute brightest and darkest pixels are used then one random
 		// pixel in the image could throw off the whole system. Instead, count up/down
-		// from the limit and allow 0.1% of brightest/darkest pixels to be clipped to min/max
-		$clip_threshold = ImageSX($gdimg) * ImageSX($gdimg) * 0.001;
-		if ($min >= 0) {
-			$range_min = min($min, 255);
-		} else {
+		// from the limit and allow <threshold> (default = 0.1%) of brightest/darkest
+		// pixels to be clipped to min/max
+		$threshold = floatval($threshold) / 100;
+		$clip_threshold = ImageSX($gdimg) * ImageSX($gdimg) * $threshold;
+		//if ($min >= 0) {
+		//	$range_min = min($min, 255);
+		//} else {
 			$countsum = 0;
 			for ($i = 0; $i <= 255; $i++) {
-				$countsum += @$Analysis[$key][$i];
+				if ($method == 0) {
+					$countsum = max(@$Analysis['red'][$i], @$Analysis['green'][$i], @$Analysis['blue'][$i]);
+				} else {
+					$countsum += @$Analysis[$key][$i];
+				}
 				if ($countsum >= $clip_threshold) {
 					$range_min = $i - 1;
 					break;
 				}
 			}
 			$range_min = max($range_min, 0);
-		}
-		if ($max >= 0) {
-			$range_max = max($max, 255);
-		} else {
+		//}
+		//if ($max > 0) {
+		//	$range_max = max($max, 255);
+		//} else {
 			$countsum = 0;
-			$threshold = ImageSX($gdimg) * ImageSX($gdimg) * 0.001; // 0.1% of brightest and darkest pixels can be clipped
 			for ($i = 255; $i >= 0; $i--) {
-				$countsum += @$Analysis[$key][$i];
+				if ($method == 0) {
+					$countsum = max(@$Analysis['red'][$i], @$Analysis['green'][$i], @$Analysis['blue'][$i]);
+				} else {
+					$countsum += @$Analysis[$key][$i];
+				}
 				if ($countsum >= $clip_threshold) {
 					$range_max = $i + 1;
 					break;
 				}
 			}
 			$range_max = min($range_max, 255);
-		}
+		//}
 		$range_scale = (($range_max == $range_min) ? 1 : (255 / ($range_max - $range_min)));
 		if (($range_min == 0) && ($range_max == 255)) {
 			// no adjustment neccesary - don't waste CPU time!
@@ -597,7 +608,6 @@ class phpthumb_filters {
 		$margin_y = (is_null($margin_y) ? $margin_x : $margin_y);
 
 		$Analysis = phpthumb_filters::HistogramAnalysis($gdimg, true);
-
 		$histW = round(($width > 1) ? min($width, ImageSX($gdimg)) : ImageSX($gdimg) * $width);
 		$histH = round(($width > 1) ? min($width, ImageSX($gdimg)) : ImageSX($gdimg) * $width);
 		if ($gdHist = ImageCreateTrueColor($histW, $histH)) {
@@ -606,7 +616,9 @@ class phpthumb_filters {
 			ImageAlphaBlending($gdHist, false);
 			ImageSaveAlpha($gdHist, true);
 
-			if ($gdHistTemp = ImageCreateTrueColor(256, 100)) {
+			$HistogramTempWidth  = 256;
+			$HistogramTempHeight = 100;
+			if ($gdHistTemp = ImageCreateTrueColor($HistogramTempWidth, $HistogramTempHeight)) {
 				$color_back_temp = phpthumb_functions::ImageColorAllocateAlphaSafe($gdHistTemp, 255, 0, 255, 127);
 				ImageAlphaBlending($gdHistTemp, false);
 				ImageSaveAlpha($gdHistTemp, true);
@@ -622,12 +634,11 @@ class phpthumb_filters {
 					}
 					$PeakValue = max($Analysis[$keys[$band]]);
 					$thisColor = phpthumb_functions::ImageHexColorAllocate($gdHistTemp, phpthumb_functions::IsHexColor(@$Colors[$key]) ? $Colors[$key] : $DefaultColors[$band]);
-					$tempHeight = ImageSY($gdHistTemp);
-					for ($x = 0; $x <= 255; $x++) {
-						ImageLine($gdHistTemp, $x, $tempHeight - 1, $x, $tempHeight - 1 - round(@$Analysis[$keys[$band]][$x] / $PeakValue * $tempHeight), $thisColor);
+					for ($x = 0; $x < $HistogramTempWidth; $x++) {
+						ImageLine($gdHistTemp, $x, $HistogramTempHeight - 1, $x, $HistogramTempHeight - 1 - round(@$Analysis[$keys[$band]][$x] / $PeakValue * $HistogramTempHeight), $thisColor);
 					}
-					ImageLine($gdHistTemp, 0, $tempHeight - 1, 255, $tempHeight - 1, $thisColor);
-					ImageLine($gdHistTemp, 0, $tempHeight - 2, 255, $tempHeight - 2, $thisColor);
+					ImageLine($gdHistTemp, 0, $HistogramTempHeight - 1, $HistogramTempWidth - 1, $HistogramTempHeight - 1, $thisColor);
+					ImageLine($gdHistTemp, 0, $HistogramTempHeight - 2, $HistogramTempWidth - 1, $HistogramTempHeight - 2, $thisColor);
 				}
 				ImageCopyResampled($gdHist, $gdHistTemp, 0, 0, 0, 0, ImageSX($gdHist), ImageSY($gdHist), ImageSX($gdHistTemp), ImageSY($gdHistTemp));
 				ImageDestroy($gdHistTemp);
@@ -1327,6 +1338,13 @@ class phpthumb_filters {
 					break;
 
 				case 'BL':
+//echo '<pre>';
+////var_dump($watermark_destination_x);
+////var_dump($watermark_destination_y);
+//var_dump($watermark_margin_x);
+//var_dump($img_source_height);
+//var_dump($watermark_source_height);
+//var_dump($watermark_margin_y);
 					$watermark_destination_x = $watermark_margin_x;
 					$watermark_destination_y = $img_source_height - $watermark_source_height - $watermark_margin_y;
 					break;

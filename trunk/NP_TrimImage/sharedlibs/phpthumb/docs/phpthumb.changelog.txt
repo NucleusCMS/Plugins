@@ -6,6 +6,57 @@
 § = structure change or important new feature
 * = less important new feature or change
 
+v1.7.7 - December ??, 2006
+  § Added phpThumb.demo.gallery.php -- basic image gallery demo
+  § Added option for image watermark for anti-hotlinking. See
+    phpThumb.config.php "nooffsitelink_watermark_src"
+    (thanks rik_helsenÿrad*be)
+  § Added config option "imagemagick_use_thumbnail" to control
+    use of ImageMagick's "-thumbnail" command vs "-resize" (the
+    former discards non-visible metadata, the latter retains it)
+    Most times you want the smallest filesize so keep the default
+    setting (imagemagick_use_thumbnail==true)
+    (thanks niklasÿmysticalgarden*se)
+  * Bugfix [#1620056]: EnsureDirectoryExists() failed to create
+    some directory structures  (thanks jeromyÿlocallinux*com)
+  * Bugfix [#1620056]: CleanUpCacheDirectory() would not purge
+    files from subdirectories if (cache_directory_depth > 0)
+    (thanks kingsquareÿusers*sourceforge*net)
+  * Bugfix: nooffsitelink_* broken when running on non-standard
+    HTTP port  (thanks marianbucur17ÿyahoo*com)
+
+
+v1.7.6 - December 09, 2006
+  § Added "sia" (Save Image As) parameter to provide default
+    filename when saving generated thumbnails
+    (thanks web_mkÿhotmail*com)
+  § Changed "lvl" filter parameters, and added option to choose
+    between four different methods (two internal, two from
+    ImageMagick). Added configurable threshold parameter.
+    (thanks publicÿwoktiny*com for code for new internal method)
+  § "wb" (White Balance) filter now processed by ImageMagick
+  * Changed GD max source pixels to 1/6 (from 1/5) available
+    memory, and changed SourceImageIsTooLarge() to account for
+    already-used memory (if known)
+  * More graceful error handling in object mode when source
+    larger than PHP memory limit and ImageMagick unavailable
+    (thanks djasonÿdjason*com)
+  * Added ImageMagickFormatsList()
+  * CleanUpCacheDirectory() now also purges zero-byte orphan
+    files left over from aborted thumbnailings
+  * Bugfix [#1606069]: Changed default urlencoded space
+    character from "+" to "%20"
+  * Bugfix [#1608664]: "Unsupported operand types" in "wmi"
+    filter (thanks haydurÿhaydur*com; squidliberty)
+  * Bugfix: debug mode now supports text output in all modes
+  * Bugfix: ImageMagick creation attempted before GD creation
+  * Bugfix: no longer fails silently if GD creation runs out of
+    memory
+  * Bugfix: poor alpha rendering from PNG to GIF with ImageMagick
+  * Bugfix: "wb" filter had no effect when "lvl" filter applied
+    in ImageMagick instead of GD
+
+
 v1.7.5 - October 03, 2006
   § Deprecated parameters "err", "file", "goto"
   § Added broad cache directory feature (see phpThumb.config.php
