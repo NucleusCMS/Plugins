@@ -1,7 +1,7 @@
 <?php
     /***************************************
     * SQLite-MySQL wrapper for Nucleus     *
-    *                           ver 0.8.5.1*
+    *                           ver 0.8.5.2*
     * Written by Katsumi                   *
     ***************************************/
 //
@@ -434,6 +434,9 @@ function sqlite_altertable($table,$alterdefs,$dbhandle){
 	$origsql = trim(preg_replace("/[\s]+/"," ",str_replace(",",", ",preg_replace("/[\(]/","( ",$row['sql'],1))));
 	$createtemptableSQL = 'CREATE TEMPORARY '.substr(trim(preg_replace("'".$table."'",$tmpname,$origsql,1)),6);
 	$createindexsql = array();
+	while ($row = sqlite_fetch_array($result)) {//index sql
+		$createindexsql[]=$row['sql'];
+	}
 	$i = 0;
 	$defs = preg_split("/[,]+/",$alterdefs,-1,PREG_SPLIT_NO_EMPTY);
 	$prevword = $table;
@@ -539,6 +542,7 @@ function sqlite_altertable($table,$alterdefs,$dbhandle){
 	sqlite_query($dbhandle,$dropoldsql); //drop old table
 
 	sqlite_query($dbhandle,$createnewtableSQL); //recreate original table
+	foreach($createindexsql as $sql) sqlite_query($dbhandle,$sql); //recreate index
 	sqlite_query($dbhandle,$copytonewsql); //copy back to original table
 	sqlite_query($dbhandle,$droptempsql); //drop temp table
 	return true;
