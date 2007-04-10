@@ -1,7 +1,7 @@
 <?php
     /***************************************
     * SQLite-MySQL wrapper for Nucleus     *
-    *                           ver 0.8.1  *
+    *                           ver 0.8.5  *
     * Written by Katsumi                   *
     ***************************************/
 //
@@ -40,6 +40,10 @@
 //    -Avoid executing outside php file in some very specfic environment.
 //    -Avoid executing multiple queries using ";" as delimer.
 //    -Add check routine for the installed SQLite
+//
+//  Version 0.8.5
+//    -Use SQLite_Functions class
+//    -'PRAGMA synchronous = off;' when installing
 
 // Check SQLite installed
 
@@ -49,12 +53,7 @@ if (!function_exists('sqlite_open')) exit('Sorry, SQLite is not installed in the
 require_once dirname(__FILE__) . '/sqliteconfig.php';
 $SQLITE_DBHANDLE=sqlite_open($SQLITECONF['DBFILENAME']);
 require_once dirname(__FILE__) . '/sqlitequeryfunctions.php';
-$SQLITECONF['VERSION']='0.8.1';
-
-function sqlite_createQueryFunction($queryf,$globalf){
-	global $SQLITE_DBHANDLE;
-	if (function_exists($globalf)) sqlite_create_function($SQLITE_DBHANDLE,$queryf,$globalf);
-}
+$SQLITECONF['VERSION']='0.8.5';
 
 //Following thing may work if MySQL is NOT installed in server.
 if (!function_exists('mysql_query')) {
@@ -316,7 +315,7 @@ function sqlite_mysql_query_sub($dbhandle,$query,$strpositions=array(),$p1=null,
 		$query=sqlite_showFieldsFrom(trim(substr($query,18)),$dbhandle);
 	} else if (strpos($uquery,'TRUNCATE TABLE ')===0) {
 		$query='DELETE FROM '.substr($query,15);
-	} else sqlite_modifyQueryForUserFunc($query,$strpositions);
+	} else SQLite_Functions::sqlite_modifyQueryForUserFunc($query,$strpositions);
 
 	//Throw query again.
 	$aftertrans=time()+microtime();

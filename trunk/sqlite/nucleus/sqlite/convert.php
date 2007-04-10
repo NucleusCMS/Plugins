@@ -2,7 +2,7 @@
 /*******************************************
 * mysql_xxx => nucleus_mysql_xxx converter *
 *                              for Nucleus *
-*     ver 0.8.0   Written by Katsumi       *
+*     ver 0.8.5   Written by Katsumi       *
 *******************************************/
 
 // The license of this script is GPL
@@ -64,6 +64,10 @@ function modifyConfigInstall(){
 					$line=preg_replace('/[\s]+auto_increment/i'," default '0'",$line);
 			} else {
 				if (preg_match('/CREATE[\s]+TABLE[\s]+`nucleus_plugin_option`/i',$line)) $pluginoptiontable=true;
+			}
+			if (strlen($after)==0) {
+				$replace='PRAGMA synchronous = off;';
+				if (!strstr($line,$replace)) $after=preg_replace('/^[^\r\n]*([\r\n]*)$/',$replace.'$1$1',$line);
 			}
 			$after.=$line;
 		}
