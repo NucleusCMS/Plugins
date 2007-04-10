@@ -1,7 +1,7 @@
 <?php
     /***************************************
     * SQLite-MySQL wrapper for Nucleus     *
-    *                           ver 0.8.5  *
+    *                           ver 0.8.5.1*
     * Written by Katsumi                   *
     ***************************************/
 //
@@ -474,9 +474,10 @@ function sqlite_altertable($table,$alterdefs,$dbhandle){
 			if ($exists) break;
 			
 			// Ignore 'AFTER xxxx' statement.
+			// Ignore 'FIRST' statement.
 			// Maybe this feature will be supprted later.
-			if (4<=$i && strtoupper($defparts[$i-2])=='AFTER') 
-				unset($defparts[$i-1],$defparts[$i-2]);
+			if (4<=$i && strtoupper($defparts[$i-2])=='AFTER') unset($defparts[$i-1],$defparts[$i-2]);
+			else if (3<=$i && strtoupper($defparts[$i-1])=='FIRST') unset($defparts[$i-1]);
 			
 			$createtesttableSQL = substr($createtesttableSQL,0,strlen($createtesttableSQL)-1).',';
 			for($i=1;$i<sizeof($defparts);$i++) $createtesttableSQL.=' '.$defparts[$i];
