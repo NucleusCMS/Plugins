@@ -1,7 +1,7 @@
 <?php
     /***************************************
     * SQLite-MySQL wrapper for Nucleus     *
-    *                           ver 0.8.5.2*
+    *                           ver 0.8.5.4*
     * Written by Katsumi                   *
     ***************************************/
 //
@@ -470,21 +470,37 @@ function sqlite_altertable($table,$alterdefs,$dbhandle){
 			break;
 		case 'add':
 			if(($i=sizeof($defparts)) <= 2) return sqlite_ReturnWithError('near "'.$defparts[0].($defparts[1]?' '.$defparts[1]:'').'": syntax error');
-			
 			// ignore if there is already such table
 			$exists=false;
 			foreach($oldcols as $value) if (str_replace("'",'',$defparts[1])==str_replace("'",'',$value)) $exists=true;
 			if ($exists) break;
-			
-			// Ignore 'AFTER xxxx' statement.
-			// Ignore 'FIRST' statement.
-			// Maybe this feature will be supprted later.
-			if (4<=$i && strtoupper($defparts[$i-2])=='AFTER') unset($defparts[$i-1],$defparts[$i-2]);
-			else if (3<=$i && strtoupper($defparts[$i-1])=='FIRST') unset($defparts[$i-1]);
-			
-			$createtesttableSQL = substr($createtesttableSQL,0,strlen($createtesttableSQL)-1).',';
-			for($i=1;$i<sizeof($defparts);$i++) $createtesttableSQL.=' '.$defparts[$i];
-			$createtesttableSQL.=')';
+			// Support 'AFTER xxxx' statement.
+			// Support 'FIRST' statement.
+			$position=false;
+			if (4<=$i && strtoupper($defparts[$i-2])=='AFTER') {
+				$exists=false;
+				foreach($oldcols as $value) if (str_replace("'",'',$defparts[$i-2])==str_replace("'",'',$value)) $exists=$value;
+				if ($exists) {
+					if ( $position=strpos($createtesttableSQL,$exists) ){
+						if ( $position=strpos($createtesttableSQL,',',$position) ) $position++;// If ',' cannot be found (i.e. trying to put after the last column, $position will be false.
+					}
+				}
+				unset($defparts[$i-1],$defparts[$i-2]);
+			} else if (3<=$i && strtoupper($defparts[$i-1])=='FIRST') {
+				if ( $position=strpos($createtesttableSQL,'(') ) $position++;
+				unset($defparts[$i-1]);
+			}
+			// add new column here
+			if ($position) {// insert at the first position or between two columns
+				$afterpos = substr($createtesttableSQL,$position);
+				$createtesttableSQL = substr($createtesttableSQL,0,$position);
+				for($i=1;$i<sizeof($defparts);$i++) $createtesttableSQL.=' '.$defparts[$i];
+				$createtesttableSQL.=', '.$afterpos;
+			} else {// add at the last position
+				$createtesttableSQL = substr($createtesttableSQL,0,strlen($createtesttableSQL)-1).',';
+				for($i=1;$i<sizeof($defparts);$i++) $createtesttableSQL.=' '.$defparts[$i];
+				$createtesttableSQL.=')';
+			}
 			break;
 		case 'change':
 			if(sizeof($defparts) <= 3) return sqlite_ReturnWithError('near "'.$defparts[0].($defparts[1]?' '.$defparts[1]:'').($defparts[2]?' '.$defparts[2]:'').'": syntax error');
