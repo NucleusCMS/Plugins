@@ -1,7 +1,7 @@
 <?php
     /***************************************
     * SQLite-MySQL wrapper for Nucleus     *
-    *                           ver 0.8.5.4*
+    *                           ver 0.8.5.5*
     * Written by Katsumi                   *
     ***************************************/
 //
@@ -44,6 +44,9 @@
 //  Version 0.8.5
 //    -Use SQLite_Functions class
 //    -'PRAGMA synchronous = off;' when installing
+//
+//  Version 0.8.5.5
+//    - ALTER TABLE syntaxes updated, bugs fixed
 
 // Check SQLite installed
 
@@ -438,12 +441,12 @@ function sqlite_altertable($table,$alterdefs,$dbhandle){
 		$createindexsql[]=$row['sql'];
 	}
 	$i = 0;
-	$defs = preg_split("/[,]+/",$alterdefs,-1,PREG_SPLIT_NO_EMPTY);
+	$defs = _sqlite_divideByChar(',',$alterdefs);
 	$prevword = $table;
-	$oldcols = preg_split("/[,]+/",substr(trim($createtemptableSQL),strpos(trim($createtemptableSQL),'(')+1),-1,PREG_SPLIT_NO_EMPTY);
+	$oldcols = _sqlite_divideByChar(',',substr(trim($createtemptableSQL),strpos(trim($createtemptableSQL),'(')+1));
 	$newcols = array();
 	for($i=0;$i<sizeof($oldcols);$i++){
-		$colparts = preg_split("/[\s]+/",$oldcols[$i],-1,PREG_SPLIT_NO_EMPTY);
+		$colparts = _sqlite_divideByChar(array(' ',"\t","\r","\n"),$oldcols[$i]);
 		$oldcols[$i] = $colparts[0];
 		$newcols[$colparts[0]] = $colparts[0];
 	}
@@ -461,7 +464,7 @@ function sqlite_altertable($table,$alterdefs,$dbhandle){
 	$dropoldsql = 'DROP TABLE '.$table;
 	$createtesttableSQL = $createtemptableSQL;
 	foreach($defs as $def){
-		$defparts = preg_split("/[\s]+/",$def,-1,PREG_SPLIT_NO_EMPTY);
+		$defparts = _sqlite_divideByChar(array(' ',"\t","\r","\n"),$def);
 		$action = strtolower($defparts[0]);
 		switch($action){
 		case 'modify':
@@ -519,6 +522,10 @@ function sqlite_altertable($table,$alterdefs,$dbhandle){
 			break;
 		case 'drop':
 			if(sizeof($defparts) < 2) return sqlite_ReturnWithError('near "'.$defparts[0].($defparts[1]?' '.$defparts[1]:'').'": syntax error');
+			if (sizeof($defparts)==3 && strtoupper($defparts[1])=='COLUMN'){
+				$defparts[1]=$defparts[2];
+				unset($defparts[2]);
+			}
 			if($severpos = strpos($createtesttableSQL,' '.$defparts[1].' ')){
 				$nextcommapos = strpos($createtesttableSQL,',',$severpos);
 				if($nextcommapos) $createtesttableSQL = substr($createtesttableSQL,0,$severpos).substr($createtesttableSQL,$nextcommapos + 1);
@@ -562,6 +569,53 @@ function sqlite_altertable($table,$alterdefs,$dbhandle){
 	sqlite_query($dbhandle,$copytonewsql); //copy back to original table
 	sqlite_query($dbhandle,$droptempsql); //drop temp table
 	return true;
+}
+function _sqlite_divideByChar($char,$query,$limit=-1){
+	if (!is_array($char)) $char=array($char);
+	$ret=array();
+	$query=trim($query);
+	$buff='';
+	while (strlen($query)){
+		$i=strlen($query);
+		foreach($char as $valule){
+			if (($j=strpos($query,$valule))!==false) {
+				if ($j<$i) $i=$j;
+			}
+		}
+		if (($j=strpos($query,'('))===false) $j=strlen($query);
+		if (($k=strpos($query,"'"))===false) $k=strlen($query);
+		if ($i<$j && $i<$k) {// ',' found
+			$buff.=substr($query,0,$i);
+			if ($buff) $ret[]=$buff;
+			$query=trim(substr($query,$i+1));
+			$buff='';
+			$limit--;
+			if ($limit==0) exit;
+		} else if ($j<$i && $j<$k) {// '(' found
+			if (($i=strpos($query,')',$j))===false) {
+				$buff.=$query;
+				if ($buff) $ret[]=$buff;
+				$query='';
+			} else {
+				$buff.=substr($query,0,$i+1);
+				$query=substr($query,$i+1);
+			}
+		} else if ($k<$i && $k<$j) {// "'" found
+			if (($i=strpos($query,"'",$k))===false) {
+				$buff.=$query;
+				if ($buff) $ret[]=$buff;
+				$query='';
+			} else {
+				$buff.=substr($query,0,$i+1);
+				$query=substr($query,$i+1);
+			}
+		} else {// last column
+			$buff.=$query;
+			if ($buff) $ret[]=$buff;
+			$query='';
+		}
+	}
+	return $ret;
 }
 function sqlite_showKeysFrom($tname,$dbhandle) {
 	// This function is for supporing 'SHOW KEYS FROM' and 'SHOW INDEX FROM'.
