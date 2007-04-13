@@ -13,26 +13,27 @@
  * @author    Original Author nakahara21
  * @copyright 2005-2006 nakahara21
  * @license   http://www.gnu.org/licenses/gpl.txt  GNU GENERAL PUBLIC LICENSE Version 2, June 1991
- * @version   2.66.4
+ * @version   2.66.2
  * @link      http://japan.nucleuscms.org/wiki/plugins:showblogs
  *
- * 2.66.4 add function doIf()
- *        USAGE : <%if(ShowBlogs,page,PageNo.)%>TRULE OUTPUT<%endif%>
- *                <%if(ShowBlogs,tpl|amt|bmd|psw|srt|stk|stp|cmd|acd|cst,
- *                    TemplateName|Amount|Blog mode|page switch type|Sort|
- *                    Stick ID|StickyTemplate|Categpry mode|AD code mode|
- *                    Category stick mode)%><%emdif%>
- * 2.66.3 fix display offset
- * 2.66.2 fix display Item when $q_amount=0
- * 2.66.1 fix sticky mode
- * 2.66   default argument bug fix
- * 2.65   add AD code control
- *        add Category mode
- *        fix stickies bug
- * 2.64   fix page switch URL generate
- * 2.62   security fix and tag related
- * 2.61   security fix
- * 2.6    security fix
+ * 2.7      add doIf function requier Nucleus version 3.3 or later
+ *              ex. <%ifnot(ShowBlogs,page)%>top page contents<%else%>other pages contents<%endif%>
+ *              ex. <%if(ShowBlogs,cstik|bmode|stick|amont|tmplt,1|all|23|5|myTemplate)%><%endif%>
+ *               is <%ShowBlogs(myTemplate,5,all,,,23,,,,1)%>
+ * 2.66.4.1 cahnge prev/next pagelink label class <span class="npsb_prevlink"></span>
+ *                 and page label to BlogOption
+ * 2.66.4   fix catformat
+ * 2.66.3   fix display offset
+ * 2.66.2   fix display Item when $q_amount=0
+ * 2.66.1   fix sticky mode
+ * 2.66     default argument bug fix
+ * 2.65     add AD code control
+ *          add Category mode
+ *          fix stickies bug
+ * 2.64     fix page switch URL generate
+ * 2.62     security fix and tag related
+ * 2.61     security fix
+ * 2.6      security fix
  *
  ****************************************************************************
  *
@@ -66,7 +67,7 @@ class NP_ShowBlogs extends NucleusPlugin
 
 	function getVersion()
 	{
-		return '2.66.5';
+		return '2.7';
 	}
 
 	function getDescription()
@@ -103,17 +104,13 @@ class NP_ShowBlogs extends NucleusPlugin
 
 	function install()
 	{
-//		$this->createOption('catnametoshow', '[allblog mode only] category name to show (0:catname on blogname, 1:catname only, 2:blogname only)','text','0');
-//		$this->createOption('stickmode',	'[currentblog mode only] 0:show all stickyID, 1:show current blog stickyID only', 'text', '1');
-//		$this->createOption('ads', '[Ads code] code displayed under first and second item of the page', 'textarea', '' . "\n");
-// <mod by shizuki>
-		$this->createOption('catformat',     _CAT_FORMAT,   'text',    '<%category%> on <%blogname%>');
-//		$this->createOption('catnametoshow', CATNAME_SHOW, 'text',     '0');
-//		$this->createOption('stickmode',    _STICKMODE,    'text',     '1');
-		$this->createOption('stickmode',    _STICKMODE,    'select',   '1', _STICKSELECT);
-		$this->createOption('ads',          _ADCODE_1,     'textarea', '' . "\n");
-		$this->createOption('ads2',         _ADCODE_2,     'textarea', '' . "\n");
-		$this->createOption('tagMode',      _TAG_MODE,     'select',   '2', _TAG_SELECT);
+		$this->createOption('catformat',     _CAT_FORMAT, 'text',    '<%category%> on <%blogname%>');
+		$this->createOption('stickmode',     _STICKMODE,  'select',   '1', _STICKSELECT);
+		$this->createOption('ads',           _ADCODE_1,   'textarea', '' . "\n");
+		$this->createOption('ads2',          _ADCODE_2,   'textarea', '' . "\n");
+		$this->createOption('tagMode',       _TAG_MODE,   'select',   '2', _TAG_SELECT);
+		$this->createBlogOption('prevLabel', _SB_NEXTL,   'text',     'Next&raquo;');
+		$this->createBlogOption('nextLabel', _SB_PREVL,   'text',     '&laquo;Prev');
 /* todo can't install ? only warning ?
  * douyatte 'desc' ni keikoku wo daseba iinoka wakaranai desu
 		$ver_min = (getNucleusVersion() < $this->getMinNucleusVersion());
@@ -133,75 +130,6 @@ class NP_ShowBlogs extends NucleusPlugin
 		}
 */
 // </mod by shizuki>
-	}
-
-	function doIf($key, $value)
-	{
-		if ($key == 'page') {
-			if ($value) {
-				$v = explode('/', $value);
-				if ($v[1] == 1 && !$this->currPage) {
-					$this->currPage = 1;
-				}
-				switch ($v[0]) {
-					case '=':
-						if ($this->currPage == $v[1]) {
-							return TRUE;
-						}
-						break;
-					case '<':
-						if ($this->currPage < $v[1]) {
-							return TRUE;
-						}
-						break;
-					case '>':
-						if ($this->currPage > $v[1]) {
-							return TRUE;
-						}
-						break;
-					case '<=':
-						if ($this->currPage <= $v[1]) {
-							return TRUE;
-						}
-						break;
-					case '>=':
-						if ($this->currPage >= $v[1]) {
-							return TRUE;
-						}
-						break;
-					default:
-						if ($this->currPage == 1 || !$this->currPage) {
-							return TRUE;
-						}
-						break;
-				}
-			} else {
-				if ($this->currPage == 1 || !$this->currPage) {
-					return TRUE;
-				}
-			}
-		}
-		$args = explode('|', $key);
-		$vals = explode('|', $value);
-		if (count($args) != count($vals)) {
-			return FALSE;
-		}
-		$loop = count($args);
-		for ($i = 0; $i < $loop; $i++) {
-			$vars[$args[$i]] = $vals[$i];
-		}
-		$template      = $vars['tpl'] ? $vars['tpl'] : 'default/index';
-		$amount        = $vars['amt'] ? $vars['amt'] : 10;
-		$bmode         = $vars['bmd'] ? $vars['bmd'] : '';
-		$type          = $vars['psw'] ? $vars['psw'] : 1;
-		$sort          = $vars['srt'] ? $vars['srt'] : 'DESC';
-		$sticky        = $vars['stk'] ? $vars['stk'] : '';
-		$sticktemplate = $vars['stp'] ? $vars['stp'] : '';
-		$catmode       = $vars['cmd'] ? $vars['cmd'] : 'all';
-		$showAdCode    = $vars['acd'] ? $vars['acd'] : 1;
-		$catStick      = $vars['cst'] ? $vars['cst'] : 0;
-		$this->doSkinVar($this->skinType, $template, $amount, $bmode, $type, $sort, $sticky, $sticktemplate, $catmode, $showAdCode, $catStick);
-		return FALSE;
 	}
 
 	function doSkinVar($skinType,
@@ -331,7 +259,6 @@ class NP_ShowBlogs extends NucleusPlugin
 				}
 				$where .= ' AND i.iblog != ' . intval($val);
 			}
-//			$catblogname = 1;
 		} elseif (isset($show[0]) && $bmode == 'all') {
 			foreach ($show as $val) {
 				if (!is_numeric($val)) {
@@ -339,8 +266,7 @@ class NP_ShowBlogs extends NucleusPlugin
 				}
 				$w[] = intval($val);
 			}
-//			$catblogname = (count($w) > 1) ? 1 : 0;
-			$where .= ' AND i.iblog in (' . implode(',', $w) . ')';
+			$where .= (count($w) > 0) ? ' AND i.iblog in (' . implode(',', $w) . ')' : '';
 		}
 
 		if (isset($hideCat[0]) && $catmode == 'all') {
@@ -349,20 +275,19 @@ class NP_ShowBlogs extends NucleusPlugin
 					$where .= ' AND i.icat != ' . intval($val);
 				}
 			}
-			$catblogname = 1;
 		} elseif (isset($showCat[0]) && $catmode == 'all') {
 			foreach ($showCat as $val) {
-				if (!is_numeric($val)) {
+				if (is_numeric($val)) {
 					$w[] = intval($val);
 				}
 			}
-//			$catblogname = (count($w) > 1) ? 1 : 0;
-			$where .= ' AND i.icat in (' . implode(',', $w) . ')';
+			$where .= (count($w) > 0) ? ' AND i.icat in (' . implode(',', $w) . ')' : '';
+			$mcats = $w;
 		}
 		if ($bmode == 'all') {
 			$catblogname = 1;
 		}
-//		$stickWhere = $where;
+//		echo $bmode;
 
 		if ($skinType == 'item' || $skinType == 'index' || $skinType == 'archive') {
 			$catformat = '"' . addslashes($catformat) . '"';
@@ -529,7 +454,11 @@ class NP_ShowBlogs extends NucleusPlugin
 			}
 
 			if ($skinType != 'item') {
-				$this->_showUsingQuery($template, $sh_query, $page_switch['startpos'], $pageamount, $b, $ads);
+				$pStartPos = $page_switch['startpos'];
+				if ($offset && $type < 1) {
+					$pStartPos += intval($offset);
+				}
+				$this->_showUsingQuery($template, $sh_query, $pStartPos, $pageamount, $b, $ads);
 				if ($type >= 1 && $typeExp != 1) echo $page_switch['buf'];
 			} elseif ($skinType == 'item') {
 				$sh_query .= ' LIMIT 0, ' . $pageamount;
@@ -569,7 +498,7 @@ class NP_ShowBlogs extends NucleusPlugin
 	function event_InitSkinParse($data)
 	{
 		global $CONF, $manager;
-		$this->skinType = $data['type'];
+		$this->skintype = $data['type'];
 		$usePathInfo = ($CONF['URLMode'] == 'pathinfo');
 		if (serverVar('REQUEST_URI') == '') {
 			$uri = (serverVar('QUERY_STRING')) ?
@@ -738,20 +667,11 @@ class NP_ShowBlogs extends NucleusPlugin
 		if ($this->maxamount && $this->maxamount < $totalamount) {
 			$totalamount = intval($this->maxamount);
 		}
-		$totalpages = ceil($totalamount/$pageamount);
+		$totalpages = ceil($totalamount / $pageamount);
 		$totalpages = intval($totalpages);
 		if ($startpos > $totalamount) {
 			$currentpage = $totalpages;
-			$startpos    = $totalamount-$pageamount;
-		}
-		if ($offset) {
-			$startpos += $offset;
-			$totalamount -= $offset;
-		}
-		$totalpages = ceil($totalamount/$pageamount);
-		if ($startpos > $totalamount) {
-			$currentpage = $totalpages;
-			$startpos    = $totalamount-$pageamount;
+			$startpos    = $totalamount - $pageamount;
 		}
 		$prevpage      = ($currentpage > 1) ? $currentpage - 1 : 0;
 		$nextpage      = $currentpage + 1;
@@ -763,6 +683,8 @@ class NP_ShowBlogs extends NucleusPlugin
 		if ($page_str == 'page_') {
 			$lastpagelink .= '.html';
 		}
+		$nextLinkLabel = $this->BloggetOption($this->nowbid, 'nextLabel');
+		$prevLinkLabel = $this->BloggetOption($this->nowbid, 'prevLabel');
 
 		if ($type >= 1) {
 			$buf .= '<div class="pageswitch">' . "\n";
@@ -772,9 +694,10 @@ class NP_ShowBlogs extends NucleusPlugin
 				if ($page_str == 'page_') {
 					$prevpagelink .= '.html';
 				}
-				$buf .= '<a href="' . $prevpagelink . '" title="Previous page" rel="Prev">&laquo;Prev</a> |';
+				$buf .= '<a href="' . $prevpagelink . '" title="Previous page" rel="Prev">'
+					  . '<span class="npsb_prevlink">' . $prevLinkLabel . '</span></a> |';
 			} elseif ($type >= 2) {
-				$buf .= "&laquo;Prev |";
+				$buf .= $prevLinkLabel . " |";
 			}
 			if (intval($type) == 1) {
 				$buf .= "\n";
@@ -835,9 +758,10 @@ class NP_ShowBlogs extends NucleusPlugin
 				if ($page_str == 'page_') {
 					$nextpagelink .= '.html';
 				}
-				$buf .= '| <a href="' . $nextpagelink . '" title="Next page" rel="Next">Next&raquo;</a>' . "\n";
+				$buf .= '| <a href="' . $nextpagelink . '" title="Next page" rel="Next">'
+					  . '<span class="npsb_nextlink">' . $prevLinkLabel . '</span></a>' . "\n";
 			} elseif ($type >= 2) {
-				$buf .= "| Next&raquo;\n";
+				$buf .= "| {$prevLinkLabel}\n";
 			}
 //			$buf .= " | <a rel=\"last\" title=\"Last page\" href=\"{$lastpagelink}\">&lt;LAST&gt;</a>\n";
 			$buf .= "</div>\n";
@@ -1016,6 +940,46 @@ class NP_ShowBlogs extends NucleusPlugin
 						  'inumsres' => $inumsres
 						 );
 		return $retArray;
+	}
+
+	function doIf($key, $val = '')
+	{
+		if (strpos($key, '|') && strpos($val, '|')) {
+			$keys = explode('|', $key);
+			$vals = explode('|', $val);
+			if (count($keys) <> count($vals)) {
+				return;
+			}
+			$sbArgs = array();
+			for ($i = 0; count($keys) > $i; $i++) {
+				$sbArgs[$keys[$i]] = $vals[$i];
+			}
+			$tmplt = $sbArgs['tmplt'] ? $sbArgs['tmplt'] : 'default/index'; // template
+			$amont = $sbArgs['amont'] ? $sbArgs['amont'] : 10;              // amount/page
+			$bmode = $sbArgs['bmode'] ? $sbArgs['bmode'] : '';              // show or hide Blogs
+			$type  = $sbArgs['type']  ? $sbArgs['type']  : 1;               // pagw switch type
+			$sort  = $sbArgs['sort']  ? $sbArgs['sort']  : 'DESC';          // item sort mode (DESC or ASC)
+			$stick = $sbArgs['stick'] ? $sbArgs['stick'] : '';              // sticky item id
+			$stplt = $sbArgs['stplt'] ? $sbArgs['stplt'] : '';              // sticky template
+			$cmode = $sbArgs['cmode'] ? $sbArgs['cmode'] : 'all';           // show or hide categories
+			$acode = $sbArgs['acode'] ? $sbArgs['acode'] : 1;               // AdCode switch
+			$cstik = $sbArgs['cstik'] ? $sbArgs['cstik'] : 0;               // show sticky item when category selected ?
+			$this->doSkinVar($this->skintype, $tmplt, $amont, $bmode, $type, $sort, $stick, $stplt, $cmode, $acode, $cstik);
+			return TRUE;
+		} elseif ($key == 'page') {
+			if ($value) {
+				if ($this->currPage == intval($value)) {
+					return TRUE;
+				} else {
+					return FALSE;
+				}
+			} elseif ($this->currPage > 1) {
+				return TRUE;
+			} else {
+				return FALSE;
+			}
+		}
+
 	}
 
 }
