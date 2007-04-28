@@ -109,8 +109,8 @@ class NP_ShowBlogs extends NucleusPlugin
 		$this->createOption('ads',           _ADCODE_1,   'textarea', '' . "\n");
 		$this->createOption('ads2',          _ADCODE_2,   'textarea', '' . "\n");
 		$this->createOption('tagMode',       _TAG_MODE,   'select',   '2', _TAG_SELECT);
-		$this->createBlogOption('prevLabel', _SB_NEXTL,   'text',     '&laquo;Prev');
-		$this->createBlogOption('nextLabe', _SB_PREVL,   'text',     'Next&raquo;');
+		$this->createBlogOption('prevLabel', _SB_NEXTL,   'text',     'Next&raquo;');
+		$this->createBlogOption('nextLabel', _SB_PREVL,   'text',     '&laquo;Prev');
 /* todo can't install ? only warning ?
  * douyatte 'desc' ni keikoku wo daseba iinoka wakaranai desu
 		$ver_min = (getNucleusVersion() < $this->getMinNucleusVersion());
@@ -675,8 +675,6 @@ class NP_ShowBlogs extends NucleusPlugin
 		}
 		$prevpage      = ($currentpage > 1) ? $currentpage - 1 : 0;
 		$nextpage      = $currentpage + 1;
-		//$nextpage      = ($currentpage > 1) ? $currentpage - 1 : 0;
-		//$pregpage      = $currentpage + 1;
 		$firstpagelink = $pagelink . $page_str . '1';
 		if ($page_str == 'page_') {
 			$firstpagelink .= '.html';
@@ -685,8 +683,8 @@ class NP_ShowBlogs extends NucleusPlugin
 		if ($page_str == 'page_') {
 			$lastpagelink .= '.html';
 		}
-		$nextLinkLabel = $this->getBlogOption($this->nowbid, 'nextLabel');
-		$prevLinkLabel = $this->getBlogOption($this->nowbid, 'prevLabel');
+		$nextLinkLabel = $this->getBlogOption($this->nowbid, 'nextLabel') ? $this->getBlogOption($this->nowbid, 'nextLabel') : 'Next&raquo;';
+		$prevLinkLabel = $this->getBlogOption($this->nowbid, 'prevLabel') ? $this->getBlogOption($this->nowbid, 'prevLabel') : '&laquo;Prev';
 
 		if ($type >= 1) {
 			$buf .= '<div class="pageswitch">' . "\n";
@@ -699,7 +697,7 @@ class NP_ShowBlogs extends NucleusPlugin
 				$buf .= '<a href="' . $prevpagelink . '" title="Previous page" rel="Prev">'
 					  . '<span class="npsb_prevlink">' . $prevLinkLabel . '</span></a> |';
 			} elseif ($type >= 2) {
-				$buf .= "{$prevLinkLabel} |";
+				$buf .= $prevLinkLabel . " |";
 			}
 			if (intval($type) == 1) {
 				$buf .= "\n";
@@ -763,7 +761,7 @@ class NP_ShowBlogs extends NucleusPlugin
 				$buf .= '| <a href="' . $nextpagelink . '" title="Next page" rel="Next">'
 					  . '<span class="npsb_nextlink">' . $nextLinkLabel . '</span></a>' . "\n";
 			} elseif ($type >= 2) {
-				$buf .= "| {$nextLinkLabel}\n";
+				$buf .= "| " . $nextLinkLabel . "\n";
 			}
 //			$buf .= " | <a rel=\"last\" title=\"Last page\" href=\"{$lastpagelink}\">&lt;LAST&gt;</a>\n";
 			$buf .= "</div>\n";
