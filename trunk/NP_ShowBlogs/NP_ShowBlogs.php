@@ -109,8 +109,8 @@ class NP_ShowBlogs extends NucleusPlugin
 		$this->createOption('ads',           _ADCODE_1,   'textarea', '' . "\n");
 		$this->createOption('ads2',          _ADCODE_2,   'textarea', '' . "\n");
 		$this->createOption('tagMode',       _TAG_MODE,   'select',   '2', _TAG_SELECT);
-		$this->createBlogOption('prevLabel', _SB_NEXTL,   'text',     'Next&raquo;');
-		$this->createBlogOption('nextLabel', _SB_PREVL,   'text',     '&laquo;Prev');
+		$this->createBlogOption('prevLabel', _SB_NEXTL,   'text',     '&laquo;Prev');
+		$this->createBlogOption('nextLabel', _SB_PREVL,   'text',     'Next&raquo;');
 /* todo can't install ? only warning ?
  * douyatte 'desc' ni keikoku wo daseba iinoka wakaranai desu
 		$ver_min = (getNucleusVersion() < $this->getMinNucleusVersion());
@@ -683,21 +683,21 @@ class NP_ShowBlogs extends NucleusPlugin
 		if ($page_str == 'page_') {
 			$lastpagelink .= '.html';
 		}
-		$nextLinkLabel = $this->BloggetOption($this->nowbid, 'nextLabel');
-		$prevLinkLabel = $this->BloggetOption($this->nowbid, 'prevLabel');
+		$nextLinkLabel = $this->getBlogOption($this->nowbid, 'nextLabel');
+		$prevLinkLabel = $this->getBlogOption($this->nowbid, 'prevLabel');
 
 		if ($type >= 1) {
 			$buf .= '<div class="pageswitch">' . "\n";
 //			$buf .= "<a rel=\"first\" title=\"first page\" href=\"{$firstpagelink}\">&lt;TOP&gt;</a> | \n";
-			if (!empty($prevpage)) {
-				$prevpagelink = $pagelink . $page_str . $prevpage;
+			if ($totalpages >= $nextpage) {
+				$nextpagelink = $pagelink . $page_str . $nextpage;
 				if ($page_str == 'page_') {
-					$prevpagelink .= '.html';
+					$nextpagelink .= '.html';
 				}
-				$buf .= '<a href="' . $prevpagelink . '" title="Previous page" rel="Prev">'
-					  . '<span class="npsb_prevlink">' . $prevLinkLabel . '</span></a> |';
+				$buf .= '<a href="' . $nextpagelink . '" title="Next page" rel="Next">'
+					  . '<span class="npsb_nextlink">' . $nextLinkLabel . '</span></a> |';
 			} elseif ($type >= 2) {
-				$buf .= $prevLinkLabel . " |";
+				$buf .= "{$nextLinkLabel} |";
 			}
 			if (intval($type) == 1) {
 				$buf .= "\n";
@@ -753,13 +753,13 @@ class NP_ShowBlogs extends NucleusPlugin
 					}
 				}
 			}
-			if ($totalpages >= $nextpage) {
-				$nextpagelink = $pagelink . $page_str . $nextpage;
+			if (!empty($prevpage)) {
+				$prevpagelink = $pagelink . $page_str . $prevpage;
 				if ($page_str == 'page_') {
-					$nextpagelink .= '.html';
+					$prevpagelink .= '.html';
 				}
-				$buf .= '| <a href="' . $nextpagelink . '" title="Next page" rel="Next">'
-					  . '<span class="npsb_nextlink">' . $prevLinkLabel . '</span></a>' . "\n";
+				$buf .= '| <a href="' . $prevpagelink . '" title="Previous page" rel="Prev">'
+					  . '<span class="npsb_prevlink">' . $prevLinkLabel . '</span></a>' . "\n";
 			} elseif ($type >= 2) {
 				$buf .= "| {$prevLinkLabel}\n";
 			}
