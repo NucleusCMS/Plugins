@@ -13,9 +13,10 @@
  * @author    Original Author nakahara21
  * @copyright 2005-2006 nakahara21
  * @license   http://www.gnu.org/licenses/gpl.txt  GNU GENERAL PUBLIC LICENSE Version 2, June 1991
- * @version   2.66.2
+ * @version   2.71
  * @link      http://japan.nucleuscms.org/wiki/plugins:showblogs
  *
+ * 2.71     fix typo
  * 2.7      add doIf function requier Nucleus version 3.3 or later
  *              ex. <%ifnot(ShowBlogs,page)%>top page contents<%else%>other pages contents<%endif%>
  *              ex. <%if(ShowBlogs,cstik|bmode|stick|amont|tmplt,1|all|23|5|myTemplate)%><%endif%>
@@ -109,8 +110,8 @@ class NP_ShowBlogs extends NucleusPlugin
 		$this->createOption('ads',           _ADCODE_1,   'textarea', '' . "\n");
 		$this->createOption('ads2',          _ADCODE_2,   'textarea', '' . "\n");
 		$this->createOption('tagMode',       _TAG_MODE,   'select',   '2', _TAG_SELECT);
-		$this->createBlogOption('prevLabel', _SB_NEXTL,   'text',     'Next&raquo;');
-		$this->createBlogOption('nextLabel', _SB_PREVL,   'text',     '&laquo;Prev');
+		$this->createBlogOption('nextLabel', _SB_NEXTL,   'text',     'Next&raquo;');
+		$this->createBlogOption('prevLabel', _SB_PREVL,   'text',     '&laquo;Prev');
 /* todo can't install ? only warning ?
  * douyatte 'desc' ni keikoku wo daseba iinoka wakaranai desu
 		$ver_min = (getNucleusVersion() < $this->getMinNucleusVersion());
