@@ -307,9 +307,27 @@
 			} 
 
 			exit;
-		} 
-
-
+		}
+		
+		function doIf($key = '', $value = '')
+		{
+			global $blog;
+			if (!$blog)
+				return false;
+			
+			$bid = $blog->getID();
+			$key = ($key == 0 ) ? 'no' : 'yes';
+			
+			if ($this->getOption('AcceptPing') == 'no' ) {
+				return ($key == 'no');
+			} else {
+				if ($tb_option = $this->getBlogOption($bid, 'AllowTrackBack')) {
+					return ($tb_option == $key );
+				} else {
+					return ($key == 'yes');
+				}
+			}
+		}
 
     	/**************************************************************************************
     	 * OUTPUT
@@ -675,6 +693,9 @@
 			$desc   = $this->_cut_string($desc, 200);
 			$desc   = htmlspecialchars($desc, ENT_QUOTES);
 			
+			$timestamp = time();
+			$sourceaddr = ip2long(serverVar('REMOTE_ADDR'));
+			$key = md5( sprintf("%u %u %u %s", $timestamp, $sourceaddr, $itemid, __FILE__));
 			?>
 			<!--
 			<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -954,8 +975,11 @@
 			$excerpt 	= requestVar('excerpt');
 			$blog_name 	= requestVar('blog_name');
 			
-			if (!$url) {
-				return 'URL is missing (url)';
+			if( $url && preg_match('/https?:\/\/([^\/]+)/', $url, $matches) ){
+				if( gethostbynamel($matches[1]) === FALSE )
+					return 'URL is invalid (url)';
+			} else {
+				return 'URL is missing or invalid (url)';
 			}
 
 			// 2. Conversion of encoding...
@@ -1785,7 +1809,8 @@
 		/* Internal helper functions for dealing with external file retrieval                 */
 	
 		function retrieveUrl ($url) {
-//mod by cles			$ua = ini_set('user_agent', 'NP_TrackBack/'. $this->getVersion());
+//mod by cles
+			$ua = ini_set('user_agent', 'NP_TrackBack/'. $this->getVersion());
 //mod by cles end
 			if (function_exists('curl_init') && $this->useCurl > 0)
 			{
@@ -2492,7 +2517,8 @@ function _cut_string($string, $dl = 0) {
 	return $string;
 }
 
-function _strip_controlchar($string){	$string = preg_replace("/[\x01-\x08\x0b\x0c\x0e-\x1f\x7f]+/","",$string);
+function _strip_controlchar($string){
+	$string = preg_replace("/[\x01-\x08\x0b\x0c\x0e-\x1f\x7f]+/","",$string);
 	$string = str_replace("\0","",$string);
 	return $string;
 }
@@ -2611,7 +2637,7 @@ function _strip_controlchar($string){	$string = preg_replace("/[\x01-\x08\x0b\x
 		function getName()   	  { 		return 'TrackBack';   }
 		function getAuthor() 	  { 		return 'rakaz + nakahara21 + hsur'; }
 		function getURL()    	  { 		return 'http://blog.cles.jp/np_cles/category/31/subcatid/3'; }
-		function getVersion()	  { 		return '2.0.3 jp8.2'; }
+		function getVersion()	  { 		return '2.0.3 jp9'; }
 		function getDescription() { 		return _TB_DESCRIPTION; }
 	
 //modify start+++++++++
