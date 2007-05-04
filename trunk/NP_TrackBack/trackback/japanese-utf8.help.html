@@ -62,6 +62,31 @@
 </pre>
 	と書いておけば、個別に<strong>&lt;%TrackBack(url)%&gt;</strong>をスキンに書き込まなくても<strong>&lt;%TrackBack(list)%&gt;</strong>を書いた場所に表示されます。</blockquote>
 </p>
+
+
+<p>
+	<h4>&lt;%if(TrackBack,<em>key</em>,<em>value</em>)%&gt; (v3.3より)</h4>
+</p>
+<p>
+	if拡張(&lt;%if()%&gt;)に対応しています。<br />
+	トラックバックを受け付けている場合や、バックリンクチェックが有効になっている場合のみに特定の表示をさせることができるようになります。<br />
+	<br />
+	
+	<ul>
+		<li><em>key</em>(チェックの種類を指定します)</li>
+		<li>　<b>accept</b>　トラックバックを受け付けているかどうか（デフォルト）</li>
+		<li>　<b>required</b>　バックリンクチェックが有効かどうか</li>
+	</ul>
+	<ul>
+		<li><em>value</em>(判定結果を指定します)</li>
+		<li>　<b>yes</b>　チェックの内容が真の場合、真であると判断します（デフォルト）</li>
+		<li>　<b>no</b>　チェックの内容が真の場合、偽であると判断します</li>
+	</ul>
+	
+	<br />
+	例1）&lt;%if(TrackBack)%&gt;この部分はトラックバックを受け付けている時のみ表示されます&lt;%endif%&gt;<br />
+	例2）&lt;%if(TrackBack,accept,no)%&gt;この部分はトラックバックを受け付けていない時のみ表示されます&lt;%endif%&gt;<br />
+</p>
 	
 <h3>テンプレート内の記述例</h3>
 

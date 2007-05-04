@@ -82,11 +82,8 @@
 			if ($tb_id == '') $tb_id = intval($itemid);
 	
 //mod by cles
-			if( $this->getBlogOption(getBlogIDFromItemID($tb_id), "AllowTrackBack") == 'yes' )
-				$isAcceptPing = ( $this->getItemOption(intval($tb_id), 'ItemAcceptPing') == 'yes' ) ? true : false ;
-			else
-				$isAcceptPing = false;
-				
+			$isAcceptPing = $this->isAcceptTrackBack($tb_id);
+
 			//if( $skinType == 'template' && (! $isAcceptPing ) ){
 			//	return;
 			//}
@@ -262,10 +259,8 @@
 //mod by cles
 //					$this->showManualPingForm(intRequestVar('tb_id'));
 					$tb_id = intRequestVar('tb_id');
-					if( $this->getBlogOption(getBlogIDFromItemID($tb_id), "AllowTrackBack") == 'yes' )
-						$isAcceptPing = ( $this->getItemOption($tb_id, 'ItemAcceptPing') == 'yes' ) ? true : false ;
-					else
-						$isAcceptPing = false;
+					$isAcceptPing = $this->isAcceptTrackBack($tb_id);
+					
 					if( $isAcceptPing )	
 						$this->showManualPingForm($tb_id);
 					else
@@ -311,21 +306,34 @@
 		
 		function doIf($key = '', $value = '')
 		{
-			global $blog;
-			if (!$blog)
-				return false;
+			global $itemid;
+			//echo "key: $key, value: $value";
 			
-			$bid = $blog->getID();
-			$key = ($key == 0 ) ? 'no' : 'yes';
-			
-			if ($this->getOption('AcceptPing') == 'no' ) {
-				return ($key == 'no');
-			} else {
-				if ($tb_option = $this->getBlogOption($bid, 'AllowTrackBack')) {
-					return ($tb_option == $key );
-				} else {
-					return ($key == 'yes');
-				}
+			switch( strtolower($key) ){
+				case '':
+				case 'accept':
+					if( $value == '' ) $value = 'yes';
+					$value = ( $value == 'no' || (! $value) ) ? false : true;
+				
+					$ret = false;
+					if( $itemid )
+						$ret = $this->isAcceptTrackBack($itemid);
+					else
+						$ret = $this->isAcceptTrackBack();
+					return ( $value == false ) ? (! $ret) : $ret;
+					
+				case 'required':
+					if( $value == '' ) $value = 'yes';
+					$value = ( $value == 'no' || (! $value) ) ? false : true;
+					
+					$ret = false;
+					if( $itemid )
+						$ret = $this->isEnableLinkCheck($itemid);
+					
+					return ( $value == false ) ? (! $ret) : $ret;
+					
+				default:
+					return false;
 			}
 		}
 
@@ -643,7 +651,7 @@
 			$form = true; $error = false; $success = false;
 
 			// Check if we are allowed to accept pings
-			if ($this->getOption('AcceptPing') == 'no') {
+			if ( !$this->isAcceptTrackBack($itemid) ) {
 				$text = 'Sorry, no trackback pings are accepted';
 				$form = false; $error = true;
 			}
@@ -693,9 +701,6 @@
 			$desc   = $this->_cut_string($desc, 200);
 			$desc   = htmlspecialchars($desc, ENT_QUOTES);
 			
-			$timestamp = time();
-			$sourceaddr = ip2long(serverVar('REMOTE_ADDR'));
-			$key = md5( sprintf("%u %u %u %s", $timestamp, $sourceaddr, $itemid, __FILE__));
 			?>
 			<!--
 			<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -919,11 +924,6 @@
 		function handlePing($tb_id = 0) {
 			global $manager;
 			
-			// Check if we are allowed to accept pings
-			if ($this->getOption('AcceptPing') == 'no') {
-				return 'Sorry, no trackback pings are accepted';
-			}
-						
 			// Defaults
 			$spam       = false;
 			$link       = false;
@@ -956,11 +956,7 @@
 //mod by cles
 			// check: accept pings.
 			$blogId = getBlogIDFromItemID($tb_id);
-			
-			if( $this->getBlogOption($blogId, "AllowTrackBack") == 'yes' )
-				$isAcceptPing = ( $this->getItemOption($tb_id, 'ItemAcceptPing') == 'yes' ) ? true : false ;
-			else
-				$isAcceptPing = false;
+			$isAcceptPing = $this->isAcceptTrackBack($tb_id);
 				
 			if (! $isAcceptPing)
 				return 'Sorry, no trackback pings are accepted.';
@@ -1284,26 +1280,53 @@
 		function isEnableLinkCheck($itemid){
 			$blogid = getBlogIDFromItemID($itemid);
 			
-//			if( ! $this->getBlogOption($blogid, 'enableLinkCheck') == 'yes' )
-//				return false;
-			
-			$val = $this->getItemOption($itemid, 'isAcceptW/OLink');
-			switch( $val ){
+			switch( $this->getItemOption($itemid, 'isAcceptW/OLink') ){
 				case 'default':
-					if($this->getBlogOption($blogid, 'isAcceptW/OLinkDef') == 'yes')
+					$def = $this->getBlogOption($blogid, 'isAcceptW/OLinkDef');
+					if($def == 'yes')
 						return false;
-					break; 
+					else
+						return $def; // block or ignore
 				case 'yes':
 					return false;
-					break;
 				case 'no':
-					break;
+					return true;
 				default :
 					ACTIONLOG :: add(INFO, "Trackback: Unknown Option (itemid:$itemid, value:$val)");
 					return false;
 			}
-			return $this->getBlogOption($blogid, 'isAcceptW/OLinkDef');
 		}
+		
+		var $acceptTrackbacks = array();
+		function isAcceptTrackBack($itemid = null){
+			if( $itemid && isset($acceptTrackbacks[$itemid]) )
+				return $acceptTrackbacks[$itemid] === true;
+			
+			$ret = false;
+			if( $this->getOption('AcceptPing') == 'yes' ){
+				$bid = null;
+				if($itemid){
+					$bid = getBlogIDFromItemID(intval($itemid));
+				} else {
+					global $blog;
+					$bid = $blog->getID();
+				}
+				
+				if( $this->getBlogOption($bid, "AllowTrackBack") == 'yes' ){
+					if( ! $itemid ){
+						$ret = ( $this->getItemOption(intval($itemid), 'ItemAcceptPing') == 'yes' ) ? true : false ;
+					} else {
+						$ret = true;
+					}
+				} else {
+					$ret = false;
+				}
+			}
+			if($itemid)
+				$acceptTrackbacks[$itemid] = $ret;
+			return $ret === true;
+		}
+		
 //mod by cles end
 
     	/**************************************************************************************
