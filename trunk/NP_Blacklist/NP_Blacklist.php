@@ -1,9 +1,9 @@
 <?php
 
 /**
-  * NP_Blacklist(JP) ($Revision: 1.11 $)
+  * NP_Blacklist(JP) ($Revision: 1.12 $)
   * by hsur ( http://blog.cles.jp/np_cles )
-  * $Id: NP_Blacklist.php,v 1.11 2007-04-07 05:56:40 hsur Exp $
+  * $Id: NP_Blacklist.php,v 1.12 2007-05-04 15:11:12 hsur Exp $
   *
   * Based on NP_Blacklist 0.98
   * by xiffy
@@ -41,10 +41,10 @@ class NP_Blacklist extends NucleusPlugin {
 		return 'http://blog.cles.jp/np_cles/category/31/subcatid/11';
 	}
 	function getVersion() {
-		return '1.1.1';
+		return '1.2';
 	}
 	function getDescription() {
-		return '[$Revision: 1.11 $]<br />'.NP_BLACKLIST_description;
+		return '[$Revision: 1.12 $]<br />'.NP_BLACKLIST_description;
 	}
 	function supportsFeature($what) {
 		switch ($what) {
@@ -124,6 +124,7 @@ class NP_Blacklist extends NucleusPlugin {
 					$data['spamcheck']['data'] = $data['spamcheck']['body']."\n";
 					$data['spamcheck']['data'] .= $data['spamcheck']['author']."\n";
 					$data['spamcheck']['data'] .= $data['spamcheck']['url']."\n";
+					$data['spamcheck']['data'] .= $data['spamcheck']['email']."\n";
 					break;
 				case 'trackback' :
 					$data['spamcheck']['data'] = $data['spamcheck']['title']."\n";
