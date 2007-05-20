@@ -32,11 +32,20 @@ if (!function_exists('array_key_exists')){
 class NP_MultipleCategories extends NucleusPlugin {
 
 	function getName()	{ return 'Multiple Categories [Custom Edition]'; }
-	function getAuthor()	  { return 'Anand + nakahara21 + Taka + sato(na)'; }
+	function getAuthor()	  { return 'Anand + nakahara21 + Taka + sato(na) + shizuki + Katsumi'; }
 	function getURL()	 { return 'http://reverb.jp/vivian/download.php?itemid=NP_MultipleCategories'; }
-	function getVersion()	 { return '0.5j'; }
+	function getVersion()	 { return '0.5.1j'; }
 	function getMinNucleusVersion()	 { return '220'; }
-	function getDescription(){ return 'Multiple Categories, Sub Categories'; }
+	function getDescription()	{
+		// include language file for this plugin 
+		$language = ereg_replace( '[\\|/]', '', getLanguageName()); 
+		if (file_exists($this->getDirectory().'language/'.$language.'.php')) {
+			include_once($this->getDirectory().'language/'.$language.'.php'); 
+		} else {
+			include_once($this->getDirectory().'language/'.'english.php');
+		}
+		return _NPMC_DESCRIPTION;
+	}
 	function supportsFeature($what) {
 		switch($what)
 		{
@@ -48,6 +57,37 @@ class NP_MultipleCategories extends NucleusPlugin {
 	}
 	
 	function install() {
+		// include language file for this plugin 
+		$language = ereg_replace( '[\\|/]', '', getLanguageName()); 
+		if (file_exists($this->getDirectory().'language/'.$language.'.php')) {
+			include_once($this->getDirectory().'language/'.$language.'.php'); 
+		} else {
+			include_once($this->getDirectory().'language/'.'english.php');
+		}
+		
+		$this->createOption('addindex',      _NP_MCOP_ADDINDEX, "yesno",    'yes');
+		$this->createOption('addblogid_def', _NP_MCOP_ADBIDDEF, "yesno",    'no');
+		$this->createOption('addblogid',     _NP_MCOP_ADBLOGID, "yesno",    'yes');
+		$this->createOption("mainsep",       _NP_MCOP_MAINSEP,  "text",     " , ");
+		$this->createOption("addsep",        _NP_MCOP_ADDSEP,   "text",     " , ");
+		$this->createOption("subformat",     _NP_MCOP_SUBFOMT,  "text",     "<%category%> ( <%subcategory%> )");
+		$this->createOption("catheader",     _NP_MCOP_CATHEADR, "textarea", '<ul class="nobullets">' . "\n");
+		$this->createOption("catlist",       _NP_MCOP_CATLIST,  "textarea", '<li<%catflag%>><a href="<%catlink%>"><%catname%></a>(<%catamount%>)<%subcategorylist%></li>'."\n");
+		$this->createOption("catfooter",     _NP_MCOP_CATFOOTR, "textarea", '</ul>' . "\n");
+		$this->createOption("catflag",       _NP_MCOP_CATFLAG,  "textarea", ' class="current"' . "\n");
+		$this->createOption("subheader",     _NP_MCOP_SUBHEADR, "textarea", '<ul>' . "\n");
+		$this->createOption("sublist",       _NP_MCOP_SUBLIST,  "textarea", '<li<%subflag%>><a href="<%sublink%>"><%subname%></a>(<%subamount%>)</li>'."\n");
+		$this->createOption("subfooter",     _NP_MCOP_SUBFOOTR, "textarea", '</ul>' . "\n");
+		$this->createOption("subflag",       _NP_MCOP_SUBFLAG,  "textarea", ' class="current"' . "\n");
+		$this->createOption("replace",       _NP_MCOP_REPLACE,  'yesno',    'no');
+		$this->createOption("replacechar",   _NP_MCOP_REPRCHAR, 'text',     '+');
+		$this->createOption("archeader",     _NP_MCOP_ARCHEADR, "textarea", '<ul>' . "\n");
+		$this->createOption("arclist",       _NP_MCOP_ARCLIST,  "textarea", '<li><a href="<%archivelink%>">%Y-%m</a></li>'."\n");
+		$this->createOption("arcfooter",     _NP_MCOP_ARCFOOTR, "textarea", '</ul>'."\n");
+		$this->createOption("locale",        _NP_MCOP_LOCALE,   "text",     'ja_JP');
+		$this->createOption("quickmenu",     _NP_MCOP_QICKMENU, "yesno",    "no");
+		$this->createOption("del_uninstall", _NP_MCOP_DELTABLE, "yesno",    "no");
+/*
 		$this->createOption('addindex', '[When URL-Mode is normal] If a blog URL ends with "/", add "index.php" before query strings.', 'yesno', 'yes');
 		$this->createOption('addblogid_def', 'Add blogid to default blog\'s category URLs.', 'yesno', 'no');
 		$this->createOption('addblogid', 'When a blog URL is different from default blog URL, add blogid to its category URLs.', 'yesno', 'yes');
@@ -70,7 +110,7 @@ class NP_MultipleCategories extends NucleusPlugin {
 		$this->createOption("locale", "[Archive list] Locale", "text",'ja_JP');
 		$this->createOption("quickmenu", "Show in quick menu", "yesno", "no");
 		$this->createOption("del_uninstall", "Delete tables on uninstall?", "yesno", "no");
-
+*/
 /*
 
 ALTER TABLE `000_nucleus_plug_multiple_categories_sub` ADD `parentid` INT( 11 ) DEFAULT '0' NOT NULL AFTER `scatid` ,
@@ -105,6 +145,25 @@ ADD `ordid` INT( 11 ) DEFAULT '100' NOT NULL AFTER `parentid` ;
 		. ' PRIMARY KEY (scatid)'
 		. ') TYPE=MyISAM;';
 		sql_query($query);
+		
+		//<sato(na)0.5.1j>
+		//table Upgrade
+		if ($this->checkMSCVersion() == 2){
+			$q = "
+				ALTER TABLE 
+					`".sql_table('plug_multiple_categories_sub')."` 
+				ADD `parentid` INT( 11 ) DEFAULT   '0' NOT NULL AFTER `scatid` , 
+				ADD `ordid`    INT( 11 ) DEFAULT '100' NOT NULL AFTER `parentid`
+			";
+		} elseif ($this->version == 3){
+			$q = "
+				ALTER TABLE 
+					`".sql_table('plug_multiple_categories_sub')."` 
+				ADD `ordid`    INT( 11 ) DEFAULT '100' NOT NULL AFTER `parentid`
+			";
+		}
+		if ($q) sql_query($q);
+		//</sato(na)0.5.1j>
 	}
 
 	function unInstall() {
@@ -253,6 +312,7 @@ ADD `ordid` INT( 11 ) DEFAULT '100' NOT NULL AFTER `parentid` ;
 		$numstr  = implode(",",array_map("intval",$numarray));
 		//<sato(na)t1855>
 		$numstr = $this->permuteSubcategories($numstr);
+		if (!$numstr) $numstr = 0;//<mod by shizuki>
 		//$res = sql_query("SELECT catid, scatid, sname FROM ". sql_table("plug_multiple_categories_sub") ." WHERE scatid in (".$numstr.")");
 		$sql_str = "SELECT catid, scatid, sname FROM ". sql_table("plug_multiple_categories_sub").
 		" WHERE scatid in (".$numstr.") ORDER BY FIND_IN_SET(scatid,'".$numstr."')";
@@ -508,6 +568,15 @@ function orderKey(key, sequence) {
 		$subcats = $this->_getScatIDs($catid);
 		if (count($subcats > 0)) {
 			sql_query("DELETE FROM ". sql_table("plug_multiple_categories_sub") ." WHERE catid=$catid");
+			global $manager;
+			foreach ($subcats as $val) {
+				$manager->notify(
+								 'PostDeleteSubcat',
+								 array(
+									   'subcatid' => $val
+									  )
+								);
+			}
 		}
 		
 		$query = "SELECT categories, subcategories, item_id FROM ". sql_table("plug_multiple_categories") ." WHERE categories REGEXP '(^|,)$catid(,|$)'";
@@ -888,7 +957,7 @@ function orderKey(key, sequence) {
 			if ($d) {
 				$archive = sprintf ('%04d-%02d-%02d', $y, $m, $d);
 			} else {
-				$archive = sprintf ('%4d-%2d', $y, $m);
+				$archive = sprintf ('%4d-%02d', $y, $m);
 			}
 		}
 		// check archivelist
@@ -933,6 +1002,26 @@ function orderKey(key, sequence) {
 								'blogurl' => $blogurl,
 								'self' => $CONF['Self']
 							));
+		/* begin modification by kat */
+		$items=array();
+		$catdata=array();
+		$scatdata=array();
+		$query = 'SELECT inumber,icat FROM '.sql_table('item').
+			' WHERE iblog='.(int)$blogid;
+		$res = sql_query($query);
+		while ($row=mysql_fetch_row($res)) {
+			$items[$row[0]]=true;
+			$catdata[$row[1]][$row[0]]=true;
+			
+		}
+		$query = 'SELECT item_id, categories, subcategories FROM '.sql_table('plug_multiple_categories');
+		$res = sql_query($query);
+		while ($row=mysql_fetch_row($res)) {
+			if (!$items[$row[0]]) continue;
+			foreach(explode(',',$row[1]) as $cat) if ($cat) $catdata[$cat][$row[0]]=true;
+			foreach(explode(',',$row[2]) as $scat) if ($scat) $scatdata[$scat][$row[0]]=true;
+		}
+		/* end modification by kat */
 
 		$query = 'SELECT c.catid, c.cdesc as catdesc, c.cname as catname FROM '.sql_table('category').
 			' as c WHERE c.cblog=' . intval($blogid) . ' GROUP BY c.cname ORDER BY c.cname ASC'; //<sato(na)0.5j />
@@ -961,12 +1050,17 @@ function orderKey(key, sequence) {
 			if ($data['catid'] == intval($catid)) { //<sato(na)0.5j />
 				$data['catflag'] = $this->getOption('catflag');
 			}
+			/* begin modification by kat */
+			/*
 			$cq = 'SELECT count(*) as result FROM '.sql_table('item').' as i';
 			$cq .= ' LEFT JOIN '.sql_table('plug_multiple_categories').' as p ON  i.inumber=p.item_id';
 			$cq .= ' WHERE ((i.inumber=p.item_id and (p.categories REGEXP "(^|,)'.$data['catid'].'(,|$)" or i.icat='.$data['catid'].')) or (p.item_id IS NULL and i.icat='.$data['catid'].'))';
 			$cq .= ' and i.itime<=' . mysqldate($b->getCorrectTime()) . ' and i.idraft=0';
 			
 			$data['catamount'] = quickQuery($cq);
+			*/
+			$data['catamount']=count($catdata[$data['catid']]);
+			/* end modification by kat */
 			if (intval($data['catamount']) < 1) {
 				continue;
 			}
@@ -978,6 +1072,8 @@ function orderKey(key, sequence) {
 				
 				while ($sdata = mysql_fetch_assoc($sres)) {
 					$sdata['subcatid'] = intval($sdata['subcatid']); //<sato(na)0.5j />ultrarich
+					/* begin modification by kat */
+					/*
 					$ares = sql_query(
 						'SELECT count(i.inumber) FROM '
 						. sql_table('item').' as i, '
@@ -987,6 +1083,9 @@ function orderKey(key, sequence) {
 						. ' and p.subcategories REGEXP "(^|,)'.$sdata['subcatid'].'(,|$)"'
 					);
 					if ($ares && $row = mysql_fetch_row($ares)) {
+					*/
+					if ($row[0]=count($scatdata[$sdata['subcatid']])) {
+					/* end modification by kat */
 						$sdata['subamount'] = $row[0];
 						if ($sdata['subamount'] > 0) {
 							if ($CONF['URLMode'] == 'pathinfo') {
@@ -1099,6 +1198,40 @@ function orderKey(key, sequence) {
 
 		echo TEMPLATE::fill($template['footer'],array('blogid'=>$b->getID()));
 	}
+	
+	//<sato(na)0.5.1j>
+	function doIf($name='', $value = '')
+	{
+		global $subcatid;
+
+		if ($name == 'subcategory' || ($value == ''))
+			return $this->isValidSubCategory($subcatid);
+
+		if ($name == 'subcatname') {
+			//Even as for "subcategory" with same "parent", the name is not unique either.
+			$scatname = _getScatNameFromID($subcatid);
+			if ($value == $scatname)
+				return $this->isValidSubCategory($subcatid);
+		}
+
+		if (($name == 'subcatid') && ($value == $subcatid))
+			return $this->isValidSubCategory($subcatid);
+
+		return false;
+	}
+	function isValidSubCategory($subcatid) {
+//		global $blog;
+		global $manager;
+//		$catid = quickQuery('SELECT catid AS result FROM '.sql_table('plug_multiple_categories_sub').' WHERE scatid=' . intval($subcatid));
+// <mod by shizuki>
+		$catid = $this->_getParentCatID($subcatid);
+		$bid   = getBlogIDFromCatID($catid);
+		$b     = $manager->getBlog($bid);
+//		return $blog->isValidCategory($catid);
+		return $b->isValidCategory($catid);
+// </ mod by shizuki>
+	}
+	//</sato(na)0.5.1j>
 
 }
 ?>
