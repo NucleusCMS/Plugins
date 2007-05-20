@@ -7,7 +7,7 @@
 	
 	
 	// Send out Content-type
-	sendContentType('application/xhtml+xml', 'admin-trackback', _CHARSET);	
+	//sendContentType('application/xhtml+xml', 'admin-trackback', _CHARSET);	
 
 	$oPluginAdmin = new PluginAdmin('TrackBack');
 
@@ -27,7 +27,9 @@
 	if (!in_array($action, $aActionsNotToCheck)) {
 		if (!$manager->checkTicket()) doError(_ERROR_BADTICKET);
 	}
-	$oPluginAdmin->start();
+
+	//$oPluginAdmin->start();
+	$oPluginAdmin->admin->pagehead();
 	
 //modify start+++++++++
 		$plug =& $oPluginAdmin->plugin;
@@ -59,7 +61,7 @@
 
 //modify start+++++++++
 		case 'tableUpgrade':
-			mysql_query("
+			sql_query("
 				CREATE TABLE IF NOT EXISTS
 					".sql_table('plugin_tb_lookup')."
 				(
@@ -80,21 +82,21 @@
 				 CHANGE `blog_name` `blog_name` TEXT NOT NULL,
 				 DROP PRIMARY KEY,
 				 ADD `id` INT( 11 ) NOT NULL AUTO_INCREMENT PRIMARY KEY FIRST ;";
-			$res = @mysql_query($q);
+			$res = @sql_query($q);
 			if (!$res){
 				echo 'Could not alter table: ' . mysql_error();
 			}else{
 				$tableVersion = 1;
 				$oTemplate->template('templates/updatetablefinished.html');
 			}
-			@mysql_query('ALTER TABLE `' . sql_table('plugin_tb') . '` ADD INDEX `tb_id_block_timestamp_idx` ( `tb_id`, `block`, `timestamp` DESC )');
+			@sql_query('ALTER TABLE `' . sql_table('plugin_tb') . '` ADD INDEX `tb_id_block_timestamp_idx` ( `tb_id`, `block`, `timestamp` DESC )');
 			break;
 //modify end+++++++++
 
 		case 'block':
 			$tb = intRequestVar('tb');
 
-			$res = mysql_query ("
+			$res = sql_query ("
 				UPDATE
 					".sql_table('plugin_tb')."
 				SET
@@ -106,19 +108,19 @@
 			$action = requestVar('next');
 			break;
 		case 'blocked_clear':
-			$res = mysql_query ("DELETE FROM ".sql_table('plugin_tb')." WHERE block = 1");
+			$res = sql_query ("DELETE FROM ".sql_table('plugin_tb')." WHERE block = 1");
 			$action = requestVar('next');
 			break;
 			
 		case 'blocked_spamclear':
-			$res = mysql_query ("DELETE FROM ".sql_table('plugin_tb')." WHERE block = 1 and spam = 1");
+			$res = sql_query ("DELETE FROM ".sql_table('plugin_tb')." WHERE block = 1 and spam = 1");
 			$action = requestVar('next');
 			break;
 
 		case 'unblock':
 			$tb = intRequestVar('tb');
 
-			$res = mysql_query ("
+			$res = sql_query ("
 				UPDATE
 					".sql_table('plugin_tb')."
 				SET
@@ -133,7 +135,7 @@
 		case 'delete':
 			$tb = intRequestVar('tb');
 
-			$res = mysql_query ("
+			$res = sql_query ("
 				DELETE FROM
 					".sql_table('plugin_tb')."
 				WHERE
@@ -204,7 +206,7 @@
 
 		case 'blocked':
 		case 'all':	
-			$rres = mysql_query ("
+			$rres = sql_query ("
 				SELECT
 					COUNT(*) AS count
 				FROM
@@ -228,7 +230,7 @@
 			} else {				$start  = intRequestVar('start') ? intRequestVar('start') : 0;
 				$amount = intRequestVar('amount') ? intRequestVar('amount') : 25;
 
-				$rres = mysql_query ("
+				$rres = sql_query ("
 					SELECT
 					i.ititle AS story,
 					i.inumber AS story_id,
@@ -292,7 +294,7 @@
 			$start  = intRequestVar('start') ? intRequestVar('start') : 0;
 			$amount = intRequestVar('amount') ? intRequestVar('amount') : 25;
 
-			$ires = mysql_query ("
+			$ires = sql_query ("
 				SELECT
 					ititle,
 					inumber
@@ -307,7 +309,7 @@
 				$story['id']    = $id;
 				$story['title'] = $irow['ititle'];
 
-				$rres = mysql_query ("
+				$rres = sql_query ("
 					SELECT
 						COUNT(*) AS count
 					FROM
@@ -322,7 +324,7 @@
 				else
 					$count = 0;
 					
-				$rres = mysql_query ("
+				$rres = sql_query ("
 					SELECT
 						t.id AS id,
 						t.title AS title,
@@ -377,7 +379,7 @@
 							
 		
 		case 'index':
-			$bres = mysql_query ("
+			$bres = sql_query ("
 				SELECT
 					bnumber AS bnumber,
 					bname AS bname,
@@ -392,7 +394,7 @@
 			
 			while ($brow = mysql_fetch_array($bres))
 			{
-				$ires = mysql_query ("
+				$ires = sql_query ("
 					SELECT
 						i.inumber AS inumber,
 					    i.ititle AS ititle,

@@ -21,12 +21,7 @@
 	* ==========================================================================================
 	*/
 
-	// Compatiblity with Nucleus < = 2.0
-	if (!function_exists('sql_table')) { function sql_table($name) { return 'nucleus_' . $name; } }
-
-	
 	class NP_TrackBack extends NucleusPlugin {
-
 		var $useCurl = 1; // use curl? 2:precheck+read by curl, 1: read by curl 0: fread
 
 //modify start+++++++++
@@ -366,7 +361,7 @@
 			';
 			if($offset)
 				$query .= ' LIMIT '.intval($offset).', ' .intval($amount);
-			$res = mysql_query($query);
+			$res = sql_query($query);
 			while ($row = mysql_fetch_array($res))
 			{
 
@@ -429,7 +424,7 @@
 //mod by cles end
 
 /*
-			$res = mysql_query('
+			$res = sql_query('
 				SELECT 
 					url, 
 					md5(url) as urlHash,
@@ -468,7 +463,7 @@
 				$query .= ' LIMIT '.intval($amount);
 			
 			if( $amount != 0)
-				$res = mysql_query($query);
+				$res = sql_query($query);
 
 			$gVars = array(
 				'action' => $this->getTrackBackUrl(intval($tb_id)),
@@ -558,7 +553,7 @@
 				ORDER BY 
 					timestamp DESC
 			';
-			$result = mysql_query($q);
+			$result = sql_query($q);
 			$total = mysql_result($result,0,0);
 
 			if($amount != -1 && $total > $amount){
@@ -777,7 +772,7 @@
 				echo "\t\t\t<description>".htmlspecialchars($excerpt, ENT_QUOTES)."</description>\n";
 	
 				$query = 'SELECT url, blog_name, excerpt, title, UNIX_TIMESTAMP(timestamp) as timestamp FROM '.sql_table('plugin_tb').' WHERE tb_id='.intval($tb_id).' AND block = 0 ORDER BY timestamp DESC';
-				$res = mysql_query($query);
+				$res = sql_query($query);
 				while ($o = mysql_fetch_object($res)) 
 				{
 					// No need to do conversion, because it is already UTF-8
@@ -1005,7 +1000,7 @@
 //modify end+++++++++
 
 			// 4. Save data in the DB
-			$res = @mysql_query('
+			$res = @sql_query('
 				SELECT 
 					tb_id, block, spam
 				FROM 
@@ -1019,7 +1014,7 @@
 			{
 				// Existing TB, update it
 /*
-				$res = @mysql_query('
+				$res = @sql_query('
 					UPDATE
 						'.sql_table('plugin_tb').'
 					SET 
@@ -1035,7 +1030,7 @@
 //modify start+++++++++
 				$rows = mysql_fetch_assoc($res);
 				$spam = ( $rows['block'] || $rows['spam'] ) ? true : false;
-				$res = @mysql_query('
+				$res = @sql_query('
 					UPDATE
 						'.sql_table('plugin_tb').'
 					SET 
@@ -1160,7 +1155,7 @@
 				';
 //modify end+++++++++
 				
-				$res = @mysql_query($query);
+				$res = @sql_query($query);
 
 				if (!$res) {
 					return 'Could not save trackback data, possibly because of a double entry: ' . mysql_error() . $query;
@@ -1252,7 +1247,7 @@
 		function redirect($tb_id, $urlHash){
 			global $CONF;
 			$query = 'SELECT url FROM '.sql_table('plugin_tb').' WHERE tb_id='.intval($tb_id).' and md5(url)="'.$urlHash.'"';
-			$res = mysql_query($query);
+			$res = sql_query($query);
 			
 			$url = $CONF['SiteURL'];
 			
@@ -1368,7 +1363,7 @@
 		
 		function event_RetrieveTrackback($data) {
 			
-			$res = mysql_query('
+			$res = sql_query('
 			SELECT 
 			url, 
 			title, 
@@ -1647,7 +1642,7 @@
 		{
 			
 			// Check to see if the cache contains this link
-			$res = mysql_query('SELECT url, title FROM '.sql_table('plugin_tb_lookup').' WHERE link=\''.mysql_real_escape_string($link).'\'');
+			$res = sql_query('SELECT url, title FROM '.sql_table('plugin_tb_lookup').' WHERE link=\''.mysql_real_escape_string($link).'\'');
 
 			if ($row = mysql_fetch_array($res)) 
 			{
@@ -1694,10 +1689,10 @@
 							$convertedTitle = $title;
 /*
 						// Store in cache
-						$res = mysql_query("INSERT INTO ".sql_table('plugin_tb_lookup')." (link, url, title) VALUES ('".mysql_real_escape_string($link)."','".mysql_real_escape_string($uri)."','".mysql_real_escape_string($title)."')");
+						$res = sql_query("INSERT INTO ".sql_table('plugin_tb_lookup')." (link, url, title) VALUES ('".mysql_real_escape_string($link)."','".mysql_real_escape_string($uri)."','".mysql_real_escape_string($title)."')");
 */
 						// Store in cache
-						$res = mysql_query("INSERT INTO ".sql_table('plugin_tb_lookup')." (link, url, title) VALUES ('".mysql_real_escape_string($link)."','".mysql_real_escape_string($uri)."','".mysql_real_escape_string($convertedTitle)."')");
+						$res = sql_query("INSERT INTO ".sql_table('plugin_tb_lookup')." (link, url, title) VALUES ('".mysql_real_escape_string($link)."','".mysql_real_escape_string($uri)."','".mysql_real_escape_string($convertedTitle)."')");
 //modify end+++++++++
 						$title = $this->_decode_entities($title);
 
@@ -1710,7 +1705,7 @@
 						$uri = html_entity_decode($uri, ENT_COMPAT);
 	
 						// Store in cache
-						$res = mysql_query("INSERT INTO ".sql_table('plugin_tb_lookup')." (link, url, title) VALUES ('".mysql_real_escape_string($link)."','".mysql_real_escape_string($uri)."','')");
+						$res = sql_query("INSERT INTO ".sql_table('plugin_tb_lookup')." (link, url, title) VALUES ('".mysql_real_escape_string($link)."','".mysql_real_escape_string($uri)."','')");
 	
 						return array (
 							$uri, $uri
@@ -1720,7 +1715,7 @@
 			}
 			
 			// Store in cache
-			$res = mysql_query("INSERT INTO ".sql_table('plugin_tb_lookup')." (link, url, title) VALUES ('".mysql_real_escape_string($link)."','','')");
+			$res = sql_query("INSERT INTO ".sql_table('plugin_tb_lookup')." (link, url, title) VALUES ('".mysql_real_escape_string($link)."','','')");
 	
 			return array ('', '');
 		}
@@ -1885,36 +1880,6 @@
 		/**************************************************************************************/
 		/* Internal helper functions for dealing with encodings and entities                  */
 	
-		var $entities_cp1251 = array (
-			'&#128;' 		=> '&#8364;',
-			'&#130;' 		=> '&#8218;',
-			'&#131;' 		=> '&#402;',	
-			'&#132;' 		=> '&#8222;',	
-			'&#133;' 		=> '&#8230;',	
-			'&#134;' 		=> '&#8224;',	
-			'&#135;' 		=> '&#8225;',	
-			'&#136;' 		=> '&#710;',	
-			'&#137;' 		=> '&#8240;',	
-			'&#138;' 		=> '&#352;',	
-			'&#139;' 		=> '&#8249;',	
-			'&#140;' 		=> '&#338;',	
-			'&#142;' 		=> '&#381;',	
-			'&#145;' 		=> '&#8216;',	
-			'&#146;' 		=> '&#8217;',	
-			'&#147;' 		=> '&#8220;',	
-			'&#148;' 		=> '&#8221;',	
-			'&#149;' 		=> '&#8226;',	
-			'&#150;' 		=> '&#8211;',	
-			'&#151;' 		=> '&#8212;',	
-			'&#152;' 		=> '&#732;',	
-			'&#153;' 		=> '&#8482;',	
-			'&#154;' 		=> '&#353;',	
-			'&#155;' 		=> '&#8250;',	
-			'&#156;' 		=> '&#339;',	
-			'&#158;' 		=> '&#382;',	
-			'&#159;' 		=> '&#376;',	
-		);
-	
 		var $entities_default = array (
 			'&quot;'		=> '&#34;',		
 			'&amp;'   		=> '&#38;',	  	
@@ -1922,261 +1887,6 @@
 			'&lt;'    		=> '&#60;',		
 			'&gt;'    		=> '&#62;',		
 		);
-	
-		var $entities_latin = array (
-			'&nbsp;' 		=> '&#160;',	
-			'&iexcl;'		=> '&#161;',	
-			'&cent;' 		=> '&#162;',	
-			'&pound;' 		=> '&#163;',	
-			'&curren;'		=> '&#164;',	
-			'&yen;' 		=> '&#165;',	
-			'&brvbar;'		=> '&#166;', 	
-			'&sect;' 		=> '&#167;',	
-			'&uml;' 		=> '&#168;',	
-			'&copy;' 		=> '&#169;',	
-			'&ordf;' 		=> '&#170;',	
-			'&laquo;' 		=> '&#171;',	
-			'&not;' 		=> '&#172;',	
-			'&shy;' 		=> '&#173;',	
-			'&reg;' 		=> '&#174;',	
-			'&macr;' 		=> '&#175;',	
-			'&deg;' 		=> '&#176;',	
-			'&plusmn;' 		=> '&#177;',	
-			'&sup2;' 		=> '&#178;',	
-			'&sup3;' 		=> '&#179;', 	
-			'&acute;' 		=> '&#180;',	
-			'&micro;' 		=> '&#181;', 	
-			'&para;' 		=> '&#182;',	
-			'&middot;' 		=> '&#183;',	
-			'&cedil;' 		=> '&#184;', 	
-			'&sup1;' 		=> '&#185;',	
-			'&ordm;' 		=> '&#186;',	
-			'&raquo;' 		=> '&#187;',	
-			'&frac14;' 		=> '&#188;',	
-			'&frac12;' 		=> '&#189;',	
-			'&frac34;' 		=> '&#190;',	
-			'&iquest;' 		=> '&#191;',	
-			'&Agrave;' 		=> '&#192;',	
-			'&Aacute;' 		=> '&#193;',	
-			'&Acirc;' 		=> '&#194;',	
-			'&Atilde;' 		=> '&#195;',	
-			'&Auml;' 		=> '&#196;',	
-			'&Aring;' 		=> '&#197;',	
-			'&AElig;' 		=> '&#198;',	
-			'&Ccedil;'		=> '&#199;', 	
-			'&Egrave;' 		=> '&#200;',	
-			'&Eacute;' 		=> '&#201;',	
-			'&Ecirc;' 		=> '&#202;',	
-			'&Euml;' 		=> '&#203;',	
-			'&Igrave;' 		=> '&#204;',	
-			'&Iacute;' 		=> '&#205;',	
-			'&Icirc;' 		=> '&#206;',	
-			'&Iuml;' 		=> '&#207;', 	
-			'&ETH;' 		=> '&#208;',	
-			'&Ntilde;' 		=> '&#209;',	
-			'&Ograve;' 		=> '&#210;',	
-			'&Oacute;'		=> '&#211;',	
-			'&Ocirc;' 		=> '&#212;',	
-			'&Otilde;' 		=> '&#213;',	
-			'&Ouml;' 		=> '&#214;',	
-			'&times;' 		=> '&#215;',	
-			'&Oslash;' 		=> '&#216;',	
-			'&Ugrave;' 		=> '&#217;',	
-			'&Uacute;' 		=> '&#218;',	
-			'&Ucirc;' 		=> '&#219;',	
-			'&Uuml;' 		=> '&#220;',	
-			'&Yacute;' 		=> '&#221;',	
-			'&THORN;' 		=> '&#222;',	
-			'&szlig;' 		=> '&#223;',	
-			'&agrave;' 		=> '&#224;',	
-			'&aacute;' 		=> '&#225;',	
-			'&acirc;' 		=> '&#226;',	
-			'&atilde;' 		=> '&#227;',	
-			'&auml;' 		=> '&#228;',	
-			'&aring;' 		=> '&#229;',	
-			'&aelig;' 		=> '&#230;',	
-			'&ccedil;' 		=> '&#231;',	
-			'&egrave;' 		=> '&#232;',	
-			'&eacute;' 		=> '&#233;',	
-			'&ecirc;' 		=> '&#234;',	
-			'&euml;' 		=> '&#235;',	
-			'&igrave;' 		=> '&#236;',	
-			'&iacute;' 		=> '&#237;',	
-			'&icirc;' 		=> '&#238;',	
-			'&iuml;' 		=> '&#239;',	
-			'&eth;' 		=> '&#240;',	
-			'&ntilde;' 		=> '&#241;',	
-			'&ograve;' 		=> '&#242;',	
-			'&oacute;' 		=> '&#243;',	
-			'&ocirc;' 		=> '&#244;',	
-			'&otilde;' 		=> '&#245;',	
-			'&ouml;' 		=> '&#246;',	
-			'&divide;' 		=> '&#247;',	
-			'&oslash;' 		=> '&#248;',	
-			'&ugrave;' 		=> '&#249;',	
-			'&uacute;' 		=> '&#250;',	
-			'&ucirc;' 		=> '&#251;',	
-			'&uuml;' 		=> '&#252;',	
-			'&yacute;' 		=> '&#253;',	
-			'&thorn;' 		=> '&#254;',	
-			'&yuml;' 		=> '&#255;',	
-		);	
-	
-		var $entities_extended = array (
-			'&OElig;'		=> '&#338;',	
-			'&oelig;'		=> '&#229;',	
-			'&Scaron;'		=> '&#352;',	
-			'&scaron;'		=> '&#353;',	
-			'&Yuml;'		=> '&#376;',	
-			'&circ;'		=> '&#710;',	
-			'&tilde;'		=> '&#732;', 	
-			'&esnp;'		=> '&#8194;',	
-			'&emsp;'		=> '&#8195;',	
-			'&thinsp;'		=> '&#8201;',	
-			'&zwnj;'		=> '&#8204;',	
-			'&zwj;'			=> '&#8205;',	
-			'&lrm;'			=> '&#8206;',	
-			'&rlm;'			=> '&#8207;', 	
-			'&ndash;'		=> '&#8211;', 	
-			'&mdash;'		=> '&#8212;',	
-			'&lsquo;'		=> '&#8216;',	
-			'&rsquo;'		=> '&#8217;', 	
-			'&sbquo;'		=> '&#8218;',	
-			'&ldquo;'		=> '&#8220;', 	
-			'&rdquo;'		=> '&#8221;',	
-			'&bdquo;'		=> '&#8222;',	
-			'&dagger;'		=> '&#8224;',	
-			'&Dagger;'		=> '&#8225;',	
-			'&permil;'		=> '&#8240;',	
-			'&lsaquo;'		=> '&#8249;',
-			'&rsaquo;'		=> '&#8250;',
-			'&euro;'		=> '&#8364;',
-			'&fnof;'		=> '&#402;',	
-			'&Alpha;'		=> '&#913;',	
-			'&Beta;'		=> '&#914;',	
-			'&Gamma;'		=> '&#915;',	
-			'&Delta;'		=> '&#916;',	
-			'&Epsilon;'		=> '&#917;',	
-			'&Zeta;'		=> '&#918;',	
-			'&Eta;'			=> '&#919;',	
-			'&Theta;'		=> '&#920;',	
-			'&Iota;'		=> '&#921;',	
-			'&Kappa;'		=> '&#922;',	
-			'&Lambda;'		=> '&#923;',	
-			'&Mu;'			=> '&#924;',	
-			'&Nu;'			=> '&#925;',	
-			'&Xi;'			=> '&#926;',	
-			'&Omicron;'		=> '&#927;',	
-			'&Pi;'			=> '&#928;',	
-			'&Rho;'			=> '&#929;',	
-			'&Sigma;'		=> '&#931;',	
-			'&Tau;'			=> '&#932;',	
-			'&Upsilon;'		=> '&#933;', 	
-			'&Phi;'			=> '&#934;',	
-			'&Chi;'			=> '&#935;',	
-			'&Psi;'			=> '&#936;',	
-			'&Omega;'		=> '&#937;',	
-			'&alpha;'		=> '&#945;',	
-			'&beta;'		=> '&#946;',	
-			'&gamma;'		=> '&#947;',	
-			'&delta;'		=> '&#948;',	
-			'&epsilon;'		=> '&#949;',	
-			'&zeta;'		=> '&#950;',	
-			'&eta;'			=> '&#951;',	
-			'&theta;'		=> '&#952;',	
-			'&iota;'		=> '&#953;',	
-			'&kappa;'		=> '&#954;',	
-			'&lambda;'		=> '&#955;',	
-			'&mu;'			=> '&#956;',	
-			'&nu;'			=> '&#957;',	
-			'&xi;'			=> '&#958;',	
-			'&omicron;'		=> '&#959;',	
-			'&pi;'			=> '&#960;',	
-			'&rho;'			=> '&#961;',	
-			'&sigmaf;'		=> '&#962;',	
-			'&sigma;'		=> '&#963;',	
-			'&tau;'			=> '&#964;',	
-			'&upsilon;'		=> '&#965;', 	
-			'&phi;'			=> '&#966;',	
-			'&chi;'			=> '&#967;',	
-			'&psi;'			=> '&#968;',	
-			'&omega;'		=> '&#969;',	
-			'&thetasym;'	=> '&#977;',	
-			'&upsih;'		=> '&#978;',	
-			'&piv;'			=> '&#982;',	
-			'&bull;'		=> '&#8226;',	
-			'&hellip;'		=> '&#8230;',	
-			'&prime;'		=> '&#8242;',	
-			'&Prime;'		=> '&#8243;',	
-			'&oline;'		=> '&#8254;', 	
-			'&frasl;'		=> '&#8260;',	
-			'&weierp;'		=> '&#8472;', 	
-			'&image;'		=> '&#8465;', 	
-			'&real;'		=> '&#8476;',	
-			'&trade;'		=> '&#8482;', 	
-			'&alefsym;' 	=> '&#8501;', 	
-			'&larr;'		=> '&#8592;', 	
-			'&uarr;'		=> '&#8593;', 	
-			'&rarr;'		=> '&#8594;',	
-			'&darr;'		=> '&#8595;', 	
-			'&harr;'		=> '&#8596;',	
-			'&crarr;'		=> '&#8629;',	
-			'&lArr;'		=> '&#8656;',	
-			'&uArr;'		=> '&#8657;', 	
-			'&rArr;'		=> '&#8658;', 	
-			'&dArr;'		=> '&#8659;', 	
-			'&hArr;'		=> '&#8660;', 	
-			'&forall;'		=> '&#8704;', 	
-			'&part;'		=> '&#8706;', 	
-			'&exist;'		=> '&#8707;', 	
-			'&empty;'		=> '&#8709;', 	
-			'&nabla;'		=> '&#8711;', 	
-			'&isin;'		=> '&#8712;', 	
-			'&notin;'		=> '&#8713;', 	
-			'&ni;'			=> '&#8715;', 	
-			'&prod;'		=> '&#8719;', 	
-			'&sum;'			=> '&#8721;', 	
-			'&minus;'		=> '&#8722;', 	
-			'&lowast;'		=> '&#8727;', 	
-			'&radic;'		=> '&#8730;', 	
-			'&prop;'		=> '&#8733;', 	
-			'&infin;'		=> '&#8734;', 	
-			'&ang;'			=> '&#8736;', 	
-			'&and;'			=> '&#8743;', 	
-			'&or;'			=> '&#8744;', 	
-			'&cap;'			=> '&#8745;', 	
-			'&cup;'			=> '&#8746;', 	
-			'&int;'			=> '&#8747;', 	
-			'&there4;'		=> '&#8756;', 	
-			'&sim;'			=> '&#8764;', 	
-			'&cong;'		=> '&#8773;', 	
-			'&asymp;'		=> '&#8776;', 	
-			'&ne;'			=> '&#8800;', 	
-			'&equiv;'		=> '&#8801;', 	
-			'&le;'			=> '&#8804;', 	
-			'&ge;'			=> '&#8805;', 	
-			'&sub;'			=> '&#8834;', 	
-			'&sup;'			=> '&#8835;', 	
-			'&nsub;'		=> '&#8836;', 	
-			'&sube;'		=> '&#8838;', 	
-			'&supe;'		=> '&#8839;', 	
-			'&oplus;'		=> '&#8853;', 	
-			'&otimes;'  	=> '&#8855;', 	
-			'&perp;'		=> '&#8869;', 	
-			'&sdot;'		=> '&#8901;', 	
-			'&lceil;'		=> '&#8968;', 	
-			'&rceil;'		=> '&#8969;', 	
-			'&lfloor;'		=> '&#8970;', 	
-			'&rfloor;'		=> '&#8971;', 	
-			'&lang;'		=> '&#9001;', 	
-			'&rang;'		=> '&#9002;', 	
-			'&loz;'			=> '&#9674;', 	
-			'&spades;'		=> '&#9824;', 	
-			'&clubs;'		=> '&#9827;', 	
-			'&hearts;'		=> '&#9829;', 	
-			'&diams;'		=> '&#9830;', 	
-		);
-	
 	
 //modify start+++++++++
 		function _restore_to_utf8($contents)
@@ -2315,14 +2025,14 @@
 			 
 			/// Convert all hexadecimal entities to decimal entities
 			$string = preg_replace('/&#[Xx]([0-9A-Fa-f]+);/e', "'&#'.hexdec('\\1').';'", $string);		
-
-			// Deal with invalid cp1251 numeric entities
-			$string = strtr($string, $this->entities_cp1251);
+			
+			global $_entities;
+			// Deal with invalid cp1251 numeric entities	
+			$string = strtr($string, $_entities['cp1251']);
 
 			// Convert all named entities to numeric entities
 			$string = strtr($string, $this->entities_default);
-			$string = strtr($string, $this->entities_latin);
-			$string = strtr($string, $this->entities_extended);
+			$string = strtr($string, $_entities['named']);
 
 			// Convert all numeric entities to UTF-8
 			$string = preg_replace('/&#([0-9]+);/e', "'&#x'.dechex('\\1').';'", $string);
@@ -2331,28 +2041,8 @@
 			return $string;
 		}
 	
-		function _hex_to_utf8($s)
-		{
-			/* IN:  string containing one hexadecimal Unicode character
-			 * OUT: string containing one binary UTF-8 character
-			 */
-			 
-			$c = hexdec($s);
-		
-			if ($c < 0x80) {
-				$str = chr($c);
-			}
-			else if ($c < 0x800) {
-				$str = chr(0xC0 | $c>>6) . chr(0x80 | $c & 0x3F);
-			}
-			else if ($c < 0x10000) {
-				$str = chr(0xE0 | $c>>12) . chr(0x80 | $c>>6 & 0x3F) . chr(0x80 | $c & 0x3F);
-			}
-			else if ($c < 0x200000) {
-				$str = chr(0xF0 | $c>>18) . chr(0x80 | $c>>12 & 0x3F) . chr(0x80 | $c>>6 & 0x3F) . chr(0x80 | $c & 0x3F);
-			}
-			
-			return $str;
+		function _hex_to_utf8($s){
+			return entity::_hex_to_utf8($s);
 		} 		
 
 		function _utf8_to_entities($string)
@@ -2580,7 +2270,7 @@ function _strip_controlchar($string){
 			
 		// save data in the DB
 		$query = 'INSERT INTO ' . sql_table('plugin_tb_lc') . " (tb_id, from_id) VALUES ('".intval($tb_id)."','".intval($itemid)."')";
-		$res = @mysql_query($query);
+		$res = @sql_query($query);
 		if (!$res) 
 			return 'Could not save trackback data, possibly because of a double entry: ' . mysql_error();
 	}
@@ -2593,7 +2283,7 @@ function _strip_controlchar($string){
 		
 		// create SQL query
 		$query = 'SELECT t.from_id as from_id , i.ititle as ititle, i.ibody as ibody, i.itime as itime, i.iblog as iblog FROM '.sql_table('plugin_tb_lc').' as t, '.sql_table('item').' as i WHERE t.tb_id='.intval($tb_id) .' and i.inumber=t.from_id ORDER BY i.itime DESC';
-		$res = mysql_query($query);
+		$res = sql_query($query);
 		
 		$vars = array(
 			'tburl' => $this->getTrackBackUrl($tb_id)
@@ -2632,7 +2322,7 @@ function _strip_controlchar($string){
 		if (!$this->canDelete($tb_id))
 			return 'You\'re not allowed to delete this trackback item';
 		$query = 'DELETE FROM ' . sql_table('plugin_tb_lc') . " WHERE tb_id='" . intval($tb_id) . "' and from_id='" . intval($from_id) ."'";
-		mysql_query($query);
+		sql_query($query);
 		return '';
 	}
 	
@@ -2660,7 +2350,7 @@ function _strip_controlchar($string){
 		function getName()   	  { 		return 'TrackBack';   }
 		function getAuthor() 	  { 		return 'rakaz + nakahara21 + hsur'; }
 		function getURL()    	  { 		return 'http://blog.cles.jp/np_cles/category/31/subcatid/3'; }
-		function getVersion()	  { 		return '2.0.3 jp9'; }
+		function getVersion()	  { 		return '2.0.3 jp10'; }
 		function getDescription() { 		return _TB_DESCRIPTION; }
 	
 //modify start+++++++++
@@ -2672,7 +2362,7 @@ function _strip_controlchar($string){
 
 		function getEventList()   { 		return array('QuickMenu','PostAddItem','AddItemFormExtras','EditItemFormExtras','PreUpdateItem','PrepareItemForEdit', 'BookmarkletExtraHead', 'RetrieveTrackback', 'SendTrackback', 'InitSkinParse'); }
 //modify end+++++++++
-		function getMinNucleusVersion() {	return 200; }
+		function getMinNucleusVersion() {	return 330; }
 	
 		function supportsFeature($feature) {
 			switch($feature) {
@@ -2743,7 +2433,7 @@ function _strip_controlchar($string){
 //mod by cles end
 
 			/* Create tables */
-			mysql_query("
+			sql_query("
 				CREATE TABLE IF NOT EXISTS 
 					".sql_table('plugin_tb')."
 				(
@@ -2762,7 +2452,7 @@ function _strip_controlchar($string){
 				)
 			");
 						
-			mysql_query("
+			sql_query("
 				CREATE TABLE IF NOT EXISTS
 					".sql_table('plugin_tb_lookup')."
 				(
@@ -2774,16 +2464,16 @@ function _strip_controlchar($string){
 				)
 			");
 //modify start+++++++++
-			@mysql_query('ALTER TABLE `' . sql_table('plugin_tb') . '` ADD INDEX `tb_id_block_timestamp_idx` ( `tb_id`, `block`, `timestamp` DESC )');
-			@mysql_query('CREATE TABLE IF NOT EXISTS ' . sql_table('plugin_tb_lc'). ' (tb_id int(11) not null, from_id int(11) not null, PRIMARY KEY (tb_id,from_id))');
+			@sql_query('ALTER TABLE `' . sql_table('plugin_tb') . '` ADD INDEX `tb_id_block_timestamp_idx` ( `tb_id`, `block`, `timestamp` DESC )');
+			@sql_query('CREATE TABLE IF NOT EXISTS ' . sql_table('plugin_tb_lc'). ' (tb_id int(11) not null, from_id int(11) not null, PRIMARY KEY (tb_id,from_id))');
 //modify end+++++++++
 		}
 	
 		function uninstall() {
 			if ($this->getOption('DropTable') == 'yes') {
-	 			mysql_query ('DROP TABLE '.sql_table('plugin_tb'));
-				mysql_query ('DROP TABLE '.sql_table('plugin_tb_lookup'));
-				mysql_query ("DROP table ".sql_table('plugin_tb_lc'));
+	 			sql_query ('DROP TABLE '.sql_table('plugin_tb'));
+				sql_query ('DROP TABLE '.sql_table('plugin_tb_lookup'));
+				sql_query ("DROP table ".sql_table('plugin_tb_lc'));
 			}
 		}
 

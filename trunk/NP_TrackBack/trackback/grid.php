@@ -67,8 +67,20 @@
 			if( !$sort_col ) $sort_col = $colname['date'];
 
 			$sort_dir = ( requestVar('sort_dir') == 'ASC' ) ? 'ASC' : 'DESC';
+
+			$rres = sql_query ("
+			SELECT
+			count(*) as count
+			FROM
+			".sql_table('plugin_tb')." AS t,
+			".sql_table('item')." AS i
+			WHERE
+			t.tb_id = i.inumber AND
+			".$filter[$type]);
+			$rrow = mysql_fetch_array($rres);
+			$count = $rrow['count'];
 			
-			$rres = mysql_query ("
+			$rres = sql_query ("
 			SELECT
 			i.ititle AS story,
 			i.inumber AS story_id,
@@ -98,17 +110,17 @@
 				$rrow['title'] 		= $oPluginAdmin->plugin->_cut_string($rrow['title'], 50);
 				$rrow['title'] 		= $oPluginAdmin->plugin->_strip_controlchar($rrow['title']);
 				$rrow['title'] 		= htmlspecialchars($rrow['title']);
-				//				$rrow['title'] 		= _CHARSET == 'UTF-8' ? $rrow['title'] : $oPluginAdmin->plugin->_utf8_to_entities($rrow['title']);
+				$rrow['title'] 		= preg_replace("/-+/","-",$rrow['title']);
 				
 				$rrow['blog_name'] 	= $oPluginAdmin->plugin->_cut_string($rrow['blog_name'], 50);
 				$rrow['blog_name'] 	= $oPluginAdmin->plugin->_strip_controlchar($rrow['blog_name']);
 				$rrow['blog_name'] 	= htmlspecialchars($rrow['blog_name']);
-				//				$rrow['blog_name'] 	= _CHARSET == 'UTF-8' ? $rrow['blog_name'] : $oPluginAdmin->plugin->_utf8_to_entities($rrow['blog_name']);
+				$rrow['blog_name'] 		= preg_replace("/-+/","-",$rrow['blog_name']);
 				
 				$rrow['excerpt'] 	= $oPluginAdmin->plugin->_cut_string($rrow['excerpt'], 100);
 				$rrow['excerpt'] 	= $oPluginAdmin->plugin->_strip_controlchar($rrow['excerpt']);
 				$rrow['excerpt'] 	= htmlspecialchars($rrow['excerpt']);
-				//				$rrow['excerpt'] 	= _CHARSET == 'UTF-8' ? $rrow['excerpt'] : $oPluginAdmin->plugin->_utf8_to_entities($rrow['excerpt']);
+				$rrow['excerpt'] 		= preg_replace("/-+/","-",$rrow['excerpt']);
 				
 				$rrow['url'] 		= htmlspecialchars($rrow['url'], ENT_QUOTES);
 				
@@ -124,6 +136,86 @@
 			$oTemplate->set ('start', $start);
 			$oTemplate->set ('items', $items);
 			$oTemplate->template('templates/response_'.$type.'.xml');			
+			break;
+			
+		case 'dodelete':
+			$ids = explode(',', requestVar('ids'));
+			
+			$safeids = array();
+			foreach( $ids as $id ){
+				$id = trim($id);
+				if( is_numeric($id) )
+					$safeids[] = $id;
+			}
+			
+			if( count($safeids) > 0 ){		
+				$safeids = implode(',',$safeids);
+				
+				$res = sql_query(
+						' DELETE FROM '
+						. sql_table('plugin_tb')
+						. ' WHERE id in (' . $safeids. ')'
+				);
+				$oTemplate->set ('message', $safeids . ' deleted.');
+			} else {
+				$oTemplate->set ('message', 'no rows deleted.');
+			}
+			
+			$oTemplate->template('templates/response_dodelete.xml');
+			break;
+			
+		case 'doblock':
+			$ids = explode(',', requestVar('ids'));
+			
+			$safeids = array();
+			foreach( $ids as $id ){
+				$id = trim($id);
+				if( is_numeric($id) )
+					$safeids[] = $id;
+			}
+			
+			if( count($safeids) > 0 ){		
+				$safeids = implode(',',$safeids);
+				
+				$res = sql_query(
+						' UPDATE '
+						. sql_table('plugin_tb')
+						.' SET block = 1 '
+						. ' WHERE id in (' . $safeids. ')'
+				);
+				$oTemplate->set ('message', $safeids . ' blocked.');
+			} else {
+				$oTemplate->set ('message', 'no rows blocked.');
+			}
+			
+			$oTemplate->template('templates/response_doblock.xml');
+			break;
+						
+		case 'dounblock':
+			$ids = explode(',', requestVar('ids'));
+			
+			$safeids = array();
+			foreach( $ids as $id ){
+				$id = trim($id);
+				if( is_numeric($id) )
+					$safeids[] = $id;
+			}
+			
+			if( count($safeids) > 0 ){		
+				$safeids = implode(',',$safeids);
+				
+				$res = sql_query(
+						' UPDATE '
+						. sql_table('plugin_tb')
+						.' SET block = 0 '
+						. ' WHERE id in (' . $safeids. ')'
+				);
+				$oTemplate->set ('message', $safeids . ' unblocked.');
+			} else {
+				$oTemplate->set ('message', 'no rows unblocked.');
+			}
+			
+			$oTemplate->template('templates/response_dounblock.xml');
 			break;
 	}
 
