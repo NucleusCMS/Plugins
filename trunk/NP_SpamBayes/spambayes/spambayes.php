@@ -260,7 +260,9 @@ class NaiveBayesian {
 		//$string = $this->_cleanString($string);
 		if (count(0 >= $this->ignore_list))
 		$this->ignore_list = $this->getIgnoreList();
-			
+
+		$string = strip_tags($string);
+
 		if( defined('NP_SPAMBAYES_TOKENIZER') && function_exists(proc_open) ) {
 			// using mecab
 
@@ -288,7 +290,9 @@ class NaiveBayesian {
 			}
 		} else {
 			// using Yahoo!API
-				
+			if( _CHARSET != 'UTF-8' )
+				$string = mb_convert_encoding($string, 'UTF-8', _CHARSET);
+			
 			$postData['appid'] = $this->parent->getOption('appid');
 			$postData['results'] = 'ma';
 			$postData['filter'] = '1|2|3|4|5|7|8|9|10';
@@ -300,6 +304,12 @@ class NaiveBayesian {
 			$p = new NP_SpamBayes_XMLParser();
 			$rawtokens = $p->parse($data);
 			$p->free();
+			
+			if( _CHARSET != 'UTF-8' ){
+				foreach( $rawtokens as $index => $word ){
+					$rawtokens[$index] = mb_convert_encoding($word, _CHARSET, 'UTF-8');
+				}
+			}
 		}
 
 		// remove some tokens
@@ -351,6 +361,12 @@ class NaiveBayesian {
 		} else {
 			$request .= "\r\n";
 		}
+
+		/* debug
+		$test = fopen("/tmp/postdata.dat","wb");
+		fwrite($test, $request);
+		fclose($test);
+		*/
 
 		$fp = fsockopen($URL['host'], $URL['port'], $errno, $errstr, 20);
 

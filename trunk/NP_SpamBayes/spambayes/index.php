@@ -348,9 +348,9 @@
 	
 	function sb_batch() {
 		global $oPluginAdmin;
-		$logids = requestIntArray(batch);
+		$logids = requestIntArray('batch');
 		$action = requestVar('batchaction');
-		//debug: print_r ($logids);
+		//debug: var_dump($logids);
 		if ($logids) foreach ($logids as $id) {
 			switch ($action) {
 				case 'tspam':
@@ -408,13 +408,13 @@
 		}
 		if ($trainall == 'yes') {
 			echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?page=trainall"),ENT_QUOTES)."\">Train HAM (not spam) with all comments<span>Use this to train the Spam Bayesian filter with all your comments as 'ham' (not spam). This can take a while but you don't have to do anything. Just sit back and relax. Once you've run this option it's save to remove it from the menu. (See options)</span></a></li>\n";
-			//cles::blog echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?page=trainblocked"),ENT_QUOTES)."\">Train spam with all blocked comments</a></li>\n";
+			//echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?page=trainblocked"),ENT_QUOTES)."\">Train spam with all blocked comments</a></li>\n";
 			echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?page=traintb"),ENT_QUOTES)."\">Train ham with all trackbacks.</a></li>\n";
 			echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?page=trainspamtb"),ENT_QUOTES)."\">Train spam with all blocked trackbacks.</a></li>\n";
 			echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?page=untrainall"),ENT_QUOTES)."\">Remove all comments from the HAM (not spam).<span>Use this to untrain the Spam Bayesian filter. This can take a while but you don't have to do anything. Just sit back and relax. Use only if you think earlier training went wrong.</span></a></li>\n";
 		}
 		echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?page=trainnew"),ENT_QUOTES)."\">Train HAM (not spam) with all NEW comments<span>Use this to train the Spam Bayesian filter with all your yet untrained comments as 'ham' (not spam). This can take a while but you don't have to do anything. Just sit back and relax. You can use this option as much as you like. Only untrained comments will be added.</span></a></li>\n";
-		//cles::blog echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?page=trainblockednew"),ENT_QUOTES)."\">Train spam with all NEW blocked comments</a></li>\n";
+		//echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?page=trainblockednew"),ENT_QUOTES)."\">Train spam with all NEW blocked comments</a></li>\n";
 		echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?page=traintbnew"),ENT_QUOTES)."\">Train HAM (not spam) with all NEW trackbacks.</a></li>\n";
 		echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?page=trainspamtbnew"),ENT_QUOTES)."\">Train spam with all NEW blocked trackbacks.</a></li>\n";
 		//echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?page=update"),ENT_QUOTES)."\">Update probabilities<span>After some training, you must use this to finalise</span></a></li>\n";
@@ -466,7 +466,7 @@
 		echo '</span></td></tr>';
 		echo $pager;
 		$extraaction = '&filter='.$filter.'&filtertype='.urlencode($filtertype).'&startpos='.$startpos.'&keyword='.$keyword.'&ipp='.$ipp.'&ticket='.$ticket;
-		echo '<tr><th>Date</th><th>event</th><th>content</th><th>action</th></tr><form>';
+		echo '<tr><th>Date</th><th>event</th><th>content</th><th>action</th></tr><form method="post"><input type="hidden" name="ticket" value="'.$ticket.'" />';
 		$i = 0;
 		while ($arr = mysql_fetch_array($res)) {
 			echo '<tr onmouseover="focusRow(this);" onmouseout="blurRow(this);"><td>'.$arr['logtime'].'<br /><b>'.$arr['catcode'].'</b></td><td>'.$arr['log'].'</td><td><input id="batch'.$i.'" name="batch['.$i.']" value="'.$arr['id'].'" type="checkbox"><label for="batch'.$i.'">'.htmlspecialchars(str_replace('^^', ' ',$arr['content']),ENT_QUOTES).'</label></td>';
@@ -487,8 +487,8 @@
 		echo '<option value="tspam">Train spam</option>';
 		echo '<option value="tham">Train ham</option>';
 		echo '<option value="delete">Delete</option></select><input name="page" value="batch" type="hidden">';
-		echo '<input type="hidden" name="ipp" value="'.$ipp.'"/><input type="hidden" name="filter" value="'.$filter.'" /><input type="hidden" name="filtertype" value="'.$filtertype.'" /><input type="hidden" name="keyword" value="'.$keyword.'" /><input type="hidden" name="ticket" value="'.$ticket.'" />';
-		echo '<input value="Uitvoeren" type="submit">(
+		echo '<input type="hidden" name="ipp" value="'.$ipp.'"/><input type="hidden" name="filter" value="'.$filter.'" /><input type="hidden" name="filtertype" value="'.$filtertype.'" /><input type="hidden" name="keyword" value="'.$keyword.'" />';
+		echo '<input value="Execute" type="submit">(
 				 <a href="" onclick="if (event && event.preventDefault) event.preventDefault(); return batchSelectAll(1); ">select all</a> -
 				 <a href="" onclick="if (event && event.preventDefault) event.preventDefault(); return batchSelectAll(0); ">deselect all</a>
 				)
