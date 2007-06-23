@@ -208,7 +208,7 @@
 		// now train spam bayes with all current trackbacks as ham!!
 		$res = sql_query("select * from ".sql_table('plugin_tb').' where block = 0');
 		while ($arr = mysql_fetch_array($res)) {
-			$oPluginAdmin->plugin->spambayes->train($arr['id']+1000000000, 'ham', $arr['title'].' '.$arr['excerpt'].' '.$arr['blog_name'].' '.$arr['url']);
+			$oPluginAdmin->plugin->spambayes->train($arr['id']+100000000, 'ham', $arr['title'].' '.$arr['excerpt'].' '.$arr['blog_name'].' '.$arr['url']);
 		}
 		$oPluginAdmin->plugin->spambayes->updateProbabilities();
 	}
@@ -218,7 +218,7 @@
 		// now train spam bayes with all current trackbacks as ham!!
 		$res = sql_query("select * from ".sql_table('plugin_tb').' where block = 0');
 		while ($arr = mysql_fetch_array($res)) {
-			$oPluginAdmin->plugin->spambayes->trainnew($arr['id']+1000000000, 'ham', $arr['title'].' '.$arr['excerpt'].' '.$arr['blog_name'].' '.$arr['url']);
+			$oPluginAdmin->plugin->spambayes->trainnew($arr['id']+100000000, 'ham', $arr['title'].' '.$arr['excerpt'].' '.$arr['blog_name'].' '.$arr['url']);
 		}
 		$oPluginAdmin->plugin->spambayes->updateProbabilities();
 	}
