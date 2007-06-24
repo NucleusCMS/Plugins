@@ -351,22 +351,24 @@
 		$logids = requestIntArray('batch');
 		$action = requestVar('batchaction');
 		//debug: var_dump($logids);
-		if ($logids) foreach ($logids as $id) {
-			switch ($action) {
-				case 'tspam':
-				case 'tham':
-					$ar = $oPluginAdmin->plugin->spambayes->nbs->getLogevent($id);
-					$docid = $oPluginAdmin->plugin->spambayes->nbs->nextdocid();
-					$cat = substr($action,1);
-					$oPluginAdmin->plugin->spambayes->train($docid,$cat,$ar['content']);
-					echo 'train '.$cat.': '.$id.'<br />';
-					break;
-				case 'delete':
-					echo 'delete: '.$id.'<br />';
-					$oPluginAdmin->plugin->spambayes->nbs->removeLogevent($id);
+		if ($logids){
+			foreach ($logids as $id) {
+				switch ($action) {
+					case 'tspam':
+					case 'tham':
+						$ar = $oPluginAdmin->plugin->spambayes->nbs->getLogevent($id);
+						$docid = $oPluginAdmin->plugin->spambayes->nbs->nextdocid();
+						$cat = substr($action,1);
+						$oPluginAdmin->plugin->spambayes->train($docid,$cat,$ar['content']);
+						echo 'train '.$cat.': '.$id.'<br />';
+						break;
+					case 'delete':
+						echo 'delete: '.$id.'<br />';
+						$oPluginAdmin->plugin->spambayes->nbs->removeLogevent($id);
+				}
 			}
+			$oPluginAdmin->plugin->spambayes->updateProbabilities();
 		}
-	
 		echo '--end of batch--';
 	}
 	
@@ -417,7 +419,7 @@
 		//echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?page=trainblockednew"),ENT_QUOTES)."\">Train spam with all NEW blocked comments</a></li>\n";
 		echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?page=traintbnew"),ENT_QUOTES)."\">Train HAM (not spam) with all NEW trackbacks.</a></li>\n";
 		echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?page=trainspamtbnew"),ENT_QUOTES)."\">Train spam with all NEW blocked trackbacks.</a></li>\n";
-		//echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?page=update"),ENT_QUOTES)."\">Update probabilities<span>After some training, you must use this to finalise</span></a></li>\n";
+		echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?page=update"),ENT_QUOTES)."\">Update probabilities<span>After some training, you must use this to finalise</span></a></li>\n";
 		echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?page=test"),ENT_QUOTES)."\">Spam Bayes Test<span>Use this to test if a certain message would be considered 'ham' (not spam) or 'spam' message</span></a></li>\n";
 		echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(dirname(serverVar('PHP_SELF'))."/../../index.php?action=pluginoptions&plugid=".getPlugid()),ENT_QUOTES)."\">Spam Bayes options<span>This will take you to the plugins options page. This menu is NOT available on that page. Sorry for this. Use the quickmenu option to show a quicklink to the admin page!</span></a></li>\n";
 		echo "</ul>\n";
