@@ -1,9 +1,9 @@
 <?php
 
 /**
-  * NP_SpamBayes(JP) ($Revision: 1.3 $)
+  * NP_SpamBayes(JP) ($Revision: 1.4 $)
   * by hsur ( http://blog.cles.jp/np_cles )
-  * $Id: NP_SpamBayes.php,v 1.3 2007-06-23 04:13:01 hsur Exp $
+  * $Id: NP_SpamBayes.php,v 1.4 2007-06-24 05:39:01 hsur Exp $
   *
   * Copyright (C) 2007 cles All rights reserved.
 */
@@ -144,7 +144,7 @@ class NP_SpamBayes extends NucleusPlugin {
 	function getName() 		  { return 'SpamBayes(JP)'; }
 	function getAuthor()  	  { return 'xiffy + hsur'; }
 	function getURL()  		  { return 'http://blog.cles.jp/np_cles/category/31/subcatid/17'; }
-	function getVersion() 	  { return '1.1.0 jp1.3b'; }
+	function getVersion() 	  { return '1.1.0 jp1.4b'; }
 	function getDescription() { return 'SpamBayes filter for comment and trackback spam. In adherence with Spam API 1.0 for Nucleus';	}
 	function supportsFeature($what) {
 		switch($what) {

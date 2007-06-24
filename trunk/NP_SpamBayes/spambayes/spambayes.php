@@ -611,7 +611,7 @@ class NaiveBayesianStorage {
 	}
 
 	function nextdocid() {
-		$res = sql_query ("select ref from ".$this->table_ref." where ref > 500000000 order by ref desc limit 0,1");
+		$res = sql_query ("select ref from ".$this->table_ref." where ref >= 500000000 order by ref desc limit 0,1");
 		$obj = @ mysql_fetch_object($res);
 		if ($obj) {
 			return $obj->ref + 1;
