@@ -1,5 +1,10 @@
 <?php
-/****** BEGIN LICENSE BLOCK *****
+
+/**
+  * Modified by hsur ( http://blog.cles.jp/np_cles )
+  * $Id: spambayes.php,v 1.5 2007-06-25 11:47:30 hsur Exp $
+
+    ***** BEGIN LICENSE BLOCK *****
 	This file is part of PHP Naive Bayesian Filter.
 	The Initial Developer of the Original Code is
 	Loic d'Anterroches [loic_at_xhtml.net].
@@ -42,6 +47,8 @@ class NaiveBayesian {
 	function NaiveBayesian(&$parent) {
 		$this->nbs = new NaiveBayesianStorage(&$parent);
 		$this->parent = &$parent;
+		
+		$this->appid = $this->parent->getOption('appid');
 		return true;
 	}
 
@@ -257,15 +264,43 @@ class NaiveBayesian {
 	function _getTokens($string)  {
 		$rawtokens = array();
 		$tokens    = array();
-		//$string = $this->_cleanString($string);
+		
 		if (count(0 >= $this->ignore_list))
 		$this->ignore_list = $this->getIgnoreList();
 
 		$string = strip_tags($string);
 
-		if( defined('NP_SPAMBAYES_TOKENIZER') && function_exists(proc_open) ) {
+		if( defined('NP_SPAMBAYES_APIURL') && $this->appid ){
+			// using Yahoo!API
+			if( _CHARSET != 'UTF-8' )
+				$string = mb_convert_encoding($string, 'UTF-8', _CHARSET);
+			
+			$postData['appid'] = $this->appid;
+			$postData['results'] = 'ma';
+			$postData['filter'] = '1|2|3|4|5|7|8|9|10';
+			$postData['response'] = 'baseform';
+			$postData['sentence'] = $string;
+				
+			$data = $this->_http(NP_SPAMBAYES_APIURL, 'POST', '', $postData);
+			if( $data ){
+				$p = new NP_SpamBayes_XMLParser();
+				$rawtokens = $p->parse($data);
+				
+				if( _CHARSET != 'UTF-8' ){
+					if( is_array($rawtokens) ) foreach( $rawtokens as $index => $word ){
+						$rawtokens[$index] = mb_convert_encoding($word, _CHARSET, 'UTF-8');
+					}
+				}
+				
+				if( $p->isError ){
+					ACTIONLOG :: add(WARNING, 'NP_SpamBayes: Y!API Error( '. (isset($rawtokens[0]) ? $rawtokens[0] : 'Unknown Error') . ' )');
+					$rawtokens = array();
+				}
+				
+				$p->free();
+			}
+		} else if( defined('NP_SPAMBAYES_TOKENIZER') && function_exists(proc_open) ) {
 			// using mecab
-
 			$string = preg_replace('/\r|\n/', '', $string);
 			$string = strtr($string, array_flip(get_html_translation_table(HTML_SPECIALCHARS)));
 			$string = strip_tags($string);
@@ -289,31 +324,13 @@ class NaiveBayesian {
 				proc_close($process);
 			}
 		} else {
-			// using Yahoo!API
-			if( _CHARSET != 'UTF-8' )
-				$string = mb_convert_encoding($string, 'UTF-8', _CHARSET);
-			
-			$postData['appid'] = $this->parent->getOption('appid');
-			$postData['results'] = 'ma';
-			$postData['filter'] = '1|2|3|4|5|7|8|9|10';
-			$postData['response'] = 'baseform';
-			$postData['sentence'] = $string;
-				
-			$data = $this->_http(NP_SPAMBAYES_APIURL, 'POST', '', $postData);
-				
-			$p = new NP_SpamBayes_XMLParser();
-			$rawtokens = $p->parse($data);
-			$p->free();
-			
-			if( _CHARSET != 'UTF-8' ){
-				foreach( $rawtokens as $index => $word ){
-					$rawtokens[$index] = mb_convert_encoding($word, _CHARSET, 'UTF-8');
-				}
-			}
+			// original
+			$string = $this->_cleanString($string);
+			$rawtokens = preg_split('/[\W]+/', $string);
 		}
 
 		// remove some tokens
-		foreach($rawtokens as $token) {
+		if( is_array($rawtokens) ) foreach($rawtokens as $token) {
 			if (!(('' == $token)                             ||
 			(mb_strlen($token) < $this->min_token_length) ||
 			(mb_strlen($token) > $this->max_token_length) ||
@@ -383,8 +400,8 @@ class NaiveBayesian {
 		} else {
 			$host = $URL['host'];
 			$port = $URL['port'];
-			ACTIONLOG :: add(WARNING, 'NP_SpamBayes' .':'."[$errno]($host:$port) $errstr");
-			return "";
+			ACTIONLOG :: add(WARNING, 'NP_SpamBayes: HTTP Error: '."[$errno]($host:$port) $errstr");
+			return null;
 		}
 	}
 
@@ -421,7 +438,7 @@ class NP_SpamBayes_XMLParser {
 		xml_set_element_handler($this->parser, "_open", "_close");
 		xml_set_character_data_handler($this->parser, "_cdata");
 
-		$this->target = 'BASEFORM';
+		$this->target = null ;
 		$this->inTarget = false;
 	}
 
@@ -437,11 +454,21 @@ class NP_SpamBayes_XMLParser {
 	}
 
 	function _open($parser, $name, $attribute){
-		if( $name == $this->target ) $this->inTarget = true;
+		switch( $name ){
+			case 'BASEFORM':
+				$this->inTarget = 'BASEFORM';
+				break;
+			case 'MESSAGE':
+				$this->inTarget = 'MESSAGE';
+				break;
+			case 'ERROR':
+				$this->isError = true;
+				break;
+		}
 	}
 
 	function _close($parser, $name){
-		if( $name == $this->target ) $this->inTarget = false;
+		if( $name == $this->target ) $this->inTarget = null;
 	}
 
 	function _cdata($parser, $data){

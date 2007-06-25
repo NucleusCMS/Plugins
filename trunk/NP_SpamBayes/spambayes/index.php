@@ -1,9 +1,14 @@
 <?php
+/**
+  * Modified by hsur ( http://blog.cles.jp/np_cles )
+  * $Id: index.php,v 1.5 2007-06-25 11:47:30 hsur Exp $
+*/
 	// vim: tabstop=2:shiftwidth=2
 	//
 	// Nucleus Admin section;
 	// Created by Xiffy
 	//
+	// Modified by hsur ($Id: index.php,v 1.5 2007-06-25 11:47:30 hsur Exp $)
 	$strRel = '../../../';
 	include($strRel . 'config.php');
 	
@@ -38,9 +43,9 @@
 	$oPluginAdmin = new PluginAdmin('SpamBayes');
 	$oPluginAdmin->start();
 	
-	if( !$oPluginAdmin->plugin->getOption('appid') ){
+	if( defined('NP_SPAMBAYES_APIURL') && (! $oPluginAdmin->plugin->getOption('appid'))){
 		echo '<h2>Plugin Error!</h2>';
-		echo '<h3>Yahoo!Japan Application ID is not set.</h3>';
+		echo '<h3>Yahoo! Japan Application ID is not set.</h3>';
 		$oPluginAdmin->end();
 		exit;
 	}
@@ -371,7 +376,7 @@
 		}
 		echo '--end of batch--';
 	}
-	
+		
 	function sb_nucmenu($trainall, $logging) {
 		global $oPluginAdmin, $manager;
 		?>
