@@ -34,8 +34,8 @@
 	</thead>
 </table>
 上記で選択したトラックバックを一括して処理します
-<a href="#" onclick="javascript: doUnblock()"><img alt="Unblock" border="0" src="<?php echo $plugindirurl;?>silk/accept.png" /></a>
-<a href="#" onclick="javascript: doDelete()"><img alt="Delete" border="0" src="<?php echo $plugindirurl?>silk/cross.png" /></a>
+<a href="javascript:doUnBlock()" onclick=""><img alt="Unblock" border="0" src="<?php echo $plugindirurl;?>silk/accept.png" /></a>
+<a href="javascript:doDelete()" onclick=""><img alt="Delete" border="0" src="<?php echo $plugindirurl?>silk/cross.png" /></a>
 </div>
 
 <!--
@@ -70,7 +70,7 @@
 			saveColumnInfo   : {width:true, filter:false, sort:false}, 
 			menuEvent	: 'none',
 			frozenColumns	: 2,
-			canSortDefault	: true,
+			canSortDefault	: false,
 			canHideDefault	: true,
 			allowColResize	: true,
 			canFilterDefault: false,

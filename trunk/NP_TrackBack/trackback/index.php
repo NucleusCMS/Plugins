@@ -28,8 +28,8 @@
 		if (!$manager->checkTicket()) doError(_ERROR_BADTICKET);
 	}
 
-	//$oPluginAdmin->start();
-	$oPluginAdmin->admin->pagehead();
+	$oPluginAdmin->start();
+	//$oPluginAdmin->admin->pagehead();
 	
 //modify start+++++++++
 		$plug =& $oPluginAdmin->plugin;
@@ -54,7 +54,7 @@
 	$oTemplate->set ('CONF', $CONF);
 	$oTemplate->set ('plugindirurl', $oPluginAdmin->plugin->getAdminURL());
 	$oTemplate->set ('ticket', $manager->_generateTicket());
-		$ajaxEnabled = ($oPluginAdmin->plugin->getOption('ajaxEnabled') == 'yes') ? true : false;
+	$ajaxEnabled = ($oPluginAdmin->plugin->getOption('ajaxEnabled') == 'yes') ? true : false;
 	$oTemplate->set ('ajaxEnabled', $ajaxEnabled);
 
 	switch($action) {

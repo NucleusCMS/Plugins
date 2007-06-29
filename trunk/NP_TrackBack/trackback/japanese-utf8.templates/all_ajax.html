@@ -30,8 +30,8 @@
 </table>
 
 上記で選択したトラックバックを一括して処理します
-<a href="#" onclick="javascript: doDelete()"><img alt="Delete" border="0" src="<?php echo $plugindirurl?>silk/cross.png" /></a>
-<a href="#" onclick="javascript: doBlock()"><img alt="Block" border="0" src="<?php echo $plugindirurl?>silk/delete.png" /></a>
+<a href="javascript:doDelete()" onclick=""><img alt="Delete" border="0" src="<?php echo $plugindirurl?>silk/cross.png" /></a>
+<a href="javascript:doBlock()" onclick=""><img alt="Block" border="0" src="<?php echo $plugindirurl?>silk/delete.png" /></a>
 </div>
 
 <!--
@@ -66,7 +66,7 @@
 			saveColumnInfo   : {width:true, filter:false, sort:false}, 
 			menuEvent	: 'none',
 			frozenColumns	: 2,
-			canSortDefault	: true,
+			canSortDefault	: false,
 			canHideDefault	: true,
 			allowColResize	: true,
 			canFilterDefault: false,

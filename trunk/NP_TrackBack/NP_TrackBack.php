@@ -21,6 +21,59 @@
 	* ==========================================================================================
 	*/
 
+	class NP_TrackBack_XMLParser {
+		function NP_TrackBack_XMLParser(){
+			$this->parser = xml_parser_create();
+			xml_set_object($this->parser, $this);
+			xml_set_element_handler($this->parser, "_open", "_close");
+			xml_set_character_data_handler($this->parser, "_cdata");
+			
+			$this->isError = false;
+			$this->inTarget = false;
+		}
+	
+		function parse($data){
+			$this->words = array();
+			xml_parse($this->parser, $data);
+			$errcode = xml_get_error_code($this->parser);
+		    if ( $errcode != XML_ERROR_NONE ) {
+		    	$this->isError = true;
+				$this->message = 'XML Parse Error: ' . xml_error_string($errcode) . ' in '. xml_get_current_line_number($this->parser);
+		    }
+			return $this->message;
+		}
+	
+		function free(){
+			xml_parser_free($this->parser);
+		}
+	
+		function _open($parser, $name, $attribute){
+			switch( $name ){
+				case 'MESSAGE':
+					$this->inTarget = 'MESSAGE';
+					break;
+				case 'ERROR':
+					$this->inTarget = 'ERROR';
+					break;
+			}
+		}
+	
+		function _close($parser, $name){
+			if( $name == $this->inTarget ) $this->inTarget = null;
+		}
+	
+		function _cdata($parser, $data){
+			switch( $this->inTarget ){
+				case 'MESSAGE':
+					$this->message = trim($data);
+					break;
+				case 'ERROR':
+					$this->isError = ($data ? true : false);
+					break;
+			}
+		}
+	}   
+   
 	class NP_TrackBack extends NucleusPlugin {
 		var $useCurl = 1; // use curl? 2:precheck+read by curl, 1: read by curl 0: fread
 
@@ -179,6 +232,10 @@
 		 */
 		function doTemplateVar(&$item, $what = '') {
 			$this->doSkinVar('template', $what, $item->itemid);
+		}
+		
+		function doTemplateCommentsVar(&$item, &$comment, $what = ''){
+			$this->doSkinVar('templatecomments', $what, $item->itemid);
 		}
 		
 		/*
@@ -851,9 +908,6 @@
 			$content .= '&excerpt=' . 	urlencode( $excerpt );
 			$content .= '&blog_name=' . urlencode( $blog_name );
 	
-#			$user_agent = 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)';
-			$user_agent = 'NP_TrackBack/'. $this->getVersion();
-	
 			// 4. Prepare HTTP request
 			$request  = 'POST ' . $parsed_url['path'];
 
@@ -862,11 +916,10 @@
 				
 			$request .= " HTTP/1.1\r\n";
 			$request .= "Accept: */*\r\n";
-			$request .= "User-Agent: " . $user_agent . "\r\n";
+			$request .= "User-Agent: " . $this->userAgent . "\r\n";
 			$request .= ( $port == 80 )?
 									"Host: " . $parsed_url['host'] . "\r\n":
 									"Host: " . $parsed_url['host'] . ":" . $port . "\r\n";
-			$request .= "Connection: Keep-Alive\r\n";
 			$request .= "Cache-Control: no-cache\r\n";
 			$request .= "Connection: Close\r\n";
 			$request .= "Content-Length: " . strlen( $content ) . "\r\n";
@@ -891,25 +944,34 @@
 			
 			fclose($socket);
 	
-			// instead of parsing the XML, just check for the error string
-			// [TODO] extract real error message and return that
 //modify start+++++++++
-
-			$DATA = split("\r\n\r\n", $result, 2);
-			preg_match("/HTTP\/1\.[0-1] ([0-9]+) ([^\r\n]*)\r?\n/",$DATA[0],$httpresp);
+			list($header, $body) = split("\r\n\r\n", $result, 2);
+			preg_match("/HTTP\/1\.[0-1] ([0-9]+) ([^\r\n]*)\r?\n/", $header, $httpresp);
 			$respCd = $httpresp[1];
 			$respMsg = $httpresp[2];
 
 			if( $respCd != 200 ){
 				return 'An error occurred: HTTP Error: [' . $respCd . '] ' . $respMsg;
 			}
-			if ( strstr($DATA[1],'<error>0</error>') === false ){
-				preg_match("/<message>(.*?)<\/message>/",$DATA[1],$error_message);
-				if( $error_message[1] )
-					return 'An error occurred: '.htmlspecialchars($error_message[1], ENT_QUOTES);
-				else
-					return 'An error occurred: fatal error.';
+			
+			if( function_exists('xml_parser_create') ){
+				$p = new NP_TrackBack_XMLParser();
+				$p->parse($body);
+				$p->free();
+				if( $p->isError ){
+					return 'An error occurred: ' . htmlspecialchars($p->message, ENT_QUOTES);
+				}
+			} else {
+				if ( strstr($DATA[1],'<error>0</error>') === false ){
+					preg_match("/<message>(.*?)<\/message>/",$DATA[1],$error_message);
+					if( $error_message[1] )
+						return 'An error occurred: '.htmlspecialchars($error_message[1], ENT_QUOTES);
+					else
+						return 'An error occurred: fatal error.';
+				}
 			}
+			
+			return '';
 		} 
 //modify end+++++++++
 
@@ -1050,6 +1112,16 @@
 			} 
 			else 
 			{
+//mod by cles
+				// spam block
+				$res = @sql_query('SELECT id FROM '.sql_table('plugin_tb').' WHERE block = 1 and url = \''.mysql_real_escape_string($url).'\'' );
+				if (mysql_num_rows($res) != 0) {
+					// NP_Trackback has blocked tb !
+					ACTIONLOG :: add(INFO, "Trackback: Duplicated Blocked Trackback [ignore] (itemid:$tb_id from: $url)");
+					return 'Sorry, trackback ping is not accepted.';
+				}
+//mod by cles end
+							
 				// 4. SPAM check (for SpamCheck API 2 /w compat. API 1)
 				$spamcheck = array (
 					'type'  	=> 'trackback',
@@ -1731,8 +1803,7 @@
 			{
 				for ($i = 0; $i < count($array); $i++)
 				{
-					//if( preg_match('/s?https?:\/\/[-_.!~*\'()a-zA-Z0-9;\/?:@&=+$,%#]+/', $array[$i][1], $matches) )
-					if( preg_match('/s?https?:\/\/[-_.!~*\'()a-zA-Z0-9;\/:@&=+$,%]+/', $array[$i][1], $matches) )
+					if( preg_match('/s?https?:\/\/[-_.!~*\'()a-zA-Z0-9;\/?:@&=+$,%#]+/', $array[$i][1], $matches) )
 						$links[$matches[0]] = 1;
 				}
 			}
@@ -1786,7 +1857,7 @@
 				@curl_setopt($ch, CURLOPT_MAXREDIRS, 5);
 				@curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 				@curl_setopt($ch, CURLOPT_TIMEOUT, 20);
-				@curl_setopt($ch, CURLOPT_USERAGENT, 'NP_TrackBack/'. $this->getVersion());
+				@curl_setopt($ch, CURLOPT_USERAGENT, $this->userAgent);
 
 				$headers = curl_exec($ch);
 				curl_close($ch);
@@ -1828,7 +1899,7 @@
 	
 		function retrieveUrl ($url) {
 //mod by cles
-			$ua = ini_set('user_agent', 'NP_TrackBack/'. $this->getVersion());
+			$ua = ini_set('user_agent', $this->userAgent);
 //mod by cles end
 			if (function_exists('curl_init') && $this->useCurl > 0)
 			{
@@ -1841,7 +1912,7 @@
 				@curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
 				@curl_setopt($ch, CURLOPT_MAXREDIRS, 5);
 				@curl_setopt($ch, CURLOPT_TIMEOUT, 20);
-				@curl_setopt($ch, CURLOPT_USERAGENT, 'NP_TrackBack/'. $this->getVersion());
+				@curl_setopt($ch, CURLOPT_USERAGENT, $this->userAgent);
 		
 				// Retrieve response
 				$raw  = curl_exec($ch);
@@ -2230,8 +2301,7 @@ function _cut_string($string, $dl = 0) {
 	return $string;
 }
 
-function _strip_controlchar($string){
-	$string = preg_replace("/[\x01-\x08\x0b\x0c\x0e-\x1f\x7f]+/","",$string);
+function _strip_controlchar($string){	$string = preg_replace("/[\x01-\x08\x0b\x0c\x0e-\x1f\x7f]+/","",$string);
 	$string = str_replace("\0","",$string);
 	return $string;
 }
@@ -2478,13 +2548,15 @@ function _strip_controlchar($string){
 		}
 
 		function init() {
-      // include language file for this plugin 
-      $language = ereg_replace( '[\\|/]', '', getLanguageName()); 
-      if (file_exists($this->getDirectory().'language/'.$language.'.php')) 
-         include_once($this->getDirectory().'language/'.$language.'.php'); 
+			// include language file for this plugin 
+			$language = ereg_replace( '[\\|/]', '', getLanguageName()); 
+			if (file_exists($this->getDirectory().'language/'.$language.'.php')) 
+				include_once($this->getDirectory().'language/'.$language.'.php'); 
       else 
-         include_once($this->getDirectory().'language/'.'english.php'); 
-		$this->notificationMail = _TB_NORTIFICATION_MAIL_BODY;
-		$this->notificationMailTitle = _TB_NORTIFICATION_MAIL_TITLE;
-         }
+				include_once($this->getDirectory().'language/'.'english.php'); 
+			$this->notificationMail = _TB_NORTIFICATION_MAIL_BODY;
+			$this->notificationMailTitle = _TB_NORTIFICATION_MAIL_TITLE;
+			
+			$this->userAgent = 'NucleusCMS NP_TrackBack plugin ( '.$this->getVersion().' )';
+		}
 	}
