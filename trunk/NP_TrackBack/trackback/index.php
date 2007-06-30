@@ -227,7 +227,8 @@
 					$oTemplate->template('templates/all_ajax.html');
 				else			
 					$oTemplate->template('templates/blocked_ajax.html');
-			} else {				$start  = intRequestVar('start') ? intRequestVar('start') : 0;
+			} else {
+				$start  = intRequestVar('start') ? intRequestVar('start') : 0;
 				$amount = intRequestVar('amount') ? intRequestVar('amount') : 25;
 
 				$rres = sql_query ("

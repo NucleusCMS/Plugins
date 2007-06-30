@@ -1,5 +1,5 @@
 <?php
-// vim: tabstop=2:shiftwidth=2 
+// vim: tabstop=2:shiftwidth=2
 
    /* ==========================================================================================
 	* Trackback 2.0 for Nucleus CMS 
@@ -1338,7 +1338,7 @@
 				
 		function getRequiredURL($itemid){
 			global $manager;
-			$blog = & $manager->getBlog(getBlogIDFromItemID($item['itemid']));
+			$blog = & $manager->getBlog(getBlogIDFromItemID($itemid));
 			if( $this->isEnableLinkCheck($itemid) )
 				return $this->_createItemLink($itemid, $blog);
 			return null;
@@ -2301,7 +2301,8 @@ function _cut_string($string, $dl = 0) {
 	return $string;
 }
 
-function _strip_controlchar($string){	$string = preg_replace("/[\x01-\x08\x0b\x0c\x0e-\x1f\x7f]+/","",$string);
+function _strip_controlchar($string){
+	$string = preg_replace("/[\x01-\x08\x0b\x0c\x0e-\x1f\x7f]+/","",$string);
 	$string = str_replace("\0","",$string);
 	return $string;
 }
@@ -2420,7 +2421,7 @@ function _strip_controlchar($string){	$string = preg_replace("/[\x01-\x08\x0b\x
 		function getName()   	  { 		return 'TrackBack';   }
 		function getAuthor() 	  { 		return 'rakaz + nakahara21 + hsur'; }
 		function getURL()    	  { 		return 'http://blog.cles.jp/np_cles/category/31/subcatid/3'; }
-		function getVersion()	  { 		return '2.0.3 jp10'; }
+		function getVersion()	  { 		return '2.0.3 jp10.1'; }
 		function getDescription() { 		return _TB_DESCRIPTION; }
 	
 //modify start+++++++++
