@@ -85,7 +85,7 @@
 			if( strpos($itemLink, 'http') === 0 ){
 				return $itemLink;
 			}
-			
+						
 			$blogurl = $b->getURL();
 			if (!$blogurl) {
 				$b =& $manager->getBlog($CONF['DefaultBlog']);
@@ -94,11 +94,16 @@
 					$blogurl = $CONF['IndexURL'];
 				}
 			}
-			if ($CONF['URLMode'] == 'pathinfo'){
-				if(substr($blogurl, -1) == '/')  $blogurl = substr($blogurl,0,-1);
-			}
-						
-			return $blogurl . $itemLink;
+			
+			if(substr($blogurl, -1) == '/')  $blogurl = substr($blogurl,0,-1);
+			$usePathInfo = ($CONF['URLMode'] == 'pathinfo');
+			
+			$itemUrlOrg = $CONF['ItemURL'];
+			$CONF['ItemURL'] = $blogurl . ($usePathInfo ? '' : '/index.php');
+			$itemLink = createItemLink($itemid,'');
+			$CONF['ItemURL'] = $itemUrlOrg;
+			
+			return $itemLink;
 		}
 //modify end+++++++++
 
@@ -2416,9 +2421,9 @@ function _strip_controlchar($string){
 		function getName()   	  { 		return 'TrackBack';   }
 		function getAuthor() 	  { 		return 'rakaz + nakahara21 + hsur'; }
 		function getURL()    	  { 		return 'http://blog.cles.jp/np_cles/category/31/subcatid/3'; }
-		function getVersion()	  { 		return '2.0.3 jp10.2'; }
-		function getDescription() { 		return '[$Revision: 1.16 $]<br />' . _TB_DESCRIPTION; }
-			
+		function getVersion()	  { 		return '2.0.3 jp10.3'; }
+		function getDescription() { 		return '[$Revision: 1.17 $]<br />' . _TB_DESCRIPTION; }
+							
 //modify start+++++++++
 /*
 		function getTableList()   { 		return array(sql_table("plugin_tb"), sql_table("plugin_tb_lookup")); }
