@@ -7,8 +7,8 @@
 </h2>
 
 <ul>
-	<li><a href="<?php echo htmlspecialchars($manager->addTicketToUrl($CONF['PluginURL'].'trackback/index.php?action=blocked_clear&next=blocked'),ENT_QUOTES); ?>">ブロックされたトラックバックのクリア</a></li>
-	<li><a href="<?php echo htmlspecialchars($manager->addTicketToUrl($CONF['PluginURL'].'trackback/index.php?action=blocked_spamclear&next=blocked'),ENT_QUOTES); ?>">spam判定されたトラックバックのクリア</a></li> 
+	<li><a href="<?php echo htmlspecialchars($manager->addTicketToUrl($CONF['PluginURL'].'trackback/index.php?action=blocked_clear&next=blocked'),ENT_QUOTES); ?>" onClick="return confirm('ブロックされたトラックバックをクリアしてもよろしいですか？');">ブロックされたトラックバックのクリア</a></li>
+	<li><a href="<?php echo htmlspecialchars($manager->addTicketToUrl($CONF['PluginURL'].'trackback/index.php?action=blocked_spamclear&next=blocked'),ENT_QUOTES); ?>" onClick="return confirm('spam判定されたトラックバックをクリアしてもよろしいですか？');">spam判定されたトラックバックのクリア</a></li> 
 </ul>
 
 <?php if(count($items)): ?>

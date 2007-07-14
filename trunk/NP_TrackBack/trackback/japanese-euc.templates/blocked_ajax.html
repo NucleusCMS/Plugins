@@ -4,8 +4,8 @@
 </h2>
 
 <ul>
-	<li><a href="<?php echo htmlspecialchars($manager->addTicketToUrl($CONF['PluginURL'].'trackback/index.php?action=blocked_clear&next=blocked'),ENT_QUOTES); ?>">ブロックされたトラックバックのクリア</a></li>
-	<li><a href="<?php echo htmlspecialchars($manager->addTicketToUrl($CONF['PluginURL'].'trackback/index.php?action=blocked_spamclear&next=blocked'),ENT_QUOTES); ?>">spam判定されたトラックバックのクリア</a></li> 
+	<li><a href="<?php echo htmlspecialchars($manager->addTicketToUrl($CONF['PluginURL'].'trackback/index.php?action=blocked_clear&next=blocked'),ENT_QUOTES); ?>" onClick="return confirm('ブロックされたトラックバックをクリアしてもよろしいですか？');">ブロックされたトラックバックのクリア</a></li>
+	<li><a href="<?php echo htmlspecialchars($manager->addTicketToUrl($CONF['PluginURL'].'trackback/index.php?action=blocked_spamclear&next=blocked'),ENT_QUOTES); ?>" onClick="return confirm('spam判定されたトラックバックをクリアしてもよろしいですか？');">spam判定されたトラックバックのクリア</a></li> 
 </ul>
 
 <div id="message" style="color: red;"></div>
@@ -119,6 +119,7 @@
 	function doDelete(){
 		var ids = checkUpdateIds();
 		if( !(ids.length && ids.length > 0) ) return ;
+		if( !confirm('本当に削除しますか？') ) return ;
 		
 		var params = [
 			'action=dodelete',

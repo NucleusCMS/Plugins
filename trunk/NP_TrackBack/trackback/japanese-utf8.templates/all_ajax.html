@@ -115,6 +115,7 @@
 	function doDelete(){
 		var ids = checkUpdateIds();
 		if( !(ids.length && ids.length > 0) ) return ;
+		if( !confirm('本当に削除しますか？') ) return ;
 		
 		var params = [
 			'action=dodelete',

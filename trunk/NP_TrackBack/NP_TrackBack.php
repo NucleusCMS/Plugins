@@ -21,6 +21,9 @@
 	* ==========================================================================================
 	*/
 
+define('NP_TRACKBACK_LINKCHECK_STRICT', 1);
+//define('NP_TRACKBACK_LINKCHECK_STRICT', 0);
+
 	class NP_TrackBack_XMLParser {
 		function NP_TrackBack_XMLParser(){
 			$this->parser = xml_parser_create();
@@ -95,11 +98,12 @@
 				}
 			}
 			
-			if(substr($blogurl, -1) == '/')  $blogurl = substr($blogurl,0,-1);
+			if(substr($blogurl, -1) == '/')  $blogurl = substr($blogurl, 0, -1);
 			$usePathInfo = ($CONF['URLMode'] == 'pathinfo');
-			
 			$itemUrlOrg = $CONF['ItemURL'];
-			$CONF['ItemURL'] = $blogurl . ($usePathInfo ? '' : '/index.php');
+			if( ! ($usePathInfo || substr($blogurl, -4) == '.php') ) $blogurl .= '/index.php';
+			$CONF['ItemURL'] = $blogurl;
+			
 			$itemLink = createItemLink($itemid,'');
 			$CONF['ItemURL'] = $itemUrlOrg;
 			
@@ -729,7 +733,7 @@
 		  */
 		function getTrackBackUrl($itemid) {
 			global $CONF, $manager;
-			return $CONF['ActionURL'] . '?action=plugin&amp;name=TrackBack&amp;tb_id='.$itemid;
+			return 'http://blog.cles.jp/item/' . intval($itemid) . '.trackback';
 		}		
 
 		/*
@@ -748,11 +752,9 @@
 */
 			$uri 	= $this->_createItemLink($item['itemid'],$blog);	
 					
-			$title  = strip_tags($item['title']);
-			$desc  	= strip_tags($item['body']);
-			$desc   = $this->_cut_string($desc, 200);
-			$desc   = htmlspecialchars($desc, ENT_QUOTES);
-			
+			$timestamp = time();
+			$sourceaddr = ip2long(serverVar('REMOTE_ADDR'));
+			$key = md5( sprintf("%u %u %u %s", $timestamp, $sourceaddr, $itemid, __FILE__));
 			?>
 			<!--
 			<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -1158,7 +1160,12 @@
 						$contents = $this->retrieveUrl($url);
 						
 						$linkArray = $this->getPermaLinksFromText($contents);
-						$itemLink = $this->_createItemLink($tb_id, $b);
+						
+						if( NP_TRACKBACK_LINKCHECK_STRICT )
+							$itemLink = $this->_createItemLink($tb_id, $b);
+						else
+							$itemLink = $b->getURL();
+						
 						$itemLinkPat = '{^' . preg_quote($itemLink) .'}i';
 						$itemLinkPat = str_replace('&','&(amp;)?', $itemLinkPat);
 						
@@ -2421,9 +2428,9 @@ function _strip_controlchar($string){
 		function getName()   	  { 		return 'TrackBack';   }
 		function getAuthor() 	  { 		return 'rakaz + nakahara21 + hsur'; }
 		function getURL()    	  { 		return 'http://blog.cles.jp/np_cles/category/31/subcatid/3'; }
-		function getVersion()	  { 		return '2.0.3 jp10.3'; }
-		function getDescription() { 		return '[$Revision: 1.17 $]<br />' . _TB_DESCRIPTION; }
-							
+		function getVersion()	  { 		return '2.0.3 jp10.4'; }
+		function getDescription() { 		return '[$Revision: 1.18 $]<br />' . _TB_DESCRIPTION; }
+	
 //modify start+++++++++
 /*
 		function getTableList()   { 		return array(sql_table("plugin_tb"), sql_table("plugin_tb_lookup")); }
