@@ -733,7 +733,7 @@ define('NP_TRACKBACK_LINKCHECK_STRICT', 1);
 		  */
 		function getTrackBackUrl($itemid) {
 			global $CONF, $manager;
-			return createItemLink(intval($itemid),'') . '.trackback';
+			return $CONF['ActionURL'] . '?action=plugin&amp;name=TrackBack&amp;tb_id='.$itemid;
 		}		
 
 		/*
@@ -2428,8 +2428,8 @@ function _strip_controlchar($string){
 		function getName()   	  { 		return 'TrackBack';   }
 		function getAuthor() 	  { 		return 'rakaz + nakahara21 + hsur'; }
 		function getURL()    	  { 		return 'http://blog.cles.jp/np_cles/category/31/subcatid/3'; }
-		function getVersion()	  { 		return '2.0.3 jp10.4'; }
-		function getDescription() { 		return '[$Revision: 1.19 $]<br />' . _TB_DESCRIPTION; }
+		function getVersion()	  { 		return '2.0.3 jp10.5'; }
+		function getDescription() { 		return '[$Revision: 1.20 $]<br />' . _TB_DESCRIPTION; }
 	
 //modify start+++++++++
 /*
