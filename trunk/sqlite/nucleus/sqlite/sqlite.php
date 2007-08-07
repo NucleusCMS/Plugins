@@ -1,7 +1,7 @@
 <?php
     /***************************************
     * SQLite-MySQL wrapper for Nucleus     *
-    *                           ver 0.8.5.5*
+    *                           ver 0.8.5.6*
     * Written by Katsumi                   *
     ***************************************/
 //
@@ -526,12 +526,14 @@ function sqlite_altertable($table,$alterdefs,$dbhandle){
 				$defparts[1]=$defparts[2];
 				unset($defparts[2]);
 			}
-			if($severpos = strpos($createtesttableSQL,' '.$defparts[1].' ')){
+			$severpos = strpos($createtesttableSQL,' '.$defparts[1].' ');
+			if ($severpos===false) $severpos = strpos($createtesttableSQL," '".$defparts[1]."' ");
+			if($severpos){
 				$nextcommapos = strpos($createtesttableSQL,',',$severpos);
 				if($nextcommapos) $createtesttableSQL = substr($createtesttableSQL,0,$severpos).substr($createtesttableSQL,$nextcommapos + 1);
 				else $createtesttableSQL = substr($createtesttableSQL,0,$severpos-(strpos($createtesttableSQL,',')?0:1) - 1).')';
 				unset($newcols[$defparts[1]]);
-			} else  return sqlite_ReturnWithError('unknown column "'.$defparts[1].'" in "'.$table.'"');
+			} else return sqlite_ReturnWithError('unknown column "'.$defparts[1].'" in "'.$table.'"');
 			break;
 		default:
 			return sqlite_ReturnWithError('near "'.$prevword.'": syntax error');
@@ -568,6 +570,14 @@ function sqlite_altertable($table,$alterdefs,$dbhandle){
 	foreach($createindexsql as $sql) sqlite_query($dbhandle,$sql); //recreate index
 	sqlite_query($dbhandle,$copytonewsql); //copy back to original table
 	sqlite_query($dbhandle,$droptempsql); //drop temp table
+
+/*	echo '<p>'.$createtemptableSQL.'<p/>';
+	echo '<p>'.$copytotempsql.'<p/>';
+	echo '<p>'.$dropoldsql.'<p/>';
+	echo '<p>'.$createnewtableSQL.'<p/>';
+	echo '<p>'.$copytonewsql.'<p/>';
+	echo '<p>'.$droptempsql.'<p/>';
+*/
 	return true;
 }
 function _sqlite_divideByChar($char,$query,$limit=-1){
