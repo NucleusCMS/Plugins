@@ -2,10 +2,10 @@
 // vim: tabstop=2:shiftwidth=2
 
 /**
- * AsyncHTTP.php ($Revision: 1.1 $)
+ * AsyncHTTP.php ($Revision: 1.2 $)
  *
  * by hsur ( http://blog.cles.jp/np_cles )
- * $Id: AsyncHTTP.php,v 1.1 2007-09-22 18:52:50 hsur Exp $
+ * $Id: AsyncHTTP.php,v 1.2 2007-09-30 13:39:44 hsur Exp $
  */
 
 /*
@@ -62,6 +62,20 @@ class cles_AsyncHTTP {
 	var $_errornos;
 	var $_errorstrs;
 	
+	var $_debug = false;
+	var $_debugMsg = '';
+	
+	function _getTimeStamp(){
+		list($usec, $sec) = explode(" ", microtime());
+		return $timestamp = date('Y/m/d H:i:s').substr($usec,1);	
+	}
+	
+	function _log($msg){
+		$m = $this->_getTimeStamp().':'.$msg."\n";
+		$this->_debugMsg .= $m;
+		//echo $msg;
+	}
+	
 	function cles_AsyncHTTP(){
 		$this->init();
 	}
@@ -82,7 +96,7 @@ class cles_AsyncHTTP {
 	}
 	
 	function getResponses(){
-		$this->_started = time();
+		$this->_startedTimestamp = $this->_getTimeStamp();
 
 		if( $this->asyncMode )
 			$this->_sendAsync();
@@ -109,8 +123,7 @@ class cles_AsyncHTTP {
 			}
 		}
 
-		$this->_finished = time();
-		$this->_consumed = $this->_finished - $this->_started;
+		$this->_finishedTimestamp = $this->_getTimeStamp();
 		return $this->_responses;
 	}
 	
@@ -130,6 +143,7 @@ class cles_AsyncHTTP {
 	}
 	
 	function _sendAsync(){
+		$this->_debug && $this->_log('Using async mode.');
 		$expired = time() + $this->timeout;
 
 		// connect
@@ -137,6 +151,7 @@ class cles_AsyncHTTP {
 			$url = parse_url($request[0]);
 			$port = ($url['port'] ? $url['port'] : 80);
 
+			$this->_debug && $this->_log('Open async connection (id:'.$id.')');
 			$s = $this->_async_connect($url['host'], $port, $this->_errornos[$id], $this->_errorstrs[$id], $this->timeout);
 			if ($s) {
 				$this->_sockets[$id] = $s;
@@ -154,18 +169,21 @@ class cles_AsyncHTTP {
 
 			$timeout = $expired - time();
 			$timeout = ($timeout < 0 ) ? 0 : $timeout;
+			
+			$this->_debug && $this->_log('socket_select (timeout:'.$timeout.')');
 			$n = socket_select($read, $write, $e, $timeout );
 			
 			if( $n ){
 				foreach ($write as $w) {
 					$id = array_search($w, $this->_sockets);
+					$this->_debug && $this->_log('Request send (id:'.$id.')');
 					socket_write($w, $this->_makePayload($id));
 					socket_shutdown($w, 1);
 				}
 				foreach ($read as $r) {
 					$id = array_search($r, $this->_sockets);
-					
 					$data = socket_read($r, CLES_ASYNCHTTP_GETBYTES);
+					$this->_debug && $this->_log('Response recieved (id:'.$id.', length:'.strlen($data).')');
 					if (strlen($data) == 0) {
 						if ($this->_errornos[$id] == CLES_ASYNCHTTP_INPROGRESS) {
 							$this->_errornos[$id] = -1;
@@ -173,6 +191,7 @@ class cles_AsyncHTTP {
 						}
 						socket_close($r);
 						unset($this->_sockets[$id]);
+						$this->_debug && $this->_log('Connection closed (id:'.$id.')');
 					} else {
 						$this->_errornos[$id] = 0;
 						$this->_errorstrs[$id] = '';
@@ -181,6 +200,7 @@ class cles_AsyncHTTP {
 				}
 			} else {
 				foreach ($this->_sockets as $id => $s) {
+					$this->_debug && $this->_log('Timeout (id:'.$id.')');
 					$this->_errornos[$id] = CLES_ASYNCHTTP_TIMEOUT;
 					$this->_errorstrs[$id] = socket_strerror(CLES_ASYNCHTTP_TIMEOUT);
 					socket_close($s);
@@ -192,6 +212,7 @@ class cles_AsyncHTTP {
 	}
 	
 	function _sendSync(){
+		$this->_debug && $this->_log('Using sync mode.');
 		$expired = time() + $this->timeout;
 
 		foreach ($this->_requests as $id => $request) {
@@ -204,10 +225,14 @@ class cles_AsyncHTTP {
 			stream_set_timeout($s, $timeout);
 			if ($s) {
 				$this->_responses[$id] = '';
+				$this->_debug && $this->_log('Request send (id:'.$id.')');
 				fputs($s, $this->_makePayload($id));
 				while (!feof($s)) {
-					$this->_responses[$id] .= fgets($s, CLES_ASYNCHTTP_GETBYTES);
+					$data = fgets($s, CLES_ASYNCHTTP_GETBYTES);
+					$this->_debug && $this->_log('Response recieved (id:'.$id.', length:'.strlen($data).')');
+					$this->_responses[$id] .= $data;
 				}
+				$this->_debug && $this->_log('Connection closed (id:'.$id.')');
 				fclose($s);
 			} else {
 				$this->_errornos[$id] = -1;
@@ -233,7 +258,7 @@ class cles_AsyncHTTP {
 		if (!isset ($url['port']))
 			$url['port'] = 80;
 
-		$request = $method.' '.$url['path'].$url['query']." HTTP/1.1\r\n";
+		$request = $method.' '.$url['path'].$url['query']." HTTP/1.0\r\n";
 		$request .= ( $url['port'] == 80 )?
 			"Host: " . $url['host'] . "\r\n" :
 			"Host: " . $url['host'] . ':' . $url['port'] . "\r\n";
