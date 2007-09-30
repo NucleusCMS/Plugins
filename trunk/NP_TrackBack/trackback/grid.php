@@ -12,7 +12,7 @@
 
 	$oPluginAdmin = new PluginAdmin('TrackBack');
 
-	if (!($member->isLoggedIn() && $member->isAdmin()))
+	if ( ! $member->isLoggedIn() )
 	{
 		$oPluginAdmin->start();
 		echo '<p>' . _ERROR_DISALLOWED . '</p>';
@@ -45,14 +45,55 @@
 	$oTemplate->set ('CONF', $CONF);
 	$oTemplate->set ('plugindirurl', $oPluginAdmin->plugin->getAdminURL());
 	$oTemplate->set ('ticket', $manager->_generateTicket());
+		
+	$whereClause = '';
+	if( ! $member->isAdmin() ){
+		// where clause
+		$res = sql_query('SELECT tblog FROM '.sql_table('team').' WHERE tadmin = 1 AND tmember = '.$member->getID() );
+		$adminBlog = array();
+		while ($row = mysql_fetch_array($res)){
+			$adminBlog[] = $row[0];
+		}
+		if($adminBlog)
+			$whereClause =  ' i.iblog in (' . implode(', ', $adminBlog) . ') ';
+			
+		if( $whereClause )
+			$whereClause = ' AND ( i.iauthor = '.$member->getID().' OR ' . $whereClause . ' )';
+		else
+			$whereClause = ' AND i.iauthor = '.$member->getID();
+	}
+			
+	$requiredItemEditRights = array(
+		'dodelete',
+		'doblock',
+		'dounblock',
+	);
+	$safeids = array();
+	if (in_array($action, $requiredItemEditRights)) {
+		$ids = explode(',', requestVar('ids'));
+		$safeids = array();
+		foreach( $ids as $id ){
+			$id = trim($id);
+			if( is_numeric($id) )
+				$safeids[] = $id;
+		}	
+		if( ! $member->isAdmin() ){
+			$query = 'SELECT t.id  FROM ' . sql_table('plugin_tb') . ' t, ' . sql_table('item') . ' i WHERE t.tb_id = i.inumber AND t.id in ( '. implode(',', $safeids) . ' ) '. $whereClause ;
+			$res = sql_query($query);
+			$safeids = array();
+			while ($row = mysql_fetch_array($res)){
+				$safeids[] = $row[0];
+			}
+		}
+	}
 	
 	// Pages 
 	switch($action) {
 		
 		case 'ajax':
 			$type = requestVar('type') == 'all' ? 'all' : 'blocked' ;
-			$filter['all'] = 't.block = 0';
-			$filter['blocked'] = 't.block = 1';
+			$filter['all'] = ' t.block = 0 ';
+			$filter['blocked'] = ' t.block = 1 ';
 
 			$start  = intRequestVar('offset') ? intRequestVar('offset') : 0;
 			$amount = intRequestVar('page_size') ? intRequestVar('page_size') : 25;
@@ -76,7 +117,7 @@
 			".sql_table('item')." AS i
 			WHERE
 			t.tb_id = i.inumber AND
-			".$filter[$type]);
+			".$filter[$type].$whereClause);
 			$rrow = mysql_fetch_array($rres);
 			$count = $rrow['count'];
 			
@@ -96,7 +137,7 @@
 			".sql_table('item')." AS i
 			WHERE
 			t.tb_id = i.inumber AND
-			".$filter[$type]."
+			".$filter[$type].$whereClause."
 			ORDER BY
 			".$sort_col." ".$sort_dir." 
 			LIMIT
@@ -139,15 +180,6 @@
 			break;
 			
 		case 'dodelete':
-			$ids = explode(',', requestVar('ids'));
-			
-			$safeids = array();
-			foreach( $ids as $id ){
-				$id = trim($id);
-				if( is_numeric($id) )
-					$safeids[] = $id;
-			}
-			
 			if( count($safeids) > 0 ){		
 				$safeids = implode(',',$safeids);
 				
@@ -165,15 +197,6 @@
 			break;
 			
 		case 'doblock':
-			$ids = explode(',', requestVar('ids'));
-			
-			$safeids = array();
-			foreach( $ids as $id ){
-				$id = trim($id);
-				if( is_numeric($id) )
-					$safeids[] = $id;
-			}
-			
 			if( count($safeids) > 0 ){		
 				$safeids = implode(',',$safeids);
 				
@@ -192,15 +215,6 @@
 			break;
 						
 		case 'dounblock':
-			$ids = explode(',', requestVar('ids'));
-			
-			$safeids = array();
-			foreach( $ids as $id ){
-				$id = trim($id);
-				if( is_numeric($id) )
-					$safeids[] = $id;
-			}
-			
 			if( count($safeids) > 0 ){		
 				$safeids = implode(',',$safeids);
 				

@@ -123,12 +123,11 @@ define('NP_TRACKBACK_LINKCHECK_STRICT', 1);
 			global $itemid, $manager, $CONF;
 
 //modify start+++++++++
-			if(eregi('limit', $tb_id)){
+			if(preg_match('/limit/i', $tb_id)){
 				$amount = $tb_id;
 				$tb_id = '';
 			}
-			$amount = eregi_replace("limit", "", $amount);
-			$amount = intval($amount);
+			$amount = intval(str_replace('limit', '', $amount));
 //modify end+++++++++
 
 			if ($tb_id == '') $tb_id = intval($itemid);
@@ -532,7 +531,7 @@ define('NP_TRACKBACK_LINKCHECK_STRICT', 1);
 				'required' => $this->getRequiredURL(intval($tb_id)),
 			);
 			
-			if ($member->isLoggedIn() && $member->isAdmin()){
+			if ( $member->isLoggedIn() ){
 				$adminurl = htmlspecialchars($manager->addTicketToUrl($CONF['PluginURL'] . 'trackback/index.php?action=list&id=' . intval($tb_id)), ENT_QUOTES);
 				$pingformurl = htmlspecialchars($manager->addTicketToUrl($CONF['PluginURL'] . 'trackback/index.php?action=ping&id=' . intval($tb_id)), ENT_QUOTES);
 				$gVars['admin'] = '<a href="' . $adminurl . '" target="_blank">[admin]</a>';
@@ -752,9 +751,11 @@ define('NP_TRACKBACK_LINKCHECK_STRICT', 1);
 */
 			$uri 	= $this->_createItemLink($item['itemid'],$blog);	
 					
-			$timestamp = time();
-			$sourceaddr = ip2long(serverVar('REMOTE_ADDR'));
-			$key = md5( sprintf("%u %u %u %s", $timestamp, $sourceaddr, $itemid, __FILE__));
+			$title  = strip_tags($item['title']);
+			$desc  	= strip_tags($item['body']);
+			$desc   = $this->_cut_string($desc, 200);
+			$desc   = htmlspecialchars($desc, ENT_QUOTES);
+			
 			?>
 			<!--
 			<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -1810,7 +1811,7 @@ define('NP_TRACKBACK_LINKCHECK_STRICT', 1);
 			{
 				for ($i = 0; $i < count($array); $i++)
 				{
-					if( preg_match('/s?https?:\/\/[-_.!~*\'()a-zA-Z0-9;\/?:@&=+$,%#]+/', $array[$i][1], $matches) )
+					if( preg_match('/s?https?:\/\/[-_.!~*\'()a-zA-Z0-9;\/?:@&=+$,%]+/', $array[$i][1], $matches) )
 						$links[$matches[0]] = 1;
 				}
 			}
@@ -1931,7 +1932,7 @@ define('NP_TRACKBACK_LINKCHECK_STRICT', 1);
 
 				curl_close($ch);
 			}
-			elseif ($fp = @fopen ($url, "r"))
+			elseif ($fp = @fopen ($url, "rb"))
 			{
 //mod by cles
 //				$contents = fread($fp, 8192);
@@ -2428,8 +2429,8 @@ function _strip_controlchar($string){
 		function getName()   	  { 		return 'TrackBack';   }
 		function getAuthor() 	  { 		return 'rakaz + nakahara21 + hsur'; }
 		function getURL()    	  { 		return 'http://blog.cles.jp/np_cles/category/31/subcatid/3'; }
-		function getVersion()	  { 		return '2.0.3 jp10.5'; }
-		function getDescription() { 		return '[$Revision: 1.20 $]<br />' . _TB_DESCRIPTION; }
+		function getVersion()	  { 		return '2.0.3 jp11'; }
+		function getDescription() { 		return '[$Revision: 1.21 $]<br />' . _TB_DESCRIPTION; }
 	
 //modify start+++++++++
 /*
@@ -2462,7 +2463,7 @@ function _strip_controlchar($string){
 			global $member, $nucleus, $blogid;
 			
 			// only show to admins
-			if (!$member->isLoggedIn() || !$member->isAdmin()) return;
+			if (!$member->isLoggedIn()) return;
 
 			array_push(
 				$data['options'],

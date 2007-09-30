@@ -6,12 +6,9 @@
 	include('template.php');
 	
 	
-	// Send out Content-type
-	//sendContentType('application/xhtml+xml', 'admin-trackback', _CHARSET);	
-
 	$oPluginAdmin = new PluginAdmin('TrackBack');
 
-	if (!($member->isLoggedIn() && $member->isAdmin()))
+	if ( !$member->isLoggedIn() )
 	{
 		$oPluginAdmin->start();
 		echo '<p>' . _ERROR_DISALLOWED . '</p>';
@@ -29,7 +26,6 @@
 	}
 
 	$oPluginAdmin->start();
-	//$oPluginAdmin->admin->pagehead();
 	
 //modify start+++++++++
 		$plug =& $oPluginAdmin->plugin;
@@ -56,6 +52,57 @@
 	$oTemplate->set ('ticket', $manager->_generateTicket());
 	$ajaxEnabled = ($oPluginAdmin->plugin->getOption('ajaxEnabled') == 'yes') ? true : false;
 	$oTemplate->set ('ajaxEnabled', $ajaxEnabled);
+	
+	$whereClause = '';
+	if( ! $member->isAdmin() ){
+		// where clause
+		$res = sql_query('SELECT tblog FROM '.sql_table('team').' WHERE tadmin = 1 AND tmember = '.$member->getID() );
+		$adminBlog = array();
+		while ($row = mysql_fetch_array($res)){
+			$adminBlog[] = $row[0];
+		}
+		if($adminBlog)
+			$whereClause =  ' i.iblog in (' . implode(', ', $adminBlog) . ') ';
+			
+		if( $whereClause )
+			$whereClause = ' AND ( i.iauthor = '.$member->getID().' OR ' . $whereClause . ' )';
+		else
+			$whereClause = ' AND i.iauthor = '.$member->getID();
+	}
+	//echo "<p>Debug: $whereClause<p>";
+	
+	$requiredAdminRights = array(
+		'tableUpgrade',
+		'blocked_clear',
+		'blocked_spamclear',
+	);
+	if (in_array($action, $requiredAdminRights)) {
+		if( ! $member->isAdmin() ){
+			echo '<p>' . _ERROR_DISALLOWED . '</p>';
+			echo '<p>Reason: ' . __LINE__ . '</p>';
+			$oPluginAdmin->end();
+			exit;
+		}
+	}
+	
+	$requiredItemEditRights = array(
+		'block',
+		'unblock',
+		'delete',
+	);
+	if (in_array($action, $requiredItemEditRights)) {
+		if( ! $member->isAdmin() ){
+			$tb = intRequestVar('tb');
+			$query = 'SELECT i.inumber FROM ' . sql_table('plugin_tb') . ' t, ' . sql_table('item') . ' i WHERE t.tb_id = i.inumber AND t.id = '. $tb . $whereClause ;
+			$res = sql_query($query);
+			if( ! @mysql_num_rows($res) ){
+				echo '<p>' . _ERROR_DISALLOWED . '</p>';
+				echo '<p>Reason: ' . __LINE__ . '</p>';
+				$oPluginAdmin->end();
+				exit;
+			}
+		}
+	}
 
 	switch($action) {
 
@@ -107,6 +154,7 @@
 
 			$action = requestVar('next');
 			break;
+			
 		case 'blocked_clear':
 			$res = sql_query ("DELETE FROM ".sql_table('plugin_tb')." WHERE block = 1");
 			$action = requestVar('next');
@@ -166,6 +214,7 @@
 			
 			$action = requestVar('next');
 			break;
+			
 		case 'ping':
 			$id  = intRequestVar('id');
 			
@@ -214,7 +263,7 @@
 					".sql_table('item')." AS i
 				WHERE
 					t.tb_id = i.inumber AND
-					t.block = " . (( $action == 'all') ? 0 : 1) );				
+					t.block = " . (( $action == 'all') ? 0 : 1) . $whereClause );				
 						
 			if ($row = mysql_fetch_array($rres))
 				$count = $row['count'];
@@ -248,7 +297,7 @@
 					".sql_table('item')." AS i
 					WHERE
 					t.tb_id = i.inumber AND
-					t.block = " . (( $action == 'all') ? 0 : 1) ."
+					t.block = " . (( $action == 'all') ? 0 : 1) . $whereClause ."
 					ORDER BY
 					timestamp DESC
 					LIMIT
@@ -297,13 +346,13 @@
 
 			$ires = sql_query ("
 				SELECT
-					ititle,
-					inumber
+					i.ititle,
+					i.inumber
 				FROM
-					".sql_table('item')."
+					".sql_table('item')." i 
 				WHERE
-					inumber = '".$id."'
-			");
+					i.inumber = '".$id."'
+			". $whereClause );
 			
 			if ($irow = mysql_fetch_array($ires))
 			{
@@ -395,6 +444,7 @@
 			
 			while ($brow = mysql_fetch_array($bres))
 			{
+				if( !$member->isTeamMember($brow['bnumber']) ) continue;
 				$ires = sql_query ("
 					SELECT
 						i.inumber AS inumber,
@@ -406,7 +456,7 @@
 					WHERE
 						i.iblog = ".$brow['bnumber']." AND
 						t.tb_id = i.inumber AND
-						t.block = 0
+						t.block = 0 ".$whereClause." 
 					GROUP BY
 						i.inumber
                     ORDER BY
