@@ -2,7 +2,7 @@
 // vim: tabstop=2:shiftwidth=2
 
 /**
-  * NP_MetaTags ($Revision: 1.1 $)
+  * NP_MetaTags ($Revision: 1.2 $)
   * by hsur ( http://blog.cles.jp/np_cles )
 */
 
@@ -52,7 +52,7 @@ class NP_MetaTags extends NucleusPlugin {
 		return '1.7';
 	}
 	function getDescription() {
-		return '[$Revision: 1.1 $]<br />This plug-in This plug-in inserts a &lt;META&gt; tag (robots, description, keywords), by using &lt;%MetaTags%&gt;';
+		return '[$Revision: 1.2 $]<br />This plug-in This plug-in inserts a &lt;META&gt; tag (robots, description, keywords), by using &lt;%MetaTags%&gt;';
 	}
 	function getMinNucleusVersion() {
 		return 320;
@@ -66,6 +66,10 @@ class NP_MetaTags extends NucleusPlugin {
 		}
 	}
 
+	function hasAdminArea() {
+		return 1;
+	}
+	
 	function getEventList() {
 		return array ('PostPluginOptionsUpdate');
 	}
@@ -257,7 +261,7 @@ class NP_MetaTags extends NucleusPlugin {
 			$p =& new NP_MetaTags_MA_XMLParser();
 			$words = $p->parse($data);
 			if( $p->isError ){
-				ACTIONLOG :: add(WARNING, 'NP_MetaTags: Y!API Error( '. (isset($rawtokens[0]) ? $rawtokens[0] : 'Unknown Error') . ' )');
+				ACTIONLOG :: add(WARNING, 'NP_MetaTags: Y!API Error( '. (isset($rawtokens[0]) ? $rawtokens[0] : 'Unknown Error -> '.$data) . ' )');
 				$words = array();
 			}
 			$p->free();
