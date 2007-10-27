@@ -15,7 +15,7 @@
   * @author    shizuki
   * @copyright 2007 shizuki
   * @license   http://www.gnu.org/licenses/gpl.txt  GNU GENERAL PUBLIC LICENSE Version 2, June 1991
-  * @version   1.6
+  * @version   1.61
   * @link      http://shizuki.kinezumi.net/
   *
   * History of NP_Ping
@@ -27,11 +27,19 @@
   *   v1.5 - remove arg1 in exec() call
   *
   * History of NP_PingJP
-  *   v1.6 - Modified NP_Ping v1.5
+  *   v1.6  - Modified NP_Ping v1.5
   *          merge NP_SendPing(by Tokitake) code
+  *   v1.61 - Merge Asynchronous request code(by hsur)
   *
+  * $NP_PingJP:Id$
   **/
 
+
+  /**
+    * Require files for Asynchronous request
+    **/
+require_once(dirname(__FILE__).'/sharedlibs/sharedlibs.php');
+require("cles/AsyncHTTP/RawPost.php");
 
 class NP_PingJP extends NucleusPlugin
 {
@@ -42,8 +50,6 @@ var $debug = false;
 
 	/**
 	  * Name of the plugin
-	  *
-	  * @access public
 	  *
 	  * @return string
 	  *     The name easy to understand for man of the plugin
@@ -59,8 +65,6 @@ var $debug = false;
 	/**
 	  * Author of the plugin
 	  *
-	  * @access public
-	  *
 	  * @return string
 	  *     The name of the plugin author
 	  **/
@@ -74,8 +78,6 @@ var $debug = false;
 
 	/**
 	  * URL of the site which can download a plugin
-	  *
-	  * @access public
 	  *
 	  * @return string
 	  *     URL of the site which can download a plugin
@@ -91,8 +93,6 @@ var $debug = false;
 	/**
 	  * Version of the plugin
 	  *
-	  * @access public
-	  *
 	  * @return string
 	  *     Version of the plugin
 	  **/
@@ -106,8 +106,6 @@ var $debug = false;
 
 	/**
 	  * Requier NucleusCMS version of the plugin
-	  *
-	  * @access public
 	  *
 	  * @return string
 	  *     Requier NucleusCMS version of a plugin
@@ -123,8 +121,6 @@ var $debug = false;
 	/**
 	  * Description of the plugin
 	  *
-	  * @access public
-	  *
 	  * @return string
 	  *     Description of a plugin
 	  **/
@@ -138,8 +134,6 @@ var $debug = false;
 
 	/**
 	  * Check whether the feature is being supported.
-	  *
-	  * @access public
 	  *
 	  * @param  string
 	  *     Feature name
@@ -161,8 +155,6 @@ var $debug = false;
 
 	/**
 	  * Plugin installing action
-	  *
-	  * @access public
 	  *
 	  * @return void
 	  **/
@@ -210,8 +202,6 @@ var $debug = false;
 	/**
 	  * Plugin initialize action
 	  *
-	  * @access public
-	  *
 	  * @return void
 	  **/
 	function init()
@@ -230,8 +220,6 @@ var $debug = false;
 	/**
 	  * Event list plugin exist
 	  *
-	  * @access public
-	  *
 	  * @return array
 	  *     exist events
 	  **/
@@ -241,32 +229,32 @@ var $debug = false;
 			'SendPing',
 			'JustPosted',
 			'EditItemFormExtras',
-			'PostUpdateItem',
+			'AdminPrePageHead',
 		);
 	}
 
 	// }}}
-	// {{{ function event_PostUpdateItem($data)
+	// {{{ function event_AdminPrePageHead($data)
 
 	/**
 	  * Event ITEM updated
 	  *
-	  * @access public
-	  *
 	  * @param  array
-	  *     itemid : value intger
-	  *         update item ID
+	  *     extrahead : reference string
+	  *         Extra information
+	  *     action    : value string
+	  *         executed action or pagetype
 	  *
 	  * @return void
 	  **/
-	function event_PostUpdateItem($data) {
+	function event_AdminPrePageHead($data) {
 		global $manager;
-		if (requestVar('np_pingjp_check') == 1) {
-			$iid  = intval($data['itemid']);
-			$item =& $manager->getItem($iid, 0, 0);
-			// don't ping on draft or future items
-			if (!$item || $item['draft']) return;
-			$this->sendPing(getBlogIDFromItemID($iid));
+		if (requestVar('np_pingjp_check') != 1 && $data['action'] == 'sendping') {
+			$blogid = intRequestVar('blogid');
+			$uri    = $CONF['AdminURL'] . 'index.php?action=itemlist&blogid=' . $blogid;
+			$pattern = '<meta http-equiv="refresh" content="1; url=.+?/>';
+			$data['extrahead'] = preg_replace('|'.$pattern.'|', '', $data['extrahead']);
+			redirect($url)
 		}
     }
 
@@ -276,8 +264,6 @@ var $debug = false;
 	/**
 	  * Event display ITEM edit form
 	  *     adding plugin specify for ITEM edit form
-	  *
-	  * @access public
 	  *
 	  * @param  array
 	  *     blog      : reference object
@@ -323,7 +309,7 @@ var $debug = false;
 		<div style="display:block">
 			<h3>NP_PingJP</h3>
 			<p>
-				<label for="np_pingjp_check">Send Ping ?:</label>
+				<label for="np_pingjp_check"><?php echo _PINGJP_FORMEXTRA ?>:</label>
 				<input type="checkbox" value="1" id="np_pingjp_check" name="np_pingjp_check" />
 			</p>
 		</div>
@@ -336,8 +322,6 @@ var $debug = false;
 	/**
 	  * Event ITEM timstamp as now
 	  *     send update ping or etc.
-	  *
-	  * @access public
 	  *
 	  * @param  array
 	  *     blogid : value intger
@@ -367,8 +351,6 @@ var $debug = false;
 	  * Event send weblog updates ping
 	  *     when add ITEM
 	  *
-	  * @access public
-	  *
 	  * @param  array
 	  *     blogid : value intger
 	  *         blog ID
@@ -386,8 +368,6 @@ var $debug = false;
 	/**
 	  * Setting ping servers
 	  *
-	  * @access public
-	  *
 	  * @param  intger
 	  *     blog ID
 	  * @param  boolean
@@ -397,109 +377,96 @@ var $debug = false;
 	  **/
 	function sendPing($myBlogId, $background = false)
 	{
-		$pinging = array();
+		$targets = array();
 		if ($this->getBlogOption($myBlogId, 'pingjp_pingomatic') == 'yes') {
-			$pinging[]['target'] = _PINGJP_PINGOM;
-			$pinging[]['host']   = 'rpc.pingomatic.com';
-			$pinging[]['path']   = '/';
-			$pinging[]['port']   = 80;
-			$pinging[]['method'] = 'weblogUpdates.ping';
+			$data['name']  = _PINGJP_PINGOM;
+			$data['host']  = 'http://rpc.pingomatic.com/';
+			$data['meth']  = 'weblogUpdates.ping';
+			$targetHosts[] = $pinging;
 		}
 
 		if ($this->getBlogOption($myBlogId, 'pingjp_weblogs') == 'yes') { 
-			$pinging[]['target'] = _PINGJP_WEBLOGS;
-			$pinging[]['host']   = 'rpc.weblogs.com';
-			$pinging[]['path']   = '/rpc2';
-			$pinging[]['port']   = 80;
-			$pinging[]['method'] = 'weblogUpdates.extendedPing';
+			$data['name']  = _PINGJP_WEBLOGS;
+			$data['host']  = 'http://rpc.weblogs.com/rpc2';
+			$data['meth']  = 'weblogUpdates.extendedPing';
+			$targetHosts[] = $pinging;
 		}
 
 		if ($this->getBlogOption($myBlogId, 'pingjp_technorati') == 'yes') {
-			$pinging[]['target'] = _PINGJP_TECHNOR;
-			$pinging[]['host']   = 'rpc.technorati.com';
-			$pinging[]['path']   = '/rpc/ping';
-			$pinging[]['port']   = 80;
-			$pinging[]['method'] = 'weblogUpdates.ping';
+			$data['name']  = _PINGJP_TECHNOR;
+			$data['host']  = 'http://rpc.technorati.com/rpc/ping';
+			$data['meth']  = 'weblogUpdates.ping';
+			$targetHosts[] = $pinging;
 		}
 
 		if ($this->getBlogOption($myBlogId, 'pingjp_blogrolling') == 'yes') {
-			$pinging[]['target'] = _PINGJP_BLOGR;
-			$pinging[]['host']   = 'rpc.blogrolling.com';
-			$pinging[]['path']   = '/pinger/';
-			$pinging[]['port']   = 80;
-			$pinging[]['method'] = 'weblogUpdates.ping';
+			$data['name']  = _PINGJP_BLOGR;
+			$data['host']  = 'http://rpc.blogrolling.com/pinger/';
+			$data['meth']  = 'weblogUpdates.ping';
+			$targetHosts[] = $pinging;
 		}
 
 		if ($this->getBlogOption($myBlogId, 'pingjp_google') == 'yes') {
-			$pinging[]['target'] = _PINGJP_GOOGLE;
-			$pinging[]['host']   = 'blogsearch.google.co.jp';
-			$pinging[]['path']   = '/ping/RPC2';
-			$pinging[]['port']   = 80;
-			$pinging[]['method'] = 'weblogUpdates.extendedPing';
+			$data['name']  = _PINGJP_GOOGLE;
+			$data['host']  = 'http://blogsearch.google.co.jp/ping/RPC2';
+			$data['meth']  = 'weblogUpdates.extendedPing';
+			$targetHosts[] = $pinging;
 		}
 
 		if ($this->getBlogOption($myBlogId, 'pingjp_yahoo') == 'yes') {
-			$pinging[]['target'] = _PINGJP_YAHOO;
-			$pinging[]['host']   = 'api.my.yahoo.co.jp';
-			$pinging[]['path']   = '/RPC2';
-			$pinging[]['port']   = 80;
-			$pinging[]['method'] = 'weblogUpdates.ping';
+			$data['name']  = _PINGJP_YAHOO;
+			$data['host']  = 'http://api.my.yahoo.co.jp/RPC2';
+			$data['meth']  = 'weblogUpdates.ping';
+			$targetHosts[] = $pinging;
 		}
 
 		if ($this->getBlogOption($myBlogId, 'pingjp_goo') == 'yes') {
-			$pinging[]['target'] = _PINGJP_GOO;
-			$pinging[]['host']   = 'blog.goo.ne.jp';
-			$pinging[]['path']   = '/XMLRPC';
-			$pinging[]['port']   = 80;
-			$pinging[]['method'] = 'weblogUpdates.ping';
+			$data['name']  = _PINGJP_GOO;
+			$data['host']  = 'http://blog.goo.ne.jp/XMLRPC';
+			$data['meth']  = 'weblogUpdates.ping';
+			$targetHosts[] = $pinging;
 		}
 
 		if ($this->getBlogOption($myBlogId, 'pingjp_ask') == 'yes') {
-			$pinging[]['target'] = _PINGJP_ASK;
-			$pinging[]['host']   = 'ping.ask.jp';
-			$pinging[]['path']   = '/xmlrpc.m';
-			$pinging[]['port']   = 80;
-			$pinging[]['method'] = 'weblogUpdates.ping';
+			$data['name']  = _PINGJP_ASK;
+			$data['host']  = 'http://ping.ask.jp/xmlrpc.m';
+			$data['meth']  = 'weblogUpdates.ping';
+			$targetHosts[] = $pinging;
 		}
 
 		if ($this->getBlogOption($myBlogId, 'pingjp_blog360') == 'yes') {
-			$pinging[]['target'] = _PINGJP_BLOG360;
-			$pinging[]['host']   = 'ping.blog360.jp';
-			$pinging[]['path']   = '/rpc';
-			$pinging[]['port']   = 80;
-			$pinging[]['method'] = 'weblogUpdates.ping';
+			$data['name']  = _PINGJP_BLOG360;
+			$data['host']  = 'http://ping.blog360.jp/rpc';
+			$data['meth']  = 'weblogUpdates.ping';
+			$targetHosts[] = $pinging;
 		}
 
 		if ($this->getBlogOption($myBlogId, 'pingjp_pingoo') == 'yes') {
-			$pinging[]['target'] = _PINGJP_PINGOO;
-			$pinging[]['host']   = 'pingoo.jp';
-			$pinging[]['path']   = '/ping';
-			$pinging[]['port']   = 80;
-			$pinging[]['method'] = 'weblogUpdates.ping';
+			$data['name']  = _PINGJP_PINGOO;
+			$data['host']  = 'http://pingoo.jp/ping';
+			$data['meth']  = 'weblogUpdates.ping';
+			$targetHosts[] = $pinging;
 		}
 
 		if ($this->getBlogOption($myBlogId, 'pingjp_blogs') == 'yes') {
-			$pinging[]['target'] = _PINGJP_BLOGS;
-			$pinging[]['host']   = 'ping.blo.gs';
-			$pinging[]['path']   = '/';
-			$pinging[]['port']   = 80;
-			$pinging[]['method'] = 'weblogUpdates.extendedPing';
+			$data['name']  = _PINGJP_BLOGS;
+			$data['host']  = 'http://ping.blo.gs/';
+			$data['meth']  = 'weblogUpdates.extendedPing';
+			$targetHosts[] = $pinging;
 		}
 
 		if ($this->getBlogOption($myBlogId, 'pingjp_weblogues') == 'yes') {
-			$pinging[]['target'] = _PINGJP_WEBLOGUES;
-			$pinging[]['host']   = 'www.weblogues.com';
-			$pinging[]['path']   = '/RPC/';
-			$pinging[]['port']   = 80;
-			$pinging[]['method'] = 'weblogUpdates.extendedPing';
+			$data['name']  = _PINGJP_WEBLOGUES;
+			$data['host']  = 'http://www.weblogues.com/RPC/';
+			$data['meth']  = 'weblogUpdates.extendedPing';
+			$targetHosts[] = $pinging;
 		}
 
 		if ($this->getBlogOption($myBlogId, 'pingjp_bloggde') == 'yes') {
-			$pinging[]['target'] = _PINGJP_BLOGGDE;
-			$pinging[]['host']   = 'xmlrpc.blogg.de';
-			$pinging[]['path']   = '/ping';
-			$pinging[]['port']   = 80;
-			$pinging[]['method'] = 'bloggUpdates.ping';
+			$data['name']  = _PINGJP_BLOGGDE;
+			$data['host']  = 'http://xmlrpc.blogg.de/ping';
+			$data['meth']  = 'bloggUpdates.ping';
+			$targetHosts[] = $pinging;
 		}
 
 		if ($this->getBlogOption($myBlogId, 'pingjp_otherurl') != '') {
@@ -516,52 +483,83 @@ var $debug = false;
 					$parsed = parse_url($target);
 					$method = 'weblogUpdates.ping';
 				}
-				$pinging[]['target'] = $parsed['host'];
-				$pinging[]['host']   = $parsed['host'];
-				$pinging[]['path']   = $parsed['path'];
-				$pinging[]['port']   = (!$parsed['port']) ? 80 : $parsed['port'];
-				$pinging[]['method'] = $method;
+				$data['name']  = $parsed['host'];
+				$data['host']  = $target;
+				$data['meth']  = $method;
+				$targetHosts[] = $pinging;
 			}
 		}
-		foreach ($pinging as $sendPing) {
-			$this->sendUpdatePing($myBlogId, $sendPing, $background);
+		$this->ahttp = new cles_AsyncHTTP_RawPost();
+		$this->ahttp->userAgent = "Nucleus(NP_PingJP Plugin)";
+		$this->ahttp->timeout   = 30;
+		$header   = "Accept-Charset: UTF-8\r\nContent-Type: text/xml\r\n";
+		$messages = array();
+		foreach ($targetHosts as $targetHost) {
+			$res = $this->sendUpdatePing($myBlogId, $targetHost, $header);
+			if (!$background) {
+				$logMsg = 'NP_PingJP: Sending ping (from foreground)';
+				ACTIONLOG::add(INFO, $logMsg);
+				echo _PINGJP_PINGING . $target['name'] . ':<br />';
+			} else {
+				$logMsg = 'NP_PingJP: Sending ping (from background)';
+				ACTIONLOG::add(INFO, $logMsg);
+			}
+			$messages[$res[0]] =& $res[1];
+		}
+		$responses = $this->ahttp->getResponses();
+		foreach ($messages as $id => $message) {
+			$target = $targetHosts[$id]['name'];
+			if (isset($responses[$id])) {
+				$response = $msg->parseResponse($responses[$id]);
+				$results  = $this->processPingResult($response);
+			} else {
+				$message  = ;
+				$errId    = ;
+				$response =  ;
+				$results  = array(
+					'error'   => true,
+					'message' => _PINGJP_UNKNOWN_ERROR
+							  .  ' '   . $this->ahttp->getErrorNo($id)
+							  .  ' : ' . $this->ahttp->getError($id)
+							  .  ', '  . $this->ahttp->_responses[$id];
+			}
+			if ($results['error']) {
+				$logMsg = 'NP_PingJP Errror: ' . $results['message'];
+				ACTIONLOG::add(WARNING, $logMsg);
+			} elseif ($this->debug) {
+				$logMsg = 'NP_PingJP: ' . $results['message'];
+				ACTIONLOG::add(INFO, $logMsg);
+			}
+			if (!$background) {
+				echo $results['message'] . '<br />';
+			}
 		}
 	}
 
 	// }}}
-	// {{{ function sendUpdatePing($myBlogId, $sendPing, $background = false)
+	// {{{ function sendUpdatePing($myBlogId, $pingServer, $header)
 
 	/**
-	  * Setting ping servers
-	  *
-	  * @access public
+	  * Setting ping message
 	  *
 	  * @param  intger
 	  *     blog ID
 	  * @param  array
 	  *     ping server settigs
-	  *     target : name of ping server
-	  *     host   : host of ping server
-	  *     path   : path of ping server
-	  *     port   : port of ping server
-	  *     method : method of ping server accept
-	  * @param  boolean
-	  *     Send ping background or foreground
+	  *     name : name of ping server
+	  *     host : URI of ping server
+	  *     meth : method of ping server accept
+	  * @param string
+	  *     http request header
 	  *
 	  * @return void
 	  **/
-	function sendUpdatePing($myBlogId, $sendPing, $background = false)
+	function sendUpdatePing($myBlogId, $pingServer, $header)
 	{
 		global $manager, $DIR_LIBS;
 		if (!class_exists('xmlrpcmsg')) {
 			global $DIR_LIBS;
 			include($DIR_LIBS . 'xmlrpc.inc.php');
-		}
-		if (!$background) {
-			echo _PINGJP_PINGING . $parsed['target'] . ':<br />';
-		} else {
-			$logMsg = 'NP_PingJP: Sending ping (from background):' . $parsed['target'];
-			ACTIONLOG::add(INFO, $logMsg);
 		}
 		$b    =& $manager->getBlog($myBlogId);
 		$name =  $b->getName();
@@ -580,7 +578,7 @@ var $debug = false;
 			new xmlrpcval($name),
 			new xmlrpcval($burl)
 		);
-		if ($sendPing['method'] == 'weblogUpdates.extendedPing') {
+		if ($pingServer['meth'] == 'weblogUpdates.extendedPing') {
 			$feedURL = $this->getBlogOption($myBlogid, 'pingjp_feedsurl');
 			if (!$feedURL) {
 				if (substr($burl, -1) != '/') {
@@ -593,29 +591,16 @@ var $debug = false;
 			$data[3] = new xmlrpcval($burl);
 			$data[4] = new xmlrpcval($feedURL);
 		}
-		$message  = new xmlrpcmsg($sendPing['method'], $data);
-		$connect  = new xmlrpc_client($sendPing['path'], $sendPing['host'], $sendPing['port']);
-		$response = $connect->send($message, 30); // 30 seconds timeout...
-		$results  = $this->processPingResult($response);
-		if ($results['error']) {
-			$logMsg = 'NP_PingJP Errror: ' . $results['message'];
-			ACTIONLOG::add(WARNING, $logMsg);
-		} elseif ($this->debug) {
-			$logMsg = 'NP_PingJP: ' . $results['message'];
-			ACTIONLOG::add(INFO, $logMsg);
-		}
-		if (!$background) {
-			echo $results['message'] . '<br />';
-		}
+		$message  = new xmlrpcmsg($pingServer['meth'], $data);
+		$reqestId = $this->ahttp->setRequest($target, 'POST', $header, $message->serialize());
+		return array($reqestId, &$message);
 	}
 
 	// }}}
 	// {{{ function processPingResult($response)
 
 	/**
-	  * Pinging result
-	  *
-	  * @access public
+	  * Process pinging result
 	  *
 	  * @param  object
 	  *     weblog updates ping response
@@ -644,11 +629,11 @@ var $debug = false;
 			$ret['error']   = true;
 			$ret['message'] = _PINGJP_ERROR . ': ' . $response->faultString();
 		} else {
-			$response = $response->value();	// get response struct
+			$struct = $response->value();	// get response struct
 			// get values
-			$flerror = $response->structmem('flerror');
+			$flerror = $struct->structmem('flerror');
 			$flerror = $flerror->scalarval();
-			$message = $response->structmem('message');
+			$message = $struct->structmem('message');
 			$message = $message->scalarval();
 			if ($flerror != 0) {
 				$ret['error']   = true;

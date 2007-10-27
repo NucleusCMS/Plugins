@@ -18,6 +18,7 @@
 	define('_PINGJP_UPDFEED',        'Feed URI send to ping servers(Ex:http://example.com/xml-rss2.php?blogid=2)');
 	define('_PINGJP_PINGING',        'Pinging ');
 	define('_PINGJP_ERROR',          'Error');
+	define('_PINGJP_UNKNOWN_ERROR',  'Unknown Error');
 	define('_PINGJP_PHP_ERROR',      'PHP Error: ');
 	define('_PINGJP_PHP_PING_ERROR', 'Error while trying to send ping. Sorry about that.');
 	define('_PINGJP_SUCCESS',        'Success');

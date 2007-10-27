@@ -19,6 +19,7 @@
 	define('_PINGJP_UPDFEED',        'Pingサーバに送信するRSS等のURL(例:http://example.com/xml-rss2.php?blogid=2)');
 	define('_PINGJP_PINGING',        'Ping 送信中 ');
 	define('_PINGJP_ERROR',          'エラー');
+	define('_PINGJP_UNKNOWN_ERROR',  '不明なエラー');
 	define('_PINGJP_PHP_ERROR',      'PHP エラー: ');
 	define('_PINGJP_PHP_PING_ERROR', '申し訳ありません。ping を送信中にエラーが発生しました。');
 	define('_PINGJP_SUCCESS',        '成功');
