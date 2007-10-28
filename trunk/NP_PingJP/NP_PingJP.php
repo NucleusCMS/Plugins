@@ -31,7 +31,8 @@
   *          merge NP_SendPing(by Tokitake) code
   *   v1.61 - Merge Asynchronous request code(by hsur)
   *
-  * $NP_PingJP:Id$
+  * NP_PingJP.php ($Revision: 1.3 $)
+  * $Id: NP_PingJP.php,v 1.3 2007-10-28 15:57:42 shizuki Exp $
   **/
 
 
