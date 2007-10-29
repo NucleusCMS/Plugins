@@ -30,9 +30,10 @@
   *   v1.6  - Modified NP_Ping v1.5
   *          merge NP_SendPing(by Tokitake) code
   *   v1.61 - Merge Asynchronous request code(by hsur)
+  *   v1.62 - Add background mode
   *
-  * NP_PingJP.php ($Revision: 1.3 $)
-  * $Id: NP_PingJP.php,v 1.3 2007-10-28 15:57:42 shizuki Exp $
+  * NP_PingJP.php ($Revision: 1.4 $)
+  * $Id: NP_PingJP.php,v 1.4 2007-10-29 15:59:04 shizuki Exp $
   **/
 
 
@@ -99,7 +100,7 @@ var $debug = false;
 	  **/
 	function getVersion()
 	{
-		return '1.6';
+		return '1.62';
 	}
 
 	// }}}
@@ -251,11 +252,11 @@ var $debug = false;
 	function event_AdminPrePageHead($data) {
 		global $manager;
 		if (requestVar('np_pingjp_check') != 1 && $data['action'] == 'sendping') {
-			$blogid = intRequestVar('blogid');
-			$uri    = $CONF['AdminURL'] . 'index.php?action=itemlist&blogid=' . $blogid;
-			$pattern = '<meta http-equiv="refresh" content="1; url=.+?/>';
+			$blogid   = intRequestVar('blogid');
+			$redirect = $CONF['AdminURL'] . 'index.php?action=itemlist&blogid=' . $blogid;
+			$pattern  = '<meta http-equiv="refresh" content="1; url=.+?/>';
 			$data['extrahead'] = preg_replace('|'.$pattern.'|', '', $data['extrahead']);
-			redirect($url)
+			redirect($redirect)
 		}
     }
 
@@ -338,9 +339,15 @@ var $debug = false;
 			return;
 		}
 		if ($this->getBlogOption($data['blogid'], 'pingjp_background') == "yes") {
-			$this->sendPings($data['blogid'], true);
+			$directory = $this->getDirectory();
+			// TODO: Check
+//			if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+//				system("start /b php " . $directory . "ping.php " . $data['blogid'] . " > nul"  );
+//			} else {
+				exec("php " . $directory . "ping.php " . $data['blogid'] . " > /dev/null &");
+//			}
 		} else {
-			$this->sendPings($data['blogid']);
+			$this->sendPings($data['blogid'], 1);
 		}
 		$data['pinged'] = true;
 	}
@@ -364,19 +371,22 @@ var $debug = false;
 	}
 
 	// }}}
-	// {{{ function sendPing($myBlogId, $background = false)
+	// {{{ function sendPing($myBlogId, $background = 0)
 
 	/**
 	  * Setting ping servers
 	  *
 	  * @param  intger
 	  *     blog ID
-	  * @param  boolean
-	  *     Send ping background or foreground
+	  * @param  intger
+	  *     Send ping mode
+	  *         0 : display mode
+	  *         1 : non display mode
+	  *         2 : background mode
 	  *
 	  * @return void
 	  **/
-	function sendPing($myBlogId, $background = false)
+	function sendPing($myBlogId, $background = 0)
 	{
 		$targets = array();
 		if ($this->getBlogOption($myBlogId, 'pingjp_pingomatic') == 'yes') {
@@ -492,18 +502,20 @@ var $debug = false;
 		}
 		$this->ahttp = new cles_AsyncHTTP_RawPost();
 		$this->ahttp->userAgent = "Nucleus(NP_PingJP Plugin)";
-		$this->ahttp->timeout   = 30;
+		$this->ahttp->timeout   = 15;
 		$header   = "Accept-Charset: UTF-8\r\nContent-Type: text/xml\r\n";
 		$messages = array();
+		if ($background == 1) {
+			$logMsg = 'NP_PingJP: Sending ping (from non display mode)';
+			ACTIONLOG::add(INFO, $logMsg);
+		} elseif ($background == 2) {
+			$logMsg = 'NP_PingJP: Sending ping (from background mode)';
+			ACTIONLOG::add(INFO, $logMsg);
+		}
 		foreach ($targetHosts as $targetHost) {
 			$res = $this->sendUpdatePing($myBlogId, $targetHost, $header);
-			if (!$background) {
-				$logMsg = 'NP_PingJP: Sending ping (from foreground)';
-				ACTIONLOG::add(INFO, $logMsg);
+			if ($background == 0) {
 				echo _PINGJP_PINGING . $target['name'] . ':<br />';
-			} else {
-				$logMsg = 'NP_PingJP: Sending ping (from background)';
-				ACTIONLOG::add(INFO, $logMsg);
 			}
 			$messages[$res[0]] =& $res[1];
 		}
@@ -514,25 +526,33 @@ var $debug = false;
 				$response = $msg->parseResponse($responses[$id]);
 				$results  = $this->processPingResult($response);
 			} else {
-				$message  = ;
-				$errId    = ;
-				$response =  ;
-				$results  = array(
-					'error'   => true,
-					'message' => _PINGJP_UNKNOWN_ERROR
-							  .  ' '   . $this->ahttp->getErrorNo($id)
-							  .  ' : ' . $this->ahttp->getError($id)
-							  .  ', '  . $this->ahttp->_responses[$id];
+				$message  = $this->ahttp->getErrorNo($id);
+				$errorId  = $this->ahttp->getError($id);
+				$response = $this->ahttp->_responses[$id];
+				if ($errorId == 110) {
+					$results['message'] = "Connection timeout($errorId)";
+				} elseif (strpos($message, 'HTTP Error') !== false) {
+					preg_match("/.*\[([0-9]{3})\] \(.*\) (.*)$/", $message, $matchies);
+					if ($matchies[1]) {
+						$rescode = $matchies[1];
+						$rescstr = $matchies[2];
+						$results['message'] = "HTTP Error: $target $rescode $rescstr");
+					} else {
+						$results['message'] = "HTTP Error: $target Response Null");
+					}
+				} else {
+					$results['message'] = "Unknown Error: $errorId: $message, $response");
+				}
+				$results['error'] = true;
 			}
+			$logMsg = $target . ' : ' . $results['message'];
 			if ($results['error']) {
-				$logMsg = 'NP_PingJP Errror: ' . $results['message'];
-				ACTIONLOG::add(WARNING, $logMsg);
+				ACTIONLOG::add(WARNING, 'NP_PingJP Errror: ' . $logMsg);
 			} elseif ($this->debug) {
-				$logMsg = 'NP_PingJP: ' . $results['message'];
-				ACTIONLOG::add(INFO, $logMsg);
+				ACTIONLOG::add(INFO, 'NP_PingJP Pinged: ' . $logMsg);
 			}
-			if (!$background) {
-				echo $results['message'] . '<br />';
+			if ($background == 0) {
+				echo $logMsg . '<br />';
 			}
 		}
 	}
