@@ -32,8 +32,8 @@
   *   v1.61 - Merge Asynchronous request code(by hsur)
   *   v1.62 - Add background mode
   *
-  * NP_PingJP.php ($Revision: 1.4 $)
-  * $Id: NP_PingJP.php,v 1.4 2007-10-29 15:59:04 shizuki Exp $
+  * NP_PingJP.php ($Revision: 1.5 $)
+  * $Id: NP_PingJP.php,v 1.5 2007-10-30 15:27:26 shizuki Exp $
   **/
 
 
@@ -256,7 +256,7 @@ var $debug = false;
 			$redirect = $CONF['AdminURL'] . 'index.php?action=itemlist&blogid=' . $blogid;
 			$pattern  = '<meta http-equiv="refresh" content="1; url=.+?/>';
 			$data['extrahead'] = preg_replace('|'.$pattern.'|', '', $data['extrahead']);
-			redirect($redirect)
+			redirect($redirect);
 		}
     }
 
@@ -481,10 +481,10 @@ var $debug = false;
 		}
 
 		if ($this->getBlogOption($myBlogId, 'pingjp_otherurl') != '') {
-			$others  = $this->getBlogOption($myBlogId, 'pingjp_otherurl')
+			$others  = $this->getBlogOption($myBlogId, 'pingjp_otherurl');
 			$servers = preg_split("/[\s,]+/", $others);
 			foreach ($servers as $target) {
-				if (strpos($target), ',') {
+				if (strpos($target, ',')) {
 					list($url, $method) = explode(',', $target);
 					$parsed = parse_url($url);
 					if ($method == 'ex') {
@@ -536,12 +536,12 @@ var $debug = false;
 					if ($matchies[1]) {
 						$rescode = $matchies[1];
 						$rescstr = $matchies[2];
-						$results['message'] = "HTTP Error: $target $rescode $rescstr");
+						$results['message'] = "HTTP Error: $target $rescode $rescstr";
 					} else {
-						$results['message'] = "HTTP Error: $target Response Null");
+						$results['message'] = "HTTP Error: $target Response Null";
 					}
 				} else {
-					$results['message'] = "Unknown Error: $errorId: $message, $response");
+					$results['message'] = "Unknown Error: $errorId: $message, $response";
 				}
 				$results['error'] = true;
 			}
