@@ -32,8 +32,8 @@
   *   v1.61 - Merge Asynchronous request code(by hsur)
   *   v1.62 - Add background mode
   *
-  * NP_PingJP.php ($Revision: 1.5 $)
-  * $Id: NP_PingJP.php,v 1.5 2007-10-30 15:27:26 shizuki Exp $
+  * NP_PingJP.php ($Revision: 1.6 $)
+  * $Id: NP_PingJP.php,v 1.6 2007-11-03 13:50:48 shizuki Exp $
   **/
 
 
@@ -581,6 +581,7 @@ var $debug = false;
 		if (!class_exists('xmlrpcmsg')) {
 			global $DIR_LIBS;
 			include($DIR_LIBS . 'xmlrpc.inc.php');
+			$GLOBALS['xmlrpc_internalencoding']=mb_internal_encoding();
 		}
 		$b    =& $manager->getBlog($myBlogId);
 		$name =  $b->getName();
