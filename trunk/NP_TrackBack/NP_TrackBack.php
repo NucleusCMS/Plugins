@@ -22,20 +22,37 @@
 	*/
 
 define('NP_TRACKBACK_LINKCHECK_STRICT', 1);
-//define('NP_TRACKBACK_LINKCHECK_STRICT', 0);
+define('NP_TRACKBACK_USE_XML_PARSER', 2);
 
 	class NP_TrackBack_XMLParser {
 		function NP_TrackBack_XMLParser(){
-			$this->parser = xml_parser_create();
-			xml_set_object($this->parser, $this);
-			xml_set_element_handler($this->parser, "_open", "_close");
-			xml_set_character_data_handler($this->parser, "_cdata");
-			
 			$this->isError = false;
 			$this->inTarget = false;
 		}
 	
 		function parse($data){
+			$rx = '/(<'.'?xml.*encoding=[\'"])(.*?)([\'"].*?'.'>)/m';
+			if (preg_match($rx, $data, $m)) {
+				$encoding = strtoupper($m[2]);
+			} else {
+				$input_encoding = "UTF-8,EUC-JP,SJIS,ISO-2022-JP,ISO-8859-1";
+				$encoding = mb_detect_encoding($data, $input_encoding);
+			}
+			
+			if($encoding == "UTF-8" || $encoding == "ISO-8859-1") {
+				// noting
+			} else {
+				$data = @mb_convert_encoding($data, "UTF-8", $encoding);
+				$data = str_replace ( $m[0], $m[1].'UTF-8'.$m[3], $data);
+				$encoding = 'UTF-8';
+			}
+			
+			$this->parser = xml_parser_create($encoding);
+			xml_set_object($this->parser, $this);
+			xml_set_element_handler($this->parser, "_open", "_close");
+			xml_set_character_data_handler($this->parser, "_cdata");
+			xml_parser_set_option($this->parser, XML_OPTION_TARGET_ENCODING, 'UTF-8').
+			
 			$this->words = array();
 			xml_parse($this->parser, $data);
 			$errcode = xml_get_error_code($this->parser);
@@ -293,11 +310,7 @@ define('NP_TRACKBACK_LINKCHECK_STRICT', 1);
 				// When no action type is given, assume it's a ping
 				case '':
 					$errorMsg = $this->handlePing();
-					
-					if ($errorMsg != '')
-						$this->xmlResponse($errorMsg);
-					else
-						$this->xmlResponse();
+					$this->xmlResponse($errorMsg);
 					break; 
 					
 				// Manual ping
@@ -873,9 +886,9 @@ define('NP_TRACKBACK_LINKCHECK_STRICT', 1);
 		/* 
 		 *  Send a Trackback ping to another website
 		 */
-		function sendPing($itemid, $title, $url, $excerpt, $blog_name, $ping_url, $utf8flag=0) 
+		function sendPing($itemid, $title, $url, $excerpt, $blog_name, $ping_url) 
 		{
-			$tempEncording = ($utf8flag)? 'UTF-8': _CHARSET;
+			$sendEncoding = 'UTF-8';
 			
 			// 1. Check some basic things
 			if (!$this->canSendPing()) {
@@ -899,10 +912,10 @@ define('NP_TRACKBACK_LINKCHECK_STRICT', 1);
 			$port = ($parsed_url['port']) ? $parsed_url['port'] : 80;
 	
 			// 3. Create contents
-			if($tempEncording != _CHARSET){
-				$title = mb_convert_encoding($title, $tempEncording, _CHARSET);
-				$excerpt = mb_convert_encoding($excerpt, $tempEncording, _CHARSET);
-				$blog_name = mb_convert_encoding($blog_name, $tempEncording, _CHARSET);
+			if($sendEncoding != _CHARSET){
+				$title = mb_convert_encoding($title, $sendEncoding, _CHARSET);
+				$excerpt = mb_convert_encoding($excerpt, $sendEncoding, _CHARSET);
+				$blog_name = mb_convert_encoding($blog_name, $sendEncoding, _CHARSET);
 			}
 			
 			
@@ -926,9 +939,7 @@ define('NP_TRACKBACK_LINKCHECK_STRICT', 1);
 			$request .= "Cache-Control: no-cache\r\n";
 			$request .= "Connection: Close\r\n";
 			$request .= "Content-Length: " . strlen( $content ) . "\r\n";
-			$request .= ($utf8flag)? 
-				"Content-Type: application/x-www-form-urlencoded; charset=UTF-8\r\n":
-				"Content-Type: application/x-www-form-urlencoded; charset="._CHARSET."\r\n";
+			$request .= "Content-Type: application/x-www-form-urlencoded; charset=UTF-8\r\n";
 			$request .= "\r\n";
 			$request .= $content;
 	
@@ -957,20 +968,23 @@ define('NP_TRACKBACK_LINKCHECK_STRICT', 1);
 				return 'An error occurred: HTTP Error: [' . $respCd . '] ' . $respMsg;
 			}
 			
-			if( function_exists('xml_parser_create') ){
+			if( defined('NP_TRACKBACK_USE_XML_PARSER') && function_exists('xml_parser_create') ){
 				$p = new NP_TrackBack_XMLParser();
 				$p->parse($body);
 				$p->free();
 				if( $p->isError ){
-					return 'An error occurred: ' . htmlspecialchars($p->message, ENT_QUOTES);
+					$errorMessage = mb_convert_encoding($p->message, _CHARSET, 'UTF-8');
+					return 'An error occurred: ' . htmlspecialchars($errorMessage, ENT_QUOTES);
 				}
 			} else {
 				if ( strstr($DATA[1],'<error>0</error>') === false ){
 					preg_match("/<message>(.*?)<\/message>/",$DATA[1],$error_message);
-					if( $error_message[1] )
-						return 'An error occurred: '.htmlspecialchars($error_message[1], ENT_QUOTES);
-					else
+					if( $error_message[1] ){
+						$errorMessage = mb_convert_encoding($error_message[1], _CHARSET);
+						return 'An error occurred: '.htmlspecialchars($errorMessage, ENT_QUOTES);
+					} else {
 						return 'An error occurred: fatal error.';
+					}
 				}
 			}
 			
@@ -1162,7 +1176,7 @@ define('NP_TRACKBACK_LINKCHECK_STRICT', 1);
 						
 						$linkArray = $this->getPermaLinksFromText($contents);
 						
-						if( NP_TRACKBACK_LINKCHECK_STRICT )
+						if( defined('NP_TRACKBACK_LINKCHECK_STRICT') )
 							$itemLink = $this->_createItemLink($tb_id, $b);
 						else
 							$itemLink = $b->getURL();
@@ -1300,15 +1314,18 @@ define('NP_TRACKBACK_LINKCHECK_STRICT', 1);
 
 		function xmlResponse($errorMessage = '') 
 		{
-			header('Content-Type: text/xml');
-
-			echo "<","?xml version='1.0' encoding='UTF-8'?",">\n";
+			header('Content-type: application/xml; charset=utf-8');
+			echo "<"."?xml version='1.0' encoding='UTF-8'?".">\n";
 			echo "<response>\n";
 
-			if ($errorMessage) 
-				echo "\t<error>1</error>\n\t<message>",htmlspecialchars($errorMessage, ENT_QUOTES),"</message>\n";
-			else
-				echo "\t<error>0</error>\n";
+			if ($errorMessage){
+				if (_CHARSET != 'UTF-8')
+					$errorMessage = mb_convert_encoding($errorMessage, 'UTF-8');
+				echo "<error>1</error>\n";
+				echo "<message>".htmlspecialchars($errorMessage, ENT_QUOTES)."</message>\n";
+			} else {
+				echo "<error>0</error>\n";
+			}
 
 			echo "</response>";
 			exit;
@@ -1372,11 +1389,7 @@ define('NP_TRACKBACK_LINKCHECK_STRICT', 1);
 			}
 		}
 		
-		var $acceptTrackbacks = array();
 		function isAcceptTrackBack($itemid = null){
-			if( $itemid && isset($acceptTrackbacks[$itemid]) )
-				return $acceptTrackbacks[$itemid] === true;
-			
 			$ret = false;
 			if( $this->getOption('AcceptPing') == 'yes' ){
 				$bid = null;
@@ -1388,7 +1401,7 @@ define('NP_TRACKBACK_LINKCHECK_STRICT', 1);
 				}
 				
 				if( $this->getBlogOption($bid, "AllowTrackBack") == 'yes' ){
-					if( ! $itemid ){
+					if( $itemid ){
 						$ret = ( $this->getItemOption(intval($itemid), 'ItemAcceptPing') == 'yes' ) ? true : false ;
 					} else {
 						$ret = true;
@@ -1397,9 +1410,7 @@ define('NP_TRACKBACK_LINKCHECK_STRICT', 1);
 					$ret = false;
 				}
 			}
-			if($itemid)
-				$acceptTrackbacks[$itemid] = $ret;
-			return $ret === true;
+			return $ret;
 		}
 		
 //mod by cles end
@@ -1621,7 +1632,6 @@ define('NP_TRACKBACK_LINKCHECK_STRICT', 1);
 			
 			$ping_urls_count = 0;
 			$ping_urls = array();
-			$utf8flag = array();
 			$localflag = array();
 			
 			$ping_url = requestVar('trackback_ping_url');
@@ -1647,7 +1657,6 @@ define('NP_TRACKBACK_LINKCHECK_STRICT', 1);
 				$tb_temp_url = requestVar('tb_url_'.$i);
 				if ($tb_temp_url) {
 					$ping_urls[$ping_urls_count] = $tb_temp_url;
-					$utf8flag[$ping_urls_count] = (requestVar('tb_url_'.$i.'_utf8') == 'on')? 1: 0;
 					$localflag[$ping_urls_count] = (requestVar('tb_url_'.$i.'_local') == 'on')? 1: 0;
 					$ping_urls_count++;
 				}
@@ -1682,7 +1691,7 @@ define('NP_TRACKBACK_LINKCHECK_STRICT', 1);
 			// send the ping(s) (add errors to actionlog)
 			for ($i=0; $i<count($ping_urls); $i++) {
 				if( ! $localflag[$i] )
-					$res = $this->sendPing($itemid, $title, $url, $excerpt, $blog_name, $ping_urls[$i], $utf8flag[$i]);
+					$res = $this->sendPing($itemid, $title, $url, $excerpt, $blog_name, $ping_urls[$i]);
 				else
 					$res = $this->handleLocalPing($itemid, $title, $excerpt, $blog_name, $ping_urls[$i]);
 				if ($res) ACTIONLOG::add(WARNING, 'TrackBack Error:' . $res . ' (' . $ping_urls[$i] . ')');
@@ -1807,11 +1816,12 @@ define('NP_TRACKBACK_LINKCHECK_STRICT', 1);
 		{
 			$links = array();
 			
-			if (preg_match_all('/<[aA] +([^>]+)>/', $text, $array, PREG_SET_ORDER))
+			if (preg_match_all('/<a +([^>]+)>/i', $text, $array, PREG_SET_ORDER))
 			{
-				for ($i = 0; $i < count($array); $i++)
+				$count = count($array);
+				for ($i = 0; $i < $count; $i++)
 				{
-					if( preg_match('/s?https?:\/\/[-_.!~*\'()a-zA-Z0-9;\/?:@&=+$,%]+/', $array[$i][1], $matches) )
+					if( preg_match('/https?:\/\/[-_.!~*\'()a-z0-9;\/?:@&=+$,%]+/i', $array[$i][1], $matches) )
 						$links[$matches[0]] = 1;
 				}
 			}
@@ -2429,8 +2439,8 @@ function _strip_controlchar($string){
 		function getName()   	  { 		return 'TrackBack';   }
 		function getAuthor() 	  { 		return 'rakaz + nakahara21 + hsur'; }
 		function getURL()    	  { 		return 'http://blog.cles.jp/np_cles/category/31/subcatid/3'; }
-		function getVersion()	  { 		return '2.0.3 jp11'; }
-		function getDescription() { 		return '[$Revision: 1.21 $]<br />' . _TB_DESCRIPTION; }
+		function getVersion()	  { 		return '2.0.3 jp12'; }
+		function getDescription() { 		return '[$Revision: 1.22 $]<br />' . _TB_DESCRIPTION; }
 	
 //modify start+++++++++
 /*

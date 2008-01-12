@@ -162,23 +162,7 @@
 			mycurrent_cell=document.createElement("TD");
 			mycurrent_cell.appendChild(label);
 			mycurrent_row.appendChild(mycurrent_cell);
-
-			//utf8?
-			checkboxU = document.createElement("input");
-			checkboxU.type = 'checkbox';
-			checkboxU.name = "tb_url_" + count + "_utf8";
-			checkboxU.id = "tb_url_" + count + "_utf8";
-			checkboxU.defaultChecked = false;
-
-			labelU =	document.createElement("label"); 
-			labelU.htmlFor = "tb_url_" + count + "_utf8";
-			labelU.title = "utf8?";
-
-			text = document.createTextNode("utf8?");
-			labelU.appendChild(text);
-			mycurrent_cell=document.createElement("TD");
-			mycurrent_cell.appendChild(checkboxU);
-			mycurrent_cell.appendChild(labelU);
+			
 			mycurrent_row.appendChild(mycurrent_cell);
 
 
