@@ -1,0 +1,78 @@
+
+  The licence of this script is GPL
+
+                ACKOWLEDGMENT
+
+  I thank all the people of Nucleus JP forum 
+  who discussed this project. Especially, I 
+  thank kosugiatkips, mekyo, and nakahara21 
+  for ideas of some part of code.
+  I also thank Jon Jensen for his generous
+  acceptance for using his PHP code in the
+  earlier version of this library.
+
+  The features that are supported by this library but not
+  generally by SQLite are as follows:
+
+  CREATE TABLE IF NOT EXISTS, auto_increment,
+  DROP TABLE IF EXISTS, ALTER TABLE,
+  RENAME TABLE, DESC,
+  INSERT INTO ... SET xx=xx, xx=xx,
+  REPLACE INTO ... SET xx=xx, xx=xx,
+  SHOW KEYS FROM, SHOW INDEX FROM,
+  SHOW FIELDS FROM, SHOW COLUMNS FROM,
+  CREATE TABLE ... KEYS xxx (xxx,xxx)
+  SHOW TABLES LIKE, TRUNCATE TABLE
+  SHOW TABLES
+
+
+  Following functions are available in SQL query.
+
+  CONCAT, IF, IFNULL, NULLIF, SUBSTRING, 
+  match() against(),
+  replace, UNIX_TIMESTAMP, REGEXP, DAYOFMONTH, MONTH, YEAR, 
+  ADDDATE, DATE_ADD, SUBDATE, DATE_SUB, FIND_IN_SET,
+  CURDATE, CURRENT_DATE, CURTIME, CURRENT_TIME, CURRENT_TIMESTAMP, 
+  LOCALTIME, LOCALTIMESTAMP, SYSDATE, DATE_FORMAT, TIME_FORMAT, 
+  DAYNAME, DAYOFWEEK, DAYOFYEAR, EXTRACT, FROM_DAYS, FROM_UNIXTIME,
+  HOUR, MINUTE, MONTH, MONTHNAME, PERIOD_ADD, PERIOD_DIFF, QUARTER,
+  SECOND, SEC_TO_TIME, SECOND, WEEK, WEEKDAY, YEAR, YEARWEEK,
+  FORMAT, INET_ATON, INET_NTOA, MD5,
+  ACOS, ASIN, ATAN, CEIL, CEILING, COS, COT, CRC32, DEGREES, 
+  EXP, FLOOR, GREATEST, MAX, LEAST, MIN, ln, log, log2, log10,
+  MOD, PI, POW, POWER, RADIANS, RAND, SIGN, SIN, SQRT, TAN,
+  ASCII, BIN, BIT_LENGTH, CHAR, CHAR_LENGTH, CONCAT_WS,
+  CONV, ELT, EXPORT_SET, FIELD, HEX, INSERT, LOCATE,
+  INSTR, LCASE, LOWER, LEFT, LENGTH, OCTET_LENGTH,
+  LOAD_FILE, LPAD, LTRIM, MAKE_SET, MID, SUBSTRING,
+  OCT, ORD, QUOTE, REPEAT, REVERSE, RIGHT, RPAD,
+  RTRIM, SOUNDEX, SPACE, SUBSTRING_INDEX, TRIM,
+  UCASE, UPPER,
+
+
+ Release note:
+  Version 0.8.0
+    -This is the first established version and
+     exactly the same as ver 0.7.8b.
+
+  Version 0.8.1
+    -Execute "PRAGMA short_column_names=1" first.
+    -Avoid executing outside php file in some very specfic environment.
+    -Avoid executing multiple queries using ";" as delimer.
+    -Add check routine for the installed SQLite
+
+  Version 0.8.5
+    -Use SQLite_Functions class
+    -'PRAGMA synchronous = off;' when installing
+
+  Version 0.8.5.5
+    - ALTER TABLE syntaxes updated, bugs fixed
+
+  Version 0.8.6.0
+    - ALTER TABLE almost completery re-written
+    - DESC 'table' 'field' supported
+    - The function 'php' is unregestered from SQL query.
+
+  Version 0.9.0.1
+    - Support RENAME TABLE
+    - Some tunings are done to improve the speed.

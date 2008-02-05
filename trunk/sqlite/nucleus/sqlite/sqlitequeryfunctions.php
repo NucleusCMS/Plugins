@@ -1,36 +1,9 @@
 <?php
-    /***************************************
-    * SQLite-MySQL wrapper for Nucleus     *
-    *                           ver 0.8.5  *
-    * Written by Katsumi                   *
-    ***************************************/
-//
-//  The licence of this script is GPL
-//
-//  The features that are supported by this script but not
-//  generally by SQLite are as follows:
-//
-//  CONCAT, IF, IFNULL, NULLIF, SUBSTRING, 
-//  match() against(),
-//  replace, UNIX_TIMESTAMP, REGEXP, DAYOFMONTH, MONTH, YEAR, 
-//  ADDDATE, DATE_ADD, SUBDATE, DATE_SUB, FIND_IN_SET,
-//  CURDATE, CURRENT_DATE, CURTIME, CURRENT_TIME, CURRENT_TIMESTAMP, 
-//  LOCALTIME, LOCALTIMESTAMP, SYSDATE, DATE_FORMAT, TIME_FORMAT, 
-//  DAYNAME, DAYOFWEEK, DAYOFYEAR, EXTRACT, FROM_DAYS, FROM_UNIXTIME,
-//  HOUR, MINUTE, MONTH, MONTHNAME, PERIOD_ADD, PERIOD_DIFF, QUARTER,
-//  SECOND, SEC_TO_TIME, SECOND, WEEK, WEEKDAY, YEAR, YEARWEEK,
-//  FORMAT, INET_ATON, INET_NTOA, MD5,
-//  ACOS, ASIN, ATAN, CEIL, CEILING, COS, COT, CRC32, DEGREES, 
-//  EXP, FLOOR, GREATEST, MAX, LEAST, MIN, ln, log, log2, log10,
-//  MOD, PI, POW, POWER, RADIANS, RAND, SIGN, SIN, SQRT, TAN,
-//  ASCII, BIN, BIT_LENGTH, CHAR, CHAR_LENGTH, CONCAT_WS,
-//  CONV, ELT, EXPORT_SET, FIELD, HEX, INSERT, LOCATE,
-//  INSTR, LCASE, LOWER, LEFT, LENGTH, OCTET_LENGTH,
-//  LOAD_FILE, LPAD, LTRIM, MAKE_SET, MID, SUBSTRING,
-//  OCT, ORD, QUOTE, REPEAT, REVERSE, RIGHT, RPAD,
-//  RTRIM, SOUNDEX, SPACE, SUBSTRING_INDEX, TRIM,
-//  UCASE, UPPER,
-
+    /****************************************
+    * SQLite-MySQL wrapper for Nucleus      *
+    *                           ver 0.9.0.1 *
+    * Written by Katsumi   License: GPL     *
+    ****************************************/
 
 // Register user-defined functions used in SQL query.
 // The SQLite_QueryFunctions object is created to register SQLite queries.
@@ -74,7 +47,11 @@ function sqlite_userfunc_CHAR(){
 	return $ret;
 }
 
-var $define_CHAR_LENGTH='mb_strlen';
+var $define_CHAR_LENGTH='sqlite_userfunc_CHAR_LENGTH';
+function sqlite_userfunc_CHAR_LENGTH($str){
+	if (function_exists('mb_strlen')) return mb_strlen($str);
+	return strlen($str);
+}
 
 var $define_CONCAT_WS='sqlite_userfunc_CONCAT_WS';
 function sqlite_userfunc_CONCAT_WS(){

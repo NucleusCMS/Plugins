@@ -1,57 +1,9 @@
 <?php
     /****************************************
     * SQLite-MySQL wrapper for Nucleus      *
-    *                           ver 0.8.6.0 *
+    *                           ver 0.9.0.1 *
     * Written by Katsumi                    *
     ****************************************/
-//
-//  The licence of this script is GPL
-//
-//                ACKOWLEDGMENT
-//
-//  I thank all the people of Nucleus JP forum 
-//  who discussed this project. Especially, I 
-//  thank kosugiatkips, mekyo, and nakahara21 
-//  for ideas of some part of code.
-//  I also thank Jon Jensen for his generous
-//  acceptance for using his PHP code in this
-//  script.
-//
-//  The features that are supported by this script but not
-//  generally by SQLite are as follows:
-//
-//  CREATE TABLE IF NOT EXISTS, auto_increment,
-//  DROP TABLE IF EXISTS, ALTER TABLE, 
-//  INSERT INTO ... SET xx=xx, xx=xx,
-//  REPLACE INTO ... SET xx=xx, xx=xx,
-//  SHOW KEYS FROM, SHOW INDEX FROM,
-//  SHOW FIELDS FROM, SHOW COLUMNS FROM,
-//  CREATE TABLE ... KEYS xxx (xxx,xxx)
-//  SHOW TABLES LIKE, TRUNCATE TABLE
-//  SHOW TABLES
-//
-// Release note:
-//  Version 0.8.0
-//    -This is the first established version and
-//     exactly the same as ver 0.7.8b.
-//
-//  Version 0.8.1
-//    -Execute "PRAGMA short_column_names=1" first.
-//    -Avoid executing outside php file in some very specfic environment.
-//    -Avoid executing multiple queries using ";" as delimer.
-//    -Add check routine for the installed SQLite
-//
-//  Version 0.8.5
-//    -Use SQLite_Functions class
-//    -'PRAGMA synchronous = off;' when installing
-//
-//  Version 0.8.5.5
-//    - ALTER TABLE syntaxes updated, bugs fixed
-//
-//  Version 0.8.6.0
-//    - ALTER TABLE almost completery re-written
-//    - DESC 'table' 'field' supported
-//    - The function 'php' is unregestered from SQL query.
 
 // Check SQLite installed
 
@@ -61,7 +13,7 @@ if (!function_exists('sqlite_open')) exit('Sorry, SQLite is not available from P
 require_once dirname(__FILE__) . '/sqliteconfig.php';
 $SQLITE_DBHANDLE=sqlite_open($SQLITECONF['DBFILENAME']);
 require_once dirname(__FILE__) . '/sqlitequeryfunctions.php';
-$SQLITECONF['VERSION']='0.8.5.8';
+$SQLITECONF['VERSION']='0.9.0.1';
 
 //Following thing may work if MySQL is NOT installed in server.
 if (!function_exists('mysql_query')) {
@@ -202,56 +154,14 @@ function sqlite_mysql_query_sub($dbhandle,$query,$strpositions=array(),$p1=null,
 			$tablename=trim(substr($query,12,$i-12));
 			if (substr($tablename,0,1)!="'") $tablename="'$tablename'";
 		}
-		
 		$query=trim(substr($query,$i+1));
 		for ($i=strlen($query);0<$i;$i--) if ($query[$i]==')') break;
 		$query=substr($query,0,$i);
-		$auto_increment=false;
-		$commands=sqlite_splitByComma($query);
-		$query=' (';
-		$first=true;
-		foreach($commands as $key => $value) {
-			if (strpos(strtolower($value),'auto_increment')==strlen($value)-14) $auto_increment=true;
-			$isint=preg_match('/int\(([0-9]*?)\)/i',$value);
-			$isint=$isint | preg_match('/tinyint\(([0-9]*?)\)/i',$value);
-			$value=preg_replace('/int\(([0-9]*?)\)[\s]+unsigned/i','int($1)',$value);
-			$value=preg_replace('/int\([0-9]*?\)[\s]+NOT NULL[\s]+auto_increment$/i',' INTEGER NOT NULL PRIMARY KEY',$value);
-			$value=preg_replace('/int\([0-9]*?\)[\s]+auto_increment$/i',' INTEGER PRIMARY KEY',$value);
-			if ($auto_increment) $value=preg_replace('/^PRIMARY KEY(.*?)$/i','',$value);
-			while (preg_match('/PRIMARY KEY[\s]*\((.*)\([0-9]+\)(.*)\)/i',$value)) // Remove '(100)' from 'PRIMARY KEY (`xxx` (100))'
-				$value=preg_replace('/PRIMARY KEY[\s]*\((.*)\([0-9]+\)(.*)\)/i','PRIMARY KEY ($1 $2)',$value);
-			
-			// CREATE KEY queries for SQLite (corresponds to KEY 'xxxx'('xxxx', ...) of MySQL
-			if (preg_match('/^FULLTEXT KEY(.*?)$/i',$value,$matches)) {
-				array_push($morequeries,'CREATE INDEX '.str_replace('('," ON $tablename (",$matches[1]));
-				$value='';
-			} else if (preg_match('/^UNIQUE KEY(.*?)$/i',$value,$matches)) {
-				array_push($morequeries,'CREATE UNIQUE INDEX '.str_replace('('," ON $tablename (",$matches[1]));
-				$value='';
-			} else if (preg_match('/^KEY(.*?)$/i',$value,$matches)) {
-				array_push($morequeries,'CREATE INDEX '.str_replace('('," ON $tablename (",$matches[1]));
-				$value='';
-			}
-			
-			// Check if 'DEFAULT' is set when 'NOT NULL'
-			$uvalue=strtoupper($value);
-			if (strpos($uvalue,'NOT NULL')!==false && 
-					strpos($uvalue,'DEFAULT')===false &&
-					strpos($uvalue,'INTEGER NOT NULL PRIMARY KEY')===false) {
-				if ($isint) $value.=" DEFAULT 0";
-				else $value.=" DEFAULT ''";
-			}
-			
-			if ($value) {
-				if ($first) $first=false;
-				else $query.=',';
-				 $query.=' '.$value;
-			}
-		}
-		$query.=' )';
+		$commands=_sqlite_divideByChar(',',$query); //$commands=sqlite_splitByComma($query);
+		require_once(dirname(__FILE__) . '/sqlitealtertable.php');
+		$query=sqlite_createtable_query($commands);
 		if ($temptable) $query='CREATE TEMPORARY TABLE '.$tablename.$query;
 		else $query='CREATE TABLE '.$tablename.$query;
-		//echo "<br />".htmlspecialchars($p1)."<br /><br />\n".htmlspecialchars($query)."<hr />\n";
 	} else if (strpos($uquery,'DROP TABLE IF EXISTS')===0) {
 		if (!($i=strpos($query,';'))) $i=strlen($query);
 		$tablename=trim(substr($query,20,$i-20));
@@ -264,13 +174,15 @@ function sqlite_mysql_query_sub($dbhandle,$query,$strpositions=array(),$p1=null,
 		if ($i=strpos($query,' ')) {
 			$tablename=trim(substr($query,0,$i));
 			$query=trim(substr($query,$i));
-			require_once('sqlitealtertable.php');
+			require_once(dirname(__FILE__) . '/sqlitealtertable.php');
 			$ret =sqlite_altertable($tablename,$query,$dbhandle);
 			if (!$ret) sqlite_ReturnWithError('SQL error',"<br /><i>".nucleus_mysql_error()."</i><br />".htmlspecialchars($p1)."<br /><br />\n".htmlspecialchars("ALTER TABLE $tablename $query")."<hr />\n");
 			return $ret;
 		}
-		// Syntax error
-		//$query=='DROP TABLE '.$query;
+		// Else, syntax error
+	} else if (strpos($uquery,'RENAME TABLE ')===0) {
+		require_once(dirname(__FILE__) . '/sqlitealtertable.php');
+		return sqlite_renametable(_sqlite_divideByChar(',',substr($query,13)),$dbhandle);
 	} else if (strpos($uquery,'INSERT INTO ')===0 || strpos($uquery,'REPLACE INTO ')===0 ||
 			strpos($uquery,'INSERT IGNORE INTO ')===0 || strpos($uquery,'REPLACE IGNORE INTO ')===0) {
 		$buff=str_replace(' IGNORE ',' OR IGNORE ',substr($uquery,0,($i=strpos($uquery,' INTO ')+6)));
@@ -282,7 +194,7 @@ function sqlite_mysql_query_sub($dbhandle,$query,$strpositions=array(),$p1=null,
 		if ($i=strpos($query,' ')) {
 			if (strpos(strtoupper($query),'SET')===0) {
 				$query=trim(substr($query,3));
-				$commands=sqlite_splitByComma($query);
+				$commands=_sqlite_divideByChar(',',$query); //$commands=sqlite_splitByComma($query);
 				$query=' VALUES(';
 				$buff.=' (';
 				foreach($commands as $key=>$value){
@@ -300,7 +212,7 @@ function sqlite_mysql_query_sub($dbhandle,$query,$strpositions=array(),$p1=null,
 				$query.=')';
 			} else {
 				$beforevalues='';
-				$commands=sqlite_splitByComma($query);
+				$commands=_sqlite_divideByChar(',',$query); //$commands=sqlite_splitByComma($query);
 				$query='';
 				foreach($commands as $key=>$value){
 					if ($beforevalues=='' && preg_match('/^(.*)\)\s+VALUES\s+\(/i',$value,$matches)) {
@@ -317,16 +229,22 @@ function sqlite_mysql_query_sub($dbhandle,$query,$strpositions=array(),$p1=null,
 	} else if (strpos($uquery,'SHOW TABLES')===0) {
 		$query='SELECT name FROM sqlite_master WHERE type=\'table\'';
 	} else if (strpos($uquery,'SHOW KEYS FROM ')===0) {
+		require_once(dirname(__FILE__) . '/sqlitealtertable.php');
 		$query=sqlite_showKeysFrom(trim(substr($query,15)),$dbhandle);
 	} else if (strpos($uquery,'SHOW INDEX FROM ')===0) {
+		require_once(dirname(__FILE__) . '/sqlitealtertable.php');
 		$query=sqlite_showKeysFrom(trim(substr($query,16)),$dbhandle);
 	} else if (strpos($uquery,'SHOW FIELDS FROM ')===0) {
+		require_once(dirname(__FILE__) . '/sqlitealtertable.php');
 		$query=sqlite_showFieldsFrom(trim(substr($query,17)),$dbhandle);
 	} else if (strpos($uquery,'SHOW COLUMNS FROM ')===0) {
+		require_once(dirname(__FILE__) . '/sqlitealtertable.php');
 		$query=sqlite_showFieldsFrom(trim(substr($query,18)),$dbhandle);
 	} else if (strpos($uquery,'TRUNCATE TABLE ')===0) {
 		$query='DELETE FROM '.substr($query,15);
-	} else if (preg_match('/DESC\s+\'([^\']+)\'\s+\'([^\']+)\'\s*$/',$query,$m)) {
+	} else if (preg_match('/DESC \'([^\']+)\' \'([^\']+)\'$/',$query,$m)) {
+		return nucleus_mysql_query("SHOW FIELDS FROM '$m[1]' LIKE '$m[2]'");
+	} else if (preg_match('/DESC ([^\s]+) ([^\s]+)$/',$query,$m)) {
 		return nucleus_mysql_query("SHOW FIELDS FROM '$m[1]' LIKE '$m[2]'");
 	} else SQLite_Functions::sqlite_modifyQueryForUserFunc($query,$strpositions);
 
@@ -400,34 +318,6 @@ function sqlite_changeQuote(&$query){
 	$query=$ret;
 	return $sarray;
 }
-function sqlite_splitByComma($query) {
-	// The query is splitted by comma and the data will be put into an array.
-	// The commas in quoted strings are ignored.
-	$commands=array();
-	$i=0;
-	$in=false;
-	while ($query) {
-		if ($query[$i]=="'") {
-			$i++;
-			while ($i<strlen($query)) {
-				if ($query[$i++]!="'") continue;
-				if ($query[$i]!="'") break;
-				$i++;
-			}
-			continue;
-		} else if ($query[$i]=='(') $in=true;
-		else if ($query[$i]==')') $in=false;
-		else if ($query[$i]==',' && (!$in)) {
-			$commands[]=trim(substr($query,0,$i));
-			$query=trim(substr($query,$i+1));
-			$i=0;
-			continue;
-		} // Do NOT add 'else' statement here! '$i++' is important in the following line.
-		if (strlen($query)<=($i++)) break;
-	}
-	if ($query) $commands[]=$query;
-	return $commands;
-}
 function sqlite_changeslashes(&$text){
 	// By SQLite, "''" is used in the quoted string instead of "\'".
 	// In addition, only "'" seems to be allowed for perfect quotation of string.
@@ -484,197 +374,9 @@ function _sqlite_divideByChar($char,$query,$limit=-1){
 	if (strlen($buff)) $ret[]=$buff;
 	return $ret;
 }
-function sqlite_showKeysFrom($tname,$dbhandle) {
-	// This function is for supporing 'SHOW KEYS FROM' and 'SHOW INDEX FROM'.
-	// For making the same result as obtained by MySQL, temporary table is made.
-	if (preg_match('/^([^\s]+)\s+LIKE\s+\'([^\']+)\'$/i',$tname,$m)) list($m,$tname,$like)=$m;
-	$tname=str_replace("'",'',$tname);
-	
-	// Create a temporary table for making result
-	if (function_exists('microtime')) $tmpname='t'.str_replace('.','',str_replace(' ','',microtime()));
-	else $tmpname = 't'.rand(0,999999).time();
-	sqlite_query($dbhandle,"CREATE TEMPORARY TABLE $tmpname ('Table', 'Non_unique', 'Key_name', 'Seq_in_index',".
-		" 'Column_name', 'Collation', 'Cardinality', 'Sub_part', 'Packed', 'Null', 'Index_type', 'Comment')"); 
-	
-	// First, get the sql query when the table created
-	$res=sqlite_query($dbhandle,"SELECT sql FROM sqlite_master WHERE tbl_name = '$tname' ORDER BY type DESC");
-	$a=nucleus_mysql_fetch_assoc($res);
-	$tablesql=$a['sql'];
-	
-	// Check if each columns are unique
-	$notnull=array();
-	foreach(sqlite_splitByComma(substr($tablesql,strpos($tablesql,'(')+1)) as $value) {
-		$name=str_replace("'",'',substr($value,0,strpos($value,' ')));
-		if (strpos(strtoupper($value),'NOT NULL')!==false) $notnull[$name]='';
-		else $notnull[$name]='YES';
-	}
-	
-	// Get the primary key (and check if it is unique???).
-	if (preg_match('/[^a-zA-Z_\']([\S]+)[^a-zA-Z_\']+INTEGER NOT NULL PRIMARY KEY/i',$tablesql,$matches)) {
-		$pkey=str_replace("'",'',$matches[1]);
-		$pkeynull='';
-	} else if (preg_match('/[^a-zA-Z_\']([\S]+)[^a-zA-Z_\']+INTEGER PRIMARY KEY/i',$tablesql,$matches)) {
-		$pkey=str_replace("'",'',$matches[1]);
-		$pkeynull='YES';
-	} else if (preg_match('/PRIMARY KEY[\s]*?\(([^\)]+)\)/i',$tablesql,$matches)) {
-		$pkey=null;// PRIMARY KEY ('xxx'[,'xxx'])
-		foreach(explode(',',$matches[1]) as $key=>$value) {
-			$value=str_replace("'",'',trim($value));
-			$key++;
-			$cardinality=nucleus_mysql_num_rows(sqlite_query($dbhandle,"SELECT '$value' FROM '$tname'"));
-			sqlite_query($dbhandle,"INSERT INTO $tmpname ('Table', 'Non_unique', 'Key_name', 'Seq_in_index',".
-				" 'Column_name', 'Collation', 'Cardinality', 'Sub_part', 'Packed', 'Null', 'Index_type', 'Comment')".
-				" VALUES ('$tname', '0', 'PRIMARY', '$key',".
-				" '$value', 'A', '$cardinality', null, null, '', 'BTREE', '')"); 
-		}
-	} else $pkey=null;
-	
-	// Check the index.
-	$res=sqlite_query($dbhandle,"SELECT sql,name FROM sqlite_master WHERE type = 'index' and tbl_name = '$tname' ORDER BY type DESC");
-	while ($a=nucleus_mysql_fetch_assoc($res)) {
-		if (!($sql=$a['sql'])) {// Primary key
-			if ($pkey && strpos(strtolower($a['name']),'autoindex')) {
-				$cardinality=nucleus_mysql_num_rows(sqlite_query($dbhandle,"SELECT $pkey FROM '$tname'"));
-				sqlite_query($dbhandle,"INSERT INTO $tmpname ('Table', 'Non_unique', 'Key_name', 'Seq_in_index',".
-					" 'Column_name', 'Collation', 'Cardinality', 'Sub_part', 'Packed', 'Null', 'Index_type', 'Comment')".
-					" VALUES ('$tname', '0', 'PRIMARY', '1',".
-					" '$pkey', 'A', '$cardinality', null, null, '$pkeynull', 'BTREE', '')"); 
-				$pkey=null;
-			}
-		} else {// Non-primary key
-			if (($name=str_replace("'",'',$a['name'])) && preg_match('/\(([\s\S]+)\)/',$sql,$matches)) {
-			if (isset($like) && $name!=$like) continue;
-				foreach(explode(',',$matches[1]) as $key=>$value) {
-					$columnname=str_replace("'",'',$value);
-					if (strpos(strtoupper($sql),'CREATE UNIQUE ')===0) $nonunique='0';
-					else $nonunique='1';
-					$cardinality=nucleus_mysql_num_rows(sqlite_query($dbhandle,"SELECT $columnname FROM '$tname'"));
-					sqlite_query($dbhandle,"INSERT INTO $tmpname ('Table', 'Non_unique', 'Key_name', 'Seq_in_index',".
-						" 'Column_name', 'Collation', 'Cardinality', 'Sub_part', 'Packed', 'Null', 'Index_type', 'Comment')".
-						" VALUES ('$tname', '$nonunique', '$name', '".(string)($key+1)."',".
-						" '$columnname', 'A', '$cardinality', null, null, '$notnull[$columnname]', 'BTREE', '')"); 
-				}
-			}
-		}
-	}
-	if ($pkey) { // The case that the key (index) is not defined.
-		$cardinality=nucleus_mysql_num_rows(sqlite_query($dbhandle,"SELECT $pkey FROM '$tname'"));
-		sqlite_query($dbhandle,"INSERT INTO $tmpname ('Table', 'Non_unique', 'Key_name', 'Seq_in_index',".
-			" 'Column_name', 'Collation', 'Cardinality', 'Sub_part', 'Packed', 'Null', 'Index_type', 'Comment')".
-			" VALUES ('$tname', '0', 'PRIMARY', '1',".
-			" '$pkey', 'A', '$cardinality', null, null, '$pkeynull', 'BTREE', '')"); 
-		$pkey=null;
-	}
-	
-	// return the final query to show the keys in MySQL style (using temporary table).
-	return "SELECT * FROM $tmpname";
-}
-function sqlite_showFieldsFrom($tname,$dbhandle){
-	// This function is for supporing 'SHOW FIELDS FROM' and 'SHOW COLUMNS FROM'.
-	// For making the same result as obtained by MySQL, temporary table is made.
-	if (preg_match('/^([^\s]+)\s+LIKE\s+\'([^\']+)\'$/i',$tname,$m)) list($m,$tname,$like)=$m;
-	$tname=str_replace("'",'',$tname);
-	
-	// First, get the sql query when the table created
-	$res=sqlite_query($dbhandle,"SELECT sql FROM sqlite_master WHERE tbl_name = '$tname' ORDER BY type DESC");
-	$a=nucleus_mysql_fetch_assoc($res);
-	$tablesql=trim($a['sql']);
-	if (preg_match('/^[^\(]+\(([\s\S]*?)\)$/',$tablesql,$matches)) $tablesql=$matches[1];
-	$tablearray=array();
-	foreach(sqlite_splitByComma($tablesql) as $value) {
-		$value=trim($value);
-		if ($i=strpos($value,' ')) {
-			$name=str_replace("'",'',substr($value,0,$i));
-			$value=trim(substr($value,$i));
-			if (substr($value,-1)==',') $value=substr($value,strlen($value)-1);
-			$tablearray[$name]=$value;
-		}
-	}
-	
-	// Check if INDEX has been made for the parameter 'MUL' in 'KEY' column
-	$multi=array();
-	$res=sqlite_query($dbhandle,"SELECT name FROM sqlite_master WHERE type = 'index' and tbl_name = '$tname' ORDER BY type DESC");
-	while ($a=nucleus_mysql_fetch_assoc($res)) $multi[str_replace("'",'',$a['name'])]='MUL';
-	
-	// Create a temporary table for making result
-	if (function_exists('microtime')) $tmpname='t'.str_replace('.','',str_replace(' ','',microtime()));
-	else $tmpname = 't'.rand(0,999999).time();
-	sqlite_query($dbhandle,"CREATE TEMPORARY TABLE $tmpname ('Field', 'Type', 'Null', 'Key', 'Default', 'Extra')"); 
-	
-	// Check the table
-	foreach($tablearray as $field=>$value) {
-		if (strtoupper($field)=='PRIMARY') continue;//PRIMARY KEY('xx'[,'xx'])
-		if (isset($like) && $field!=$like) continue;
-		$uvalue=strtoupper($value.' ');
-		$key=(string)$multi[$field];
-		if ($uvalue=='INTEGER NOT NULL PRIMARY KEY ' || $uvalue=='INTEGER PRIMARY KEY ') {
-			$key='PRI';
-			$extra='auto_increment';
-		} else $extra='';
-		if ($i=strpos($uvalue,' ')) {
-			$type=substr($value,0,$i);
-			if (strpos($type,'(') && ($i=strpos($value,')')))
-				$type=substr($value,0,$i+1);
-		} else $type='';
-		if (strtoupper($type)=='INTEGER') $type='int(11)';
-		if (strpos($uvalue,'NOT NULL')===false) $null='YES';
-		else {
-			$null='';
-			$value=preg_replace('/NOT NULL/i','',$value);
-			$uvalue=strtoupper($value);
-		}
-		if ($i=strpos($uvalue,'DEFAULT')) {
-			$default=trim(substr($value,$i+7));
-			if (strtoupper($default)=='NULL') {
-				$default="";
-				$setdefault="";
-			} else {
-				if (substr($default,0,1)=="'") $default=substr($default,1,strlen($default)-2);
-				$default="'".$default."',";
-				$setdefault="'Default',";
-			}
-		} else if ($null!='YES' && $extra!='auto_increment') {
-			if (strpos(strtolower($type),'int')===false) $default="'',";
-			else $default="'0',";
-			$setdefault="'Default',";
-		} else {
-			$default="";
-			$setdefault="";
-		}
-		sqlite_query($dbhandle,"INSERT INTO '$tmpname' ('Field', 'Type', 'Null', 'Key', $setdefault 'Extra')".
-			" VALUES ('$field', '$type', '$null', '$key', $default '$extra')");
-	}
-	
-	// return the final query to show the keys in MySQL style (using temporary table).
-	return "SELECT * FROM $tmpname";
-}
 function sqlite_mysql_query_debug(&$query){
-	// The debug mode is so far used for checking query difference like "SELECT i.itime, ....".
-	// This must be chaged to "SELECT i.itime as itime,..." for SQLite.
-	// (This feature is not needed any more after the version 0.8.1 (see intialization query))
-	$uquery=strtoupper($query);
-	if (strpos($uquery,"SELECT ")!==0) return $query;
-	if (($i=strpos($uquery," FROM "))===false) return $query;
-	$select=sqlite_splitByComma(substr($query,7,$i-7));
-	$query=substr($query,$i);
-	$ret='';
-	foreach($select as $value){
-		if (preg_match('/^([a-z_]+)\.([a-z_]+)$/i',$value,$matches)) {
-			$value=$value." as ".$matches[2];
-			$t=$matches[0]."=>$value\n";
-			$a=debug_backtrace();
-			foreach($a as $key=>$btrace) {
-				if (!($templine=$btrace['line'])) continue;
-				if (!($tempfile=$btrace['file'])) continue;
-				$tempfile=preg_replace('/[\s\S]*?[\/\\\\]([^\/\\\\]+)$/','$1',$tempfile);
-				$t.="$tempfile line:$templine\n";
-			}
-			sqlite_DebugMessage($t);
-		}
-		if ($ret) $ret.=', ';
-		$ret.=$value;
-	}
-	return "SELECT $ret $query";
+	// There is nothing to do here in this version.
+	return $query;
 }
 
 function nucleus_mysql_list_tables($p1=null,$p2=null) {
