@@ -1,9 +1,9 @@
 <?php
-    /***************************************
-    * SQLite-MySQL wrapper for Nucleus     *
-    *                           ver 0.8.5.6*
-    * Written by Katsumi                   *
-    ***************************************/
+    /****************************************
+    * SQLite-MySQL wrapper for Nucleus      *
+    *                           ver 0.8.6.0 *
+    * Written by Katsumi                    *
+    ****************************************/
 //
 //  The licence of this script is GPL
 //
@@ -47,16 +47,21 @@
 //
 //  Version 0.8.5.5
 //    - ALTER TABLE syntaxes updated, bugs fixed
+//
+//  Version 0.8.6.0
+//    - ALTER TABLE almost completery re-written
+//    - DESC 'table' 'field' supported
+//    - The function 'php' is unregestered from SQL query.
 
 // Check SQLite installed
 
-if (!function_exists('sqlite_open')) exit('Sorry, SQLite is not installed in the server.');
+if (!function_exists('sqlite_open')) exit('Sorry, SQLite is not available from PHP (maybe, not installed in the server).');
 
 // Initializiation stuff
 require_once dirname(__FILE__) . '/sqliteconfig.php';
 $SQLITE_DBHANDLE=sqlite_open($SQLITECONF['DBFILENAME']);
 require_once dirname(__FILE__) . '/sqlitequeryfunctions.php';
-$SQLITECONF['VERSION']='0.8.5';
+$SQLITECONF['VERSION']='0.8.5.8';
 
 //Following thing may work if MySQL is NOT installed in server.
 if (!function_exists('mysql_query')) {
@@ -97,7 +102,7 @@ function sqlite_ReturnWithError($text='Not supported',$more=''){
 	foreach($a as $key=>$btrace) {
 		if (!($templine=$btrace['line'])) continue;
 		if (!($tempfile=$btrace['file'])) continue;
-		$file=str_replace("\\",'/',$file);
+		$file=str_replace('\\','/',$file);
 		if (!$line && !$file && strpos($tempfile,'/sqlite.php')===false && strpos($tempfile,'/sqlitequeryfunctions.php')===false) {
 			$line=$templine;
 			$file=$tempfile;
@@ -127,6 +132,8 @@ function nucleus_mysql_connect($p1=null,$p2=null,$p3=null,$p4=null,$p5=null){
 	if (!$SQLITE_DBHANDLE) $SQLITE_DBHANDLE=sqlite_open($SQLITECONF['DBFILENAME']);
 	// Initialization queries.
 	foreach($SQLITECONF['INITIALIZE'] as $value) nucleus_mysql_query($value);
+	// Unregister the function 'php' in sql query.
+	sqlite_create_function($SQLITE_DBHANDLE,'php','pi');
 	return $SQLITE_DBHANDLE;
 }
 
@@ -257,12 +264,13 @@ function sqlite_mysql_query_sub($dbhandle,$query,$strpositions=array(),$p1=null,
 		if ($i=strpos($query,' ')) {
 			$tablename=trim(substr($query,0,$i));
 			$query=trim(substr($query,$i));
+			require_once('sqlitealtertable.php');
 			$ret =sqlite_altertable($tablename,$query,$dbhandle);
 			if (!$ret) sqlite_ReturnWithError('SQL error',"<br /><i>".nucleus_mysql_error()."</i><br />".htmlspecialchars($p1)."<br /><br />\n".htmlspecialchars("ALTER TABLE $tablename $query")."<hr />\n");
 			return $ret;
 		}
 		// Syntax error
-		$query=='DROP TABLE '.$query;
+		//$query=='DROP TABLE '.$query;
 	} else if (strpos($uquery,'INSERT INTO ')===0 || strpos($uquery,'REPLACE INTO ')===0 ||
 			strpos($uquery,'INSERT IGNORE INTO ')===0 || strpos($uquery,'REPLACE IGNORE INTO ')===0) {
 		$buff=str_replace(' IGNORE ',' OR IGNORE ',substr($uquery,0,($i=strpos($uquery,' INTO ')+6)));
@@ -318,6 +326,8 @@ function sqlite_mysql_query_sub($dbhandle,$query,$strpositions=array(),$p1=null,
 		$query=sqlite_showFieldsFrom(trim(substr($query,18)),$dbhandle);
 	} else if (strpos($uquery,'TRUNCATE TABLE ')===0) {
 		$query='DELETE FROM '.substr($query,15);
+	} else if (preg_match('/DESC\s+\'([^\']+)\'\s+\'([^\']+)\'\s*$/',$query,$m)) {
+		return nucleus_mysql_query("SHOW FIELDS FROM '$m[1]' LIKE '$m[2]'");
 	} else SQLite_Functions::sqlite_modifyQueryForUserFunc($query,$strpositions);
 
 	//Throw query again.
@@ -349,13 +359,15 @@ function sqlite_changeQuote(&$query){
 		if (($i2=strpos($query,"'",$i))===false) $i2=$qlen;
 		if (($i3=strpos($query,'`',$i))===false) $i3=$qlen;
 		if ($i1==$qlen && $i2==$qlen && $i3==$qlen) {
-			$ret.=($temp=substr($query,$i));
+			$temp=preg_replace('/[\s]+/',' ',substr($query,$i)); // Change all spacying to ' '.
+			$ret.=($temp);
 			if (strstr($temp,';')) exit('Warning: try to use more than two queries?');
 			break;
 		}
 		if ($i2<($j=$i1)) $j=$i2;
 		if ($i3<$j) $j=$i3;
-		$ret.=($temp=substr($query,$i,$j-$i));
+		$temp=preg_replace('/[\s]+/',' ',substr($query,$i,$j-$i)); // Change all spacying to ' '.
+		$ret.=($temp);
 		$c=$query[($i=$j)]; // $c keeps the type of quote.
 		if (strstr($temp,';')) exit('Warning: try to use more than two queries?');
 		
@@ -424,162 +436,6 @@ function sqlite_changeslashes(&$text){
 	if ($text==='') return '';
 	return (sqlite_escape_string (stripcslashes((string)$text)));
 }
-function sqlite_altertable($table,$alterdefs,$dbhandle){
-	// This function originaly came from Jon Jensen's PHP class, SQLiteDB.
-	// There are some modifications by Katsumi.
-	$table=str_replace("'",'',$table);
-	if (!$alterdefs) return false;
-	$result = sqlite_query($dbhandle,"SELECT sql,name,type FROM sqlite_master WHERE tbl_name = '".$table."' ORDER BY type DESC");
-	if(!sqlite_num_rows($result)) return sqlite_ReturnWithError('no such table: '.$table);
-	$row = sqlite_fetch_array($result); //table sql
-	if (function_exists('microtime')) $tmpname='t'.str_replace('.','',str_replace(' ','',microtime()));
-	else $tmpname = 't'.rand(0,999999).time();
-	$origsql = trim(preg_replace("/[\s]+/"," ",str_replace(",",", ",preg_replace("/[\(]/","( ",$row['sql'],1))));
-	$createtemptableSQL = 'CREATE TEMPORARY '.substr(trim(preg_replace("'".$table."'",$tmpname,$origsql,1)),6);
-	$createindexsql = array();
-	while ($row = sqlite_fetch_array($result)) {//index sql
-		$createindexsql[]=$row['sql'];
-	}
-	$i = 0;
-	$defs = _sqlite_divideByChar(',',$alterdefs);
-	$prevword = $table;
-	$oldcols = _sqlite_divideByChar(',',substr(trim($createtemptableSQL),strpos(trim($createtemptableSQL),'(')+1));
-	$newcols = array();
-	for($i=0;$i<sizeof($oldcols);$i++){
-		$colparts = _sqlite_divideByChar(array(' ',"\t","\r","\n"),$oldcols[$i]);
-		$oldcols[$i] = $colparts[0];
-		$newcols[$colparts[0]] = $colparts[0];
-	}
-	$newcolumns = '';
-	$oldcolumns = '';
-	reset($newcols);
-	while(list($key,$val) = each($newcols)){
-		if (strtoupper($val)!='PRIMARY' && strtoupper($key)!='PRIMARY' &&
-		    strtoupper($val)!='UNIQUE'  && strtoupper($key)!='UNIQUE'){
-			$newcolumns .= ($newcolumns?', ':'').$val;
-			$oldcolumns .= ($oldcolumns?', ':'').$key;
-		}
-	}
-	$copytotempsql = 'INSERT INTO '.$tmpname.'('.$newcolumns.') SELECT '.$oldcolumns.' FROM '.$table;
-	$dropoldsql = 'DROP TABLE '.$table;
-	$createtesttableSQL = $createtemptableSQL;
-	foreach($defs as $def){
-		$defparts = _sqlite_divideByChar(array(' ',"\t","\r","\n"),$def);
-		$action = strtolower($defparts[0]);
-		switch($action){
-		case 'modify':
-			// Modification does not mean anything for SQLite, so just return true.
-			// But this command will be supported in future???
-			break;
-		case 'add':
-			if(($i=sizeof($defparts)) <= 2) return sqlite_ReturnWithError('near "'.$defparts[0].($defparts[1]?' '.$defparts[1]:'').'": syntax error');
-			// ignore if there is already such table
-			$exists=false;
-			foreach($oldcols as $value) if (str_replace("'",'',$defparts[1])==str_replace("'",'',$value)) $exists=true;
-			if ($exists) break;
-			// Support 'AFTER xxxx' statement.
-			// Support 'FIRST' statement.
-			$position=false;
-			if (4<=$i && strtoupper($defparts[$i-2])=='AFTER') {
-				$exists=false;
-				foreach($oldcols as $value) if (str_replace("'",'',$defparts[$i-2])==str_replace("'",'',$value)) $exists=$value;
-				if ($exists) {
-					if ( $position=strpos($createtesttableSQL,$exists) ){
-						if ( $position=strpos($createtesttableSQL,',',$position) ) $position++;// If ',' cannot be found (i.e. trying to put after the last column, $position will be false.
-					}
-				}
-				unset($defparts[$i-1],$defparts[$i-2]);
-			} else if (3<=$i && strtoupper($defparts[$i-1])=='FIRST') {
-				if ( $position=strpos($createtesttableSQL,'(') ) $position++;
-				unset($defparts[$i-1]);
-			}
-			// add new column here
-			if ($position) {// insert at the first position or between two columns
-				$afterpos = substr($createtesttableSQL,$position);
-				$createtesttableSQL = substr($createtesttableSQL,0,$position);
-				for($i=1;$i<sizeof($defparts);$i++) $createtesttableSQL.=' '.$defparts[$i];
-				$createtesttableSQL.=', '.$afterpos;
-			} else {// add at the last position
-				$createtesttableSQL = substr($createtesttableSQL,0,strlen($createtesttableSQL)-1).',';
-				for($i=1;$i<sizeof($defparts);$i++) $createtesttableSQL.=' '.$defparts[$i];
-				$createtesttableSQL.=')';
-			}
-			break;
-		case 'change':
-			if(sizeof($defparts) <= 3) return sqlite_ReturnWithError('near "'.$defparts[0].($defparts[1]?' '.$defparts[1]:'').($defparts[2]?' '.$defparts[2]:'').'": syntax error');
-			if($severpos = strpos($createtesttableSQL,' '.$defparts[1].' ')){
-				if($newcols[$defparts[1]] != $defparts[1]){
-					sqlite_ReturnWithError('unknown column "'.$defparts[1].'" in "'.$table.'"');
-					return false;
-				}
-				$newcols[$defparts[1]] = $defparts[2];
-				$nextcommapos = strpos($createtesttableSQL,',',$severpos);
-				$insertval = '';
-				for($i=2;$i<sizeof($defparts);$i++) $insertval.=' '.$defparts[$i];
-				if($nextcommapos) $createtesttableSQL = substr($createtesttableSQL,0,$severpos).$insertval.substr($createtesttableSQL,$nextcommapos);
-				else $createtesttableSQL = substr($createtesttableSQL,0,$severpos-(strpos($createtesttableSQL,',')?0:1)).$insertval.')';
-			} else  return sqlite_ReturnWithError('unknown column "'.$defparts[1].'" in "'.$table.'"');
-			break;
-		case 'drop':
-			if(sizeof($defparts) < 2) return sqlite_ReturnWithError('near "'.$defparts[0].($defparts[1]?' '.$defparts[1]:'').'": syntax error');
-			if (sizeof($defparts)==3 && strtoupper($defparts[1])=='COLUMN'){
-				$defparts[1]=$defparts[2];
-				unset($defparts[2]);
-			}
-			$severpos = strpos($createtesttableSQL,' '.$defparts[1].' ');
-			if ($severpos===false) $severpos = strpos($createtesttableSQL," '".$defparts[1]."' ");
-			if($severpos){
-				$nextcommapos = strpos($createtesttableSQL,',',$severpos);
-				if($nextcommapos) $createtesttableSQL = substr($createtesttableSQL,0,$severpos).substr($createtesttableSQL,$nextcommapos + 1);
-				else $createtesttableSQL = substr($createtesttableSQL,0,$severpos-(strpos($createtesttableSQL,',')?0:1) - 1).')';
-				unset($newcols[$defparts[1]]);
-			} else return sqlite_ReturnWithError('unknown column "'.$defparts[1].'" in "'.$table.'"');
-			break;
-		default:
-			return sqlite_ReturnWithError('near "'.$prevword.'": syntax error');
-			break;
-		}
-		$prevword = $defparts[sizeof($defparts)-1];
-	}
-
-	//this block of code generates a test table simply to verify that the columns specifed are valid in an sql statement
-	//this ensures that no reserved words are used as columns, for example
-	if (!sqlite_query($dbhandle,$createtesttableSQL)) return false;
-	$droptempsql = 'DROP TABLE '.$tmpname;
-	sqlite_query($dbhandle,$droptempsql);
-	//end block
-
-	$createnewtableSQL = 'CREATE '.substr(trim(preg_replace("'".$tmpname."'",$table,$createtesttableSQL,1)),17);
-	$newcolumns = '';
-	$oldcolumns = '';
-	reset($newcols);
-	while(list($key,$val) = each($newcols)) {
-		if (strtoupper($val)!='PRIMARY' && strtoupper($key)!='PRIMARY' &&
-		    strtoupper($val)!='UNIQUE'  && strtoupper($key)!='UNIQUE'){
-			$newcolumns .= ($newcolumns?', ':'').$val;
-			$oldcolumns .= ($oldcolumns?', ':'').$key;
-		}
-	}
-	$copytonewsql = 'INSERT INTO '.$table.'('.$newcolumns.') SELECT '.$oldcolumns.' FROM '.$tmpname;
-
-	sqlite_query($dbhandle,$createtemptableSQL); //create temp table
-	sqlite_query($dbhandle,$copytotempsql); //copy to table
-	sqlite_query($dbhandle,$dropoldsql); //drop old table
-
-	sqlite_query($dbhandle,$createnewtableSQL); //recreate original table
-	foreach($createindexsql as $sql) sqlite_query($dbhandle,$sql); //recreate index
-	sqlite_query($dbhandle,$copytonewsql); //copy back to original table
-	sqlite_query($dbhandle,$droptempsql); //drop temp table
-
-/*	echo '<p>'.$createtemptableSQL.'<p/>';
-	echo '<p>'.$copytotempsql.'<p/>';
-	echo '<p>'.$dropoldsql.'<p/>';
-	echo '<p>'.$createnewtableSQL.'<p/>';
-	echo '<p>'.$copytonewsql.'<p/>';
-	echo '<p>'.$droptempsql.'<p/>';
-*/
-	return true;
-}
 function _sqlite_divideByChar($char,$query,$limit=-1){
 	if (!is_array($char)) $char=array($char);
 	$ret=array();
@@ -596,7 +452,7 @@ function _sqlite_divideByChar($char,$query,$limit=-1){
 		if (($k=strpos($query,"'"))===false) $k=strlen($query);
 		if ($i<$j && $i<$k) {// ',' found
 			$buff.=substr($query,0,$i);
-			if ($buff) $ret[]=$buff;
+			if (strlen($buff)) $ret[]=$buff;
 			$query=trim(substr($query,$i+1));
 			$buff='';
 			$limit--;
@@ -604,8 +460,8 @@ function _sqlite_divideByChar($char,$query,$limit=-1){
 		} else if ($j<$i && $j<$k) {// '(' found
 			if (($i=strpos($query,')',$j))===false) {
 				$buff.=$query;
-				if ($buff) $ret[]=$buff;
-				$query='';
+				if (strlen($buff)) $ret[]=$buff;
+				$query=$buff='';
 			} else {
 				$buff.=substr($query,0,$i+1);
 				$query=substr($query,$i+1);
@@ -613,23 +469,25 @@ function _sqlite_divideByChar($char,$query,$limit=-1){
 		} else if ($k<$i && $k<$j) {// "'" found
 			if (($i=strpos($query,"'",$k))===false) {
 				$buff.=$query;
-				if ($buff) $ret[]=$buff;
-				$query='';
+				if (strlen($buff)) $ret[]=$buff;
+				$query=$buff='';
 			} else {
 				$buff.=substr($query,0,$i+1);
 				$query=substr($query,$i+1);
 			}
 		} else {// last column
 			$buff.=$query;
-			if ($buff) $ret[]=$buff;
-			$query='';
+			if (strlen($buff)) $ret[]=$buff;
+			$query=$buff='';
 		}
 	}
+	if (strlen($buff)) $ret[]=$buff;
 	return $ret;
 }
 function sqlite_showKeysFrom($tname,$dbhandle) {
 	// This function is for supporing 'SHOW KEYS FROM' and 'SHOW INDEX FROM'.
 	// For making the same result as obtained by MySQL, temporary table is made.
+	if (preg_match('/^([^\s]+)\s+LIKE\s+\'([^\']+)\'$/i',$tname,$m)) list($m,$tname,$like)=$m;
 	$tname=str_replace("'",'',$tname);
 	
 	// Create a temporary table for making result
@@ -685,6 +543,7 @@ function sqlite_showKeysFrom($tname,$dbhandle) {
 			}
 		} else {// Non-primary key
 			if (($name=str_replace("'",'',$a['name'])) && preg_match('/\(([\s\S]+)\)/',$sql,$matches)) {
+			if (isset($like) && $name!=$like) continue;
 				foreach(explode(',',$matches[1]) as $key=>$value) {
 					$columnname=str_replace("'",'',$value);
 					if (strpos(strtoupper($sql),'CREATE UNIQUE ')===0) $nonunique='0';
@@ -713,6 +572,7 @@ function sqlite_showKeysFrom($tname,$dbhandle) {
 function sqlite_showFieldsFrom($tname,$dbhandle){
 	// This function is for supporing 'SHOW FIELDS FROM' and 'SHOW COLUMNS FROM'.
 	// For making the same result as obtained by MySQL, temporary table is made.
+	if (preg_match('/^([^\s]+)\s+LIKE\s+\'([^\']+)\'$/i',$tname,$m)) list($m,$tname,$like)=$m;
 	$tname=str_replace("'",'',$tname);
 	
 	// First, get the sql query when the table created
@@ -744,6 +604,7 @@ function sqlite_showFieldsFrom($tname,$dbhandle){
 	// Check the table
 	foreach($tablearray as $field=>$value) {
 		if (strtoupper($field)=='PRIMARY') continue;//PRIMARY KEY('xx'[,'xx'])
+		if (isset($like) && $field!=$like) continue;
 		$uvalue=strtoupper($value.' ');
 		$key=(string)$multi[$field];
 		if ($uvalue=='INTEGER NOT NULL PRIMARY KEY ' || $uvalue=='INTEGER PRIMARY KEY ') {
