@@ -1,7 +1,7 @@
 <?php
     /****************************************
     * SQLite-MySQL wrapper for Nucleus      *
-    *                           ver 0.9.0.1 *
+    *                           ver 0.9.0.2 *
     * Written by Katsumi                    *
     ****************************************/
 
@@ -13,7 +13,7 @@ if (!function_exists('sqlite_open')) exit('Sorry, SQLite is not available from P
 require_once dirname(__FILE__) . '/sqliteconfig.php';
 $SQLITE_DBHANDLE=sqlite_open($SQLITECONF['DBFILENAME']);
 require_once dirname(__FILE__) . '/sqlitequeryfunctions.php';
-$SQLITECONF['VERSION']='0.9.0.1';
+$SQLITECONF['VERSION']='0.9.0.2';
 
 //Following thing may work if MySQL is NOT installed in server.
 if (!function_exists('mysql_query')) {
@@ -141,6 +141,7 @@ function sqlite_mysql_query_sub($dbhandle,$query,$strpositions=array(),$p1=null,
 	$beforetrans=time()+microtime();
 	if (!$p1) $p1=$query;
 	$morequeries=array();
+	$temptable=false;
 	$uquery=strtoupper($query);
 	if (strpos($uquery,'CREATE TABLE')===0 || ($temptable=(strpos($uquery,'CREATE TEMPORARY TABLE')===0))) {
 		if (!($i=strpos($query,'('))) return sqlite_ReturnWithError('nucleus_mysql_query: '.$p1);
@@ -157,11 +158,9 @@ function sqlite_mysql_query_sub($dbhandle,$query,$strpositions=array(),$p1=null,
 		$query=trim(substr($query,$i+1));
 		for ($i=strlen($query);0<$i;$i--) if ($query[$i]==')') break;
 		$query=substr($query,0,$i);
-		$commands=_sqlite_divideByChar(',',$query); //$commands=sqlite_splitByComma($query);
+		$commands=_sqlite_divideByChar(',',$query);
 		require_once(dirname(__FILE__) . '/sqlitealtertable.php');
-		$query=sqlite_createtable_query($commands);
-		if ($temptable) $query='CREATE TEMPORARY TABLE '.$tablename.$query;
-		else $query='CREATE TABLE '.$tablename.$query;
+		$query=sqlite_createtable_query($commands,$tablename,$temptable,$morequeries);
 	} else if (strpos($uquery,'DROP TABLE IF EXISTS')===0) {
 		if (!($i=strpos($query,';'))) $i=strlen($query);
 		$tablename=trim(substr($query,20,$i-20));
@@ -194,7 +193,7 @@ function sqlite_mysql_query_sub($dbhandle,$query,$strpositions=array(),$p1=null,
 		if ($i=strpos($query,' ')) {
 			if (strpos(strtoupper($query),'SET')===0) {
 				$query=trim(substr($query,3));
-				$commands=_sqlite_divideByChar(',',$query); //$commands=sqlite_splitByComma($query);
+				$commands=_sqlite_divideByChar(',',$query);
 				$query=' VALUES(';
 				$buff.=' (';
 				foreach($commands as $key=>$value){
@@ -212,7 +211,7 @@ function sqlite_mysql_query_sub($dbhandle,$query,$strpositions=array(),$p1=null,
 				$query.=')';
 			} else {
 				$beforevalues='';
-				$commands=_sqlite_divideByChar(',',$query); //$commands=sqlite_splitByComma($query);
+				$commands=_sqlite_divideByChar(',',$query);
 				$query='';
 				foreach($commands as $key=>$value){
 					if ($beforevalues=='' && preg_match('/^(.*)\)\s+VALUES\s+\(/i',$value,$matches)) {
@@ -333,8 +332,8 @@ function _sqlite_divideByChar($char,$query,$limit=-1){
 	$buff='';
 	while (strlen($query)){
 		$i=strlen($query);
-		foreach($char as $valule){
-			if (($j=strpos($query,$valule))!==false) {
+		foreach($char as $value){
+			if (($j=strpos($query,$value))!==false) {
 				if ($j<$i) $i=$j;
 			}
 		}
@@ -357,7 +356,7 @@ function _sqlite_divideByChar($char,$query,$limit=-1){
 				$query=substr($query,$i+1);
 			}
 		} else if ($k<$i && $k<$j) {// "'" found
-			if (($i=strpos($query,"'",$k))===false) {
+			if (($i=strpos($query,"'",$k+1))===false) {
 				$buff.=$query;
 				if (strlen($buff)) $ret[]=$buff;
 				$query=$buff='';

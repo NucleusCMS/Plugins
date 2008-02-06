@@ -76,3 +76,7 @@
   Version 0.9.0.1
     - Support RENAME TABLE
     - Some tunings are done to improve the speed.
+
+  Version 0.9.0.2
+    - Debug of CREATE TABLE routine.
+    - NP_SQLite: trim the query when 'Copy' is used.

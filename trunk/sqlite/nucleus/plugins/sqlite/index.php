@@ -80,7 +80,8 @@ function $(id) {
 	case "QUERY":
 		$infostr='<table><tr><th>'.'Query'.
 '&nbsp;&nbsp;&nbsp;&nbsp;(-&gt;<a href="javascript:Copy this query" onclick="
-$(\'ExecQuery\').value=$(\'QueryShown\').innerHTML;
+var t=$(\'QueryShown\').innerHTML+\'\';
+$(\'ExecQuery\').value=t.replace(/^\s+|\s+$/g,\'\');
 return false;
 ">Copy</a>)'.
 		"</th></td><tr><td id=\"QueryShown\">\n".htmlspecialchars($query=requestVar('query'))."</td></tr></table><br />\n";

@@ -1,14 +1,14 @@
 <?php
     /****************************************
     * SQLite-MySQL wrapper for Nucleus      *
-    *                           ver 0.9.0.0 *
+    *                           ver 0.9.0.2 *
     * Written by Katsumi   License: GPL     *
     ****************************************/
 
-function sqlite_createtable_query($commands){
-	$auto_increment=false;
-	$query=' (';
-	$first=true;
+function sqlite_createtable_query($commands,$tablename,$temptable,&$morequeries){
+	if ($temptable) $query="CREATE TEMPORARY TABLE $tablename (";
+	else $query="CREATE TABLE $tablename (";
+	$auto_increment=$first=true;
 	foreach($commands as $key => $value) {
 		if (strpos(strtolower($value),'auto_increment')==strlen($value)-14) $auto_increment=true;
 		$isint=preg_match('/int\(([0-9]*?)\)/i',$value);
