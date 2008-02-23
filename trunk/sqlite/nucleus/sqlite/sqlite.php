@@ -1,7 +1,7 @@
 <?php
     /****************************************
     * SQLite-MySQL wrapper for Nucleus      *
-    *                           ver 0.9.0.2 *
+    *                           ver 0.9.0.3 *
     * Written by Katsumi                    *
     ****************************************/
 
@@ -13,7 +13,7 @@ if (!function_exists('sqlite_open')) exit('Sorry, SQLite is not available from P
 require_once dirname(__FILE__) . '/sqliteconfig.php';
 $SQLITE_DBHANDLE=sqlite_open($SQLITECONF['DBFILENAME']);
 require_once dirname(__FILE__) . '/sqlitequeryfunctions.php';
-$SQLITECONF['VERSION']='0.9.0.2';
+$SQLITECONF['VERSION']='0.9.0.3';
 
 //Following thing may work if MySQL is NOT installed in server.
 if (!function_exists('mysql_query')) {
@@ -241,9 +241,9 @@ function sqlite_mysql_query_sub($dbhandle,$query,$strpositions=array(),$p1=null,
 		$query=sqlite_showFieldsFrom(trim(substr($query,18)),$dbhandle);
 	} else if (strpos($uquery,'TRUNCATE TABLE ')===0) {
 		$query='DELETE FROM '.substr($query,15);
-	} else if (preg_match('/DESC \'([^\']+)\' \'([^\']+)\'$/',$query,$m)) {
+	} else if (preg_match('/^DESC \'([^\']+)\' \'([^\']+)\'$/',$query,$m)) {
 		return nucleus_mysql_query("SHOW FIELDS FROM '$m[1]' LIKE '$m[2]'");
-	} else if (preg_match('/DESC ([^\s]+) ([^\s]+)$/',$query,$m)) {
+	} else if (preg_match('/^DESC ([^\s]+) ([^\s]+)$/',$query,$m)) {
 		return nucleus_mysql_query("SHOW FIELDS FROM '$m[1]' LIKE '$m[2]'");
 	} else SQLite_Functions::sqlite_modifyQueryForUserFunc($query,$strpositions);
 
