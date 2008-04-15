@@ -1,0 +1,70 @@
+/*
+	admin area style for markdown editor
+*/
+
+
+textarea#inputbody,
+textarea#inputmore {
+	width: 99%;
+	height: 250px;
+}
+
+.leftbox, .rightbox {
+	width: auto;
+}
+
+.jsbuttonbar {
+	margin-bottom: 3px;
+}
+
+
+
+div#mde-prevtitle {
+	display: none;
+}
+div#mde-prevbody,
+div#mde-prevmore {
+	overflow:auto;
+	width: 99%;
+	min-height: 1em;
+	max-height: 200px;
+	border: 1px solid #aaa;
+}
+
+div#mde-prevbody h1,
+div#mde-prevmore h1, 
+div#mde-prevbody h2,
+div#mde-prevmore h2,
+div#mde-prevbody h3,
+div#mde-prevmore h3,
+div#mde-prevbody h4,
+div#mde-prevmore h4,
+div#mde-prevbody h5,
+div#mde-prevmore h5,
+div#mde-prevbody h6,
+div#mde-prevmore h6 {
+	margin: 1em 0;
+	padding: 0;
+	border: none;
+	text-align: left;
+	color: black;
+}
+
+div#mde-prevbody blockquote,
+div#mde-prevmore blockquote {
+	overflow:auto;
+	width:90%;
+	margin-left:10px;
+	padding: 0.5em 1em;
+	border: 1px solid gray;
+}
+
+div#mde-prevbody pre,
+div#mde-prevmore pre {
+	margin-left: 10px;
+	padding: 0.5em 1em;
+	background: #ddd;
+}
+
+
+

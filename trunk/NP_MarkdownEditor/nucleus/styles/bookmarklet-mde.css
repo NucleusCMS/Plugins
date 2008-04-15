@@ -1,0 +1,54 @@
+/*
+	bookmarklet style for markdown editor
+*/
+
+.leftbox, .rightbox {
+	width: auto;
+}
+
+.jsbuttonbar-mde {
+	margin-top: 2px;
+	padding: 3px;
+	cursor: default;
+}
+
+
+
+span#prevbody h1,
+span#prevmore h1, 
+span#prevbody h2,
+span#prevmore h2,
+span#prevbody h3,
+span#prevmore h3,
+span#prevbody h4,
+span#prevmore h4,
+span#prevbody h5,
+span#prevmore h5,
+span#prevbody h6,
+span#prevmore h6 {
+	margin: 1em 0;
+	padding: 0;
+	border: none;
+	text-align: left;
+	color: black;
+}
+
+span#prevbody blockquote,
+span#prevmore blockquote {
+	overflow:auto;
+	width:90%;
+	margin-left:10px;
+	padding: 0.5em 1em;
+	border: 1px solid gray;
+}
+
+span#prevbody pre,
+span#prevmore pre {
+	width:90%;
+	margin-left:10px;
+	padding: 0.5em 1em;
+	background: #ddd;
+}
+
+
+
