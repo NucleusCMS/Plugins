@@ -2,10 +2,10 @@
 // vim: tabstop=2:shiftwidth=2
 
 /**
-  * NP_TrimImage ($Revision: 1.10 $)
+  * NP_TrimImage ($Revision: 1.11 $)
   * by nakahara21 ( http://nakahara21.com/ )
   * by hsur ( http://blog.cles.jp/np_cles/ )
-  * $Id: NP_TrimImage.php,v 1.10 2007-04-07 04:10:16 hsur Exp $
+  * $Id: NP_TrimImage.php,v 1.11 2008-05-02 17:23:20 hsur Exp $
   *
   * Based on NP_TrimImage 1.0 by nakahara21
   * http://nakahara21.com/?itemid=512
@@ -13,7 +13,7 @@
 
 /*
   * Copyright (C) 2004-2006 nakahara21 All rights reserved.
-  * Copyright (C) 2006-2007 cles All rights reserved.
+  * Copyright (C) 2006-2008 cles All rights reserved.
   *
   * This program is free software; you can redistribute it and/or
   * modify it under the terms of the GNU General Public License
@@ -50,7 +50,7 @@
 //			sql_table support :-P
 //	0.6:	parameter supports blogid and catid
 //	0.7:	supports templatevar
-//			supports <%popup()%> 
+//			supports popup() 
 //	0.8:	supports gif
 //	0.9:	doTemplateVar calls DB data for other PreItem Plugin
 //	0.9:	change '&' to '&amp;'
@@ -65,7 +65,9 @@
 // 				Add ENT_QUOTES to htmlspecialchars()
 // 				Add ExtractImageMode
 //  2.2.1:	update phpThumb() 1.7.7 . 
-//  		 bug fix	
+//  		bug fix	
+//  2.2.2:	update enableLeftTop.patch
+//  2.3.0:  add itemcat mode
 
 define('NP_TRIMIMAGE_FORCE_PASSTHRU', true); //passthru(standard)
 //define('NP_TRIMIMAGE_FORCE_PASSTHRU', false); //redirect(advanced)
@@ -91,7 +93,7 @@ class NP_TrimImage extends NucleusPlugin {
 	}
 
 	function getVersion() {
-		return '2.2.1';
+		return '2.3.0';
 	}
 
 	function supportsFeature($what) {
@@ -156,6 +158,10 @@ class NP_TrimImage extends NucleusPlugin {
 			'config_prefer_imagemagick' => NP_TRIMIMAGE_PREFER_IMAGEMAGICK,
 		);
 	}
+
+	function getCategoryIDFromItemID($itemid) {
+		return quickQuery('SELECT icat as result FROM ' . sql_table('item') . ' WHERE inumber=' . intval($itemid) );
+	}
 	
 	function doSkinVar($skinType, $amount = 10, $wsize = 80, $hsize = 80, $point = 0, $random = 0, $exmode = '', $titlemode = '', $includeImg = 'true') {
 		global $CONF, $manager, $blog;
@@ -193,30 +199,38 @@ class NP_TrimImage extends NucleusPlugin {
 
 				//break;
 			default :
-				if ($exmode == '') {
-					$this->exquery .= ' and iblog = '.intval($b->getID());
-					global $catid;
+				if ($exmode == '' || $exmode == 'itemcat') {
+					global $catid, $itemid;
 					if ($catid)
 						$this->exquery .= ' and icat = '.intval($catid);
-				}
-				elseif ($exmode == 'all') {
+					elseif( $exmode == 'itemcat' && $itemid )
+						$this->exquery .= ' and icat = '.intval( $this->getCategoryIDFromItemID($itemid) );
+					else
+						$this->exquery .= ' and iblog = '.intval($b->getID());
+				} elseif ($exmode == 'all') {
 					// nothing
 				} else {
-					$spid_array = $spbid = $spcid = array ();
+					$spbid = $spcid = array ();
 					$spid_array = explode('/', $exmode);
 					foreach ($spid_array as $spid) {
-						if (substr($spid, 0, 1) == 'b')
-							$spbid[] = intval(substr($spid, 1));
-						if (substr($spid, 0, 1) == 'c')
-							$spcid[] = intval(substr($spid, 1));
+						$type = substr($spid, 0, 1);
+						$type_id = intval(substr($spid, 1));
+						if( (!$type) || (!$type_id) ) continue;
+						
+						switch($type){
+							case 'b':
+								$spbid[] = $type_id;
+								break;
+							case 'c':
+								$spcid[] = $type_id;
+								break;
+						}
 					}
-					$spbid = implode(',', $spbid);
-					$spcid = implode(',', $spcid);
-					if ($spbid) {
-						$this->exquery .= ' and iblog IN ('.$spbid.') ';
+					if ($spbid){
+						$this->exquery .= ' and iblog IN ('.implode(',', $spbid).') ';
 					}
 					if ($spcid) {
-						$this->exquery .= ' and icat IN ('.$spcid.') ';
+						$this->exquery .= ' and icat IN ('.implode(',', $spcid).') ';
 					}
 				}
 		}

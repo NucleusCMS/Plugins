@@ -1307,6 +1307,11 @@ class phpthumb {
 //print_r($getimagesize);
 //echo '</pre>';
 
+							// added by cles
+							if( $this->zc == 2 )
+							$commandline .= ' -gravity NorthWest';
+							else
+
 							$commandline .= ' -gravity center';
 
 							if (($wAll > 0) && ($hAll > 0)) {
