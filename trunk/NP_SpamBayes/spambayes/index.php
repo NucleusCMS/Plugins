@@ -1,18 +1,21 @@
 <?php
 /**
   * Modified by hsur ( http://blog.cles.jp/np_cles )
-  * $Id: index.php,v 1.5 2007-06-25 11:47:30 hsur Exp $
+  * $Id: index.php,v 1.6 2008-05-03 22:38:17 hsur Exp $
 */
 	// vim: tabstop=2:shiftwidth=2
 	//
 	// Nucleus Admin section;
 	// Created by Xiffy
 	//
-	// Modified by hsur ($Id: index.php,v 1.5 2007-06-25 11:47:30 hsur Exp $)
+	// Modified by hsur ($Id: index.php,v 1.6 2008-05-03 22:38:17 hsur Exp $)
+
 	$strRel = '../../../';
 	include($strRel . 'config.php');
 	
 	include($DIR_LIBS . 'PLUGINADMIN.php');
+	require_once($DIR_PLUGINS . 'sharedlibs/sharedlibs.php');
+	require_once('cles/Feedback.php');
 	
 	if ($blogid) {$isblogadmin = $member->isBlogAdmin($blogid);}
 	else $isblogadmin = 0;
@@ -42,10 +45,11 @@
 	// create the admin area page
 	$oPluginAdmin = new PluginAdmin('SpamBayes');
 	$oPluginAdmin->start();
+	$fb =& new cles_Feedback($oPluginAdmin);
 	
 	if( defined('NP_SPAMBAYES_APIURL') && (! $oPluginAdmin->plugin->getOption('appid'))){
 		echo '<h2>Plugin Error!</h2>';
-		echo '<h3>Yahoo! Japan Application ID is not set.</h3>';
+		echo '<h3>Yahoo! Japan Application ID が設定されていません</h3>';
 		$oPluginAdmin->end();
 		exit;
 	}
@@ -130,13 +134,23 @@
 		case 'trainblockednew':
 			sb_trainblockednew();
 			break;
+		
+		case 'report' :
+			$extradata = '';
+			if( defined('NP_SPAMBAYES_TOKENIZER') )
+				$extradata .= 'Mecab';
+			if( defined('NP_SPAMBAYES_APIURL') )
+				$extradata .= 'Yahoo!';
+				
+			$fb->printForm($extradata);
+			break;
 	}
 	
 	$cats = $oPluginAdmin->plugin->spambayes->nbs->getCategories();
 	$i = 0;
 	$keys = array_keys($cats);
-	echo '<fieldset><legend>Baysian DB statistics</legend><table>';
-	echo '<tr><th>category</th><th>probability</th><th>wordcount</th></tr>';
+	echo '<fieldset><legend>Bayesianフィルタ 統計情報</legend><table>';
+	echo '<tr><th>カテゴリ</th><th>確率</th><th>単語数</th></tr>';
 	foreach($cats as $category) {
 		echo "<tr><td><b>$keys[$i]</b></td>";
 		foreach($category as $key => $value) {
@@ -175,9 +189,9 @@
 				$docid = $oPluginAdmin->plugin->spambayes->nbs->nextdocid();
 				$oPluginAdmin->plugin->spambayes->train($docid,requestVar('catcode'),$arr['content']);
 				$oPluginAdmin->plugin->spambayes->updateProbabilities();
-				echo '<h3>document added to the database as: '.requestVar('catcode').'</h3>';
+				echo '<h3>文例を'.requestVar('catcode').'として学習しました</h3>';
 			} else {
-				echo 'An error occured';
+				echo 'エラーが発生しました';
 			}
 		}
 	}
@@ -188,11 +202,11 @@
 		if ($expression > '') {
 			$score = $oPluginAdmin->plugin->spambayes->categorize($expression);
 			if ((float)$score['spam'] > (float)$oPluginAdmin->plugin->getOption('probability')) {
-				echo '<h2>Testresult: Spam! [score:'.$score['spam'].']</h2>';
+				echo '<h2>テスト結果: spamです! [score:'.$score['spam'].']</h2>';
 			} else {
-				echo '<h2>Testresult: Ham! [score:'.$score['ham'].']</h2>';
+				echo '<h2>テスト結果: hamです! [score:'.$score['ham'].']</h2>';
 			}
-			echo '<fieldset style="width:90%;"><legend>Tested:</legend>';
+			echo '<fieldset style="width:90%;"><legend>入力した文例:</legend>';
 			echo htmlspecialchars($expression,ENT_QUOTES);
 			echo '</fieldset>';
 		}
@@ -293,7 +307,7 @@
 		if (requestVar('ref') > 0) {
 			$oPluginAdmin->plugin->spambayes->untrain(requestVar('ref'));
 			$oPluginAdmin->plugin->spambayes->updateProbabilities();
-			echo '<h3>document untrained</h3>';
+			echo '<h3>文例を削除しました</h3>';
 		}
 		// build document table ...
 		$startpos = requestVar('startpos') ? requestVar('startpos') : 0;
@@ -303,13 +317,13 @@
 		$pager = buildpager($startpos, $total, $filter, $filtertype, $filterform,'untrain', $keyword, 10);
 		$res = $oPluginAdmin->plugin->spambayes->nbs->getreftable($startpos);
 	
-		echo '<h2>Spam Bayesian: Training data ['.$total.'] </h2>';
+		echo '<h2>Bayesianフィルタ: 学習済み文例 ['.$total.'] </h2>';
 		echo '<table>';
 		echo $pager;
-		echo '<tr><th>Type</th><th>content</th><th>action</th></tr>';
+		echo '<tr><th>種別</th><th>文例</th><th>&nbsp;</th></tr>';
 	
 		while ($arr = mysql_fetch_array($res)) {
-			echo '<tr><td>'.$arr['catcode'].'</td><td>'.htmlspecialchars($arr['content'],ENT_QUOTES).'</td><td><a href="'.htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF').'?page=untrain&ref='.$arr['ref']),ENT_QUOTES).'">untrain</a></td></tr>';
+			echo '<tr><td>'.$arr['catcode'].'</td><td>'.htmlspecialchars($arr['content'],ENT_QUOTES).'</td><td><a href="'.htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF').'?page=untrain&ref='.$arr['ref']),ENT_QUOTES).'">文例を削除</a></td></tr>';
 		}
 		echo $pager;
 		echo '</table>';
@@ -318,16 +332,16 @@
 	function sb_explain(){
 		global $oPluginAdmin;
 		$id = requestVar('id');
-		echo '<h2>Explain: Scorelog unweighed results (sorted on ham scores)</h2>';
+		echo '<h2>評価の詳細: 調整前のスコアデータ (hamのスコアの昇順)</h2>';
 		$arr = $oPluginAdmin->plugin->spambayes->nbs->getLogevent($id);
 	
 		$oPluginAdmin->plugin->spambayes->explain($arr['content']);
 	}
-	
+
 	function sb_promote(){
 		global $oPluginAdmin;
 		$id = requestVar('id');
-		echo '<h2>Promoting to blog: '.$id.'</h2>';
+		echo '<h2>コメントの復活: '.$id.'</h2>';
 		$arr = $oPluginAdmin->plugin->spambayes->nbs->getLogevent($id);
 		$itemid = explode('itemid:', $arr['log']);
 		$itemid = $itemid[1];
@@ -347,8 +361,8 @@
 		$query = 'INSERT INTO '.sql_table('comment').' (CUSER, CMAIL, CMEMBER, CBODY, CITEM, CTIME, CHOST, CIP, CBLOG) '
 				   . "VALUES ('$name', '$url', $memberid, '$body', $itemid, '$timestamp', '$host', '$ip', '$blogid')";
 		sql_query($query);
-		echo '<b>comment added</b><br />';
-		echo '-- end promote --';
+		echo '<b>コメントを復活させました</b><br />';
+		//echo '-- end promote --';
 	}
 	
 	function sb_batch() {
@@ -365,69 +379,130 @@
 						$docid = $oPluginAdmin->plugin->spambayes->nbs->nextdocid();
 						$cat = substr($action,1);
 						$oPluginAdmin->plugin->spambayes->train($docid,$cat,$ar['content']);
-						echo 'train '.$cat.': '.$id.'<br />';
+						echo '学習しました('.$cat.'): '.$id.'<br />';
 						break;
 					case 'delete':
-						echo 'delete: '.$id.'<br />';
+						echo '削除しました: '.$id.'<br />';
 						$oPluginAdmin->plugin->spambayes->nbs->removeLogevent($id);
 				}
 			}
 			$oPluginAdmin->plugin->spambayes->updateProbabilities();
 		}
-		echo '--end of batch--';
+		//echo '--end of batch--';
 	}
 		
 	function sb_nucmenu($trainall, $logging) {
-		global $oPluginAdmin, $manager;
-		?>
-	
+		global $oPluginAdmin, $manager, $CONF;
+?>
 	<!-- sorry, it's stronger then me :-) this javascript less popup's are styled using: http://meyerweb.com/eric/css/edge/popups/demo.html -->
 	<style type="text/css">
-				.adminmenu span {
-					display:none;
-				}
-				.adminmenu a:hover span {
-					display:block;
-					position: absolute;
-					text-decoration: none;
-					top: 100px;
-					left: 350px;
-					width: 225px;
-					background-color:#ffff7d;
-					padding: 10px;
-					font-weight: normal;
-					font-size: 14px;
-					border: 1px solid black;
-					z-index: 100;
-				}
-				.adminmenu a:hover {
-					background-color: #ffff7d;
-				}
-			</style>
-		<?php
+		.adminmenu span {
+			display:none;
+		}
+		.adminmenu a:hover span {
+			display:block;
+			position: absolute;
+			text-decoration: none;
+			top: 100px;
+			left: 350px;
+			width: 225px;
+			background-color:#ffff7d;
+			padding: 10px;
+			font-weight: normal;
+			font-size: 14px;
+			border: 1px solid black;
+			z-index: 100;
+		}
+		.adminmenu a:hover {
+			background-color: #ffff7d;
+		}
+	</style>
+<?php
 		$total = $oPluginAdmin->plugin->spambayes->nbs->countlogtable('all');
-	   	echo "<h2>SpamBayes menu</h2>\n";
+	   	echo "<h2>SpamBayes 管理</h2>\n";
 		echo "<ul class=\"adminmenu\">\n";
-		echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?page=train"),ENT_QUOTES)."\">Spam Bayes training<span>Use this to train the Spam Bayesian filter with either 'ham' (not spam) or 'spam' messages. Your Bayessian filter needs both type of messages. The filter will become better with each message submitted.</span></a></li>\n";
-		echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?page=untrain"),ENT_QUOTES)."\">Spam Bayes untraining<span>Use this to remove references to a earlier trained document.</span></a></li>\n";
+		echo sb_menu(
+			$CONF['PluginURL'].'spambayes/index.php?page=train',
+			'学習データを入力',
+			"Bayesianフィルタのための学習データを手動で入力します。学習データはham(spamでないもの)とspamの２種類があります。プラグインの動作精度を向上させるためには両方のデータが満遍なく必要です。"
+		);
+		echo sb_menu(
+			$CONF['PluginURL'].'spambayes/index.php?page=untrain',
+			'学習データの削除',
+			"これまでに学習したデータをBayesianフィルタから削除します"
+		);
+
 		if ($logging == 'yes') {
-			echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?page=log"),ENT_QUOTES)."\">Spam Bayes log ($total)<span>This page shows you the logging of Spam Bayes. You can browse through all 'ham' and 'spam' messages and train the filter with them if you like. (Especially usefull when SpamBayes got it wrong).</span></a></li>\n";
+			echo sb_menu(
+				$CONF['PluginURL'].'spambayes/index.php?page=log',
+				"Bayesianフィルタの動作履歴 ($total)",
+				"フィルタの動作履歴を表示します。Bayesianフィルタがコメントやトラックバックをどのように判定したのかが判ります。判定に誤りがある場合にはBayesianフィルタにそれを教えることができます。(運用初期における動作の微調整に有効です)"
+			);
 		}
+		
 		if ($trainall == 'yes') {
-			echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?page=trainall"),ENT_QUOTES)."\">Train HAM (not spam) with all comments<span>Use this to train the Spam Bayesian filter with all your comments as 'ham' (not spam). This can take a while but you don't have to do anything. Just sit back and relax. Once you've run this option it's save to remove it from the menu. (See options)</span></a></li>\n";
-			//echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?page=trainblocked"),ENT_QUOTES)."\">Train spam with all blocked comments</a></li>\n";
-			echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?page=traintb"),ENT_QUOTES)."\">Train ham with all trackbacks.</a></li>\n";
-			echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?page=trainspamtb"),ENT_QUOTES)."\">Train spam with all blocked trackbacks.</a></li>\n";
-			echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?page=untrainall"),ENT_QUOTES)."\">Remove all comments from the HAM (not spam).<span>Use this to untrain the Spam Bayesian filter. This can take a while but you don't have to do anything. Just sit back and relax. Use only if you think earlier training went wrong.</span></a></li>\n";
+			echo sb_menu(
+				$CONF['PluginURL'].'spambayes/index.php?page=trainall',
+				'全てのコメントをhamとして学習',
+				"このコマンドを実行すると、これまでに寄せられている全てのコメントをham(spamでないもの)として学習します。あらかじめspamコメントは削除しておきましょう。コメントの量によっては時間がかかる可能性があります。（このメニューはオプションによって非表示にすることができます。）"
+			);
+			echo sb_menu(
+				$CONF['PluginURL'].'spambayes/index.php?page=untrainall',
+				"hamとして学習したデータを全て削除",
+				"上記の「全てのコメントをhamとして学習する」で学習したデータを全て削除します。上記による学習の効果が芳しくなかった場合にのみ、実行してください。コメントの量によっては時間がかかる可能性があります。（このメニューはオプションによって非表示にすることができます。）"
+			);
+			echo sb_menu(
+				$CONF['PluginURL'].'spambayes/index.php?page=traintb',
+				"全ての公開済みトラックバックをhamとして学習",
+				'このコマンドを実行すると、全ての公開済みトラックバックをhamとして学習します。（このメニューはオプションによって非表示にすることができます。）'
+				);
+			echo sb_menu(
+				$CONF['PluginURL'].'spambayes/index.php?page=trainspamtb',
+				"全ての保留トラックバックをspamとして学習",
+				'このコマンドを実行すると、全ての保留済みトラックバックをspamとして学習します。（このメニューはオプションによって非表示にすることができます。）'
+			);
 		}
-		echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?page=trainnew"),ENT_QUOTES)."\">Train HAM (not spam) with all NEW comments<span>Use this to train the Spam Bayesian filter with all your yet untrained comments as 'ham' (not spam). This can take a while but you don't have to do anything. Just sit back and relax. You can use this option as much as you like. Only untrained comments will be added.</span></a></li>\n";
-		//echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?page=trainblockednew"),ENT_QUOTES)."\">Train spam with all NEW blocked comments</a></li>\n";
-		echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?page=traintbnew"),ENT_QUOTES)."\">Train HAM (not spam) with all NEW trackbacks.</a></li>\n";
-		echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?page=trainspamtbnew"),ENT_QUOTES)."\">Train spam with all NEW blocked trackbacks.</a></li>\n";
-		echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?page=update"),ENT_QUOTES)."\">Update probabilities<span>After some training, you must use this to finalise</span></a></li>\n";
-		echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(serverVar('PHP_SELF')."?page=test"),ENT_QUOTES)."\">Spam Bayes Test<span>Use this to test if a certain message would be considered 'ham' (not spam) or 'spam' message</span></a></li>\n";
-		echo "<li><a href=\"".htmlspecialchars($manager->addTicketToUrl(dirname(serverVar('PHP_SELF'))."/../../index.php?action=pluginoptions&plugid=".getPlugid()),ENT_QUOTES)."\">Spam Bayes options<span>This will take you to the plugins options page. This menu is NOT available on that page. Sorry for this. Use the quickmenu option to show a quicklink to the admin page!</span></a></li>\n";
-		echo "</ul>\n";
+		echo sb_menu(
+			$CONF['PluginURL'].'spambayes/index.php?page=trainnew',
+			"コメントをhamとして学習",
+			"前回の実行後に新たに登録されたコメントをhamとして学習します。該当するコメントがない場合は何もしません。"
+		);
+		echo sb_menu(
+			$CONF['PluginURL'].'spambayes/index.php?page=traintbnew',
+			"公開済みトラックバックをhamとして学習",
+			"前回の実行後に新たに公開されたトラックバックをhamとして学習します。該当するトラックバックがない場合何もしません。"
+		);
+		echo sb_menu(
+			$CONF['PluginURL'].'spambayes/index.php?page=trainspamtbnew',
+			"保留トラックバックをspamとして学習",
+			"前回の実行後に新たに保留されたトラックバックをspamとして学習します。該当するトラックバックがない場合何もしません。"
+		);
+		echo sb_menu(
+			$CONF['PluginURL'].'spambayes/index.php?page=update',
+			"統計情報のアップデート",
+			"Bayesianフィルタの統計情報をアップデートします。統計情報は自動的にアップデートされるため、通常は実行する必要はありません。"
+		);
+		echo sb_menu(
+			$CONF['PluginURL'].'spambayes/index.php?page=test',
+			"動作テスト",
+			"実際に文例を入力して、Bayesianフィルタの動作をテストすることができます。"
+		);
+		echo sb_menu(
+			$CONF['AdminURL']."index.php?action=pluginoptions&plugid=".getPlugid(),
+			"SpamBayes プラグインオプション",
+			"SpamBayes プラグインオプションを変更することができます。"
+		);
+		echo sb_menu(
+			$CONF['PluginURL'].'spambayes/index.php?page=report',
+			"動作確認報告",
+			"作者に動作確認レポートを送信します。"
+		);
+			echo "</ul>\n";
+	}
+	
+	function sb_menu($path, $menu, $popup=''){
+		global $manager;
+		return '<li><a href="'.htmlspecialchars($manager->addTicketToUrl($path),ENT_QUOTES).'">'.$menu.'<span>'.$popup.'</span></a></li>'."\n";
 	}
 	
 	function sb_log() {
@@ -445,9 +520,9 @@
 		if ($filter == 'all') {
 			$htotal = $oPluginAdmin->plugin->spambayes->nbs->countlogtable('ham',$filtertype, $keyword);
 			$stotal = $oPluginAdmin->plugin->spambayes->nbs->countlogtable('spam',$filtertype, $keyword);
-			echo '<h2>Spam Bayesian: Log [total events: '.$total.' (ham: '.$htotal.' spam: '.$stotal.') ]</h2>';
+			echo '<h2>Bayesianフィルタ: 動作履歴 [計:'.$total.'件 (ham: '.$htotal.'件, spam: '.$stotal.'件) ]</h2>';
 		} else {
-			echo '<h2>Spam Bayesian: Log [total '.$filter.' events: '.$total.']</h2>';
+			echo '<h2>Bayesianフィルタ: 動作履歴 [計:'.$total.'件]</h2>';
 		}
 	
 		$res = $oPluginAdmin->plugin->spambayes->nbs->getlogtable($startpos,$filter, $filtertype, $keyword, $ipp);
@@ -459,49 +534,54 @@
 		}
 		$cp = intval($startpos + $ipp) / $ipp;
 		echo '<table>';
-		echo '<tr><th colspan="2">Page '.$cp.' of '.$ap.'</th><td colspan="2">Browse: <form style="display:inline"><input type="hidden" name="ticket" value="'.$ticket.'" /><input type="text" size="3" name="ipp" value="'.$ipp.'" /> items per page. <input type="submit" value="Go" /><input type="hidden" name="amount" value="cp" /><input type="hidden" name="filter" value="'.$filter.'" /><input type="hidden" name="filtertype" value="'.$filtertype.'" /><input type="hidden" name="keyword" value="'.$keyword.'" /><input type="hidden" name="page" value="log" /></form>';
+		echo '<tr><th colspan="2">'.$cp.'/'.$ap.'ページ</th><td colspan="2">表示: <form style="display:inline"><input type="hidden" name="ticket" value="'.$ticket.'" /><input type="text" size="3" name="ipp" value="'.$ipp.'" /> 行を１ページに表示する <input type="submit" value="変更" /><input type="hidden" name="amount" value="cp" /><input type="hidden" name="filter" value="'.$filter.'" /><input type="hidden" name="filtertype" value="'.$filtertype.'" /><input type="hidden" name="keyword" value="'.$keyword.'" /><input type="hidden" name="page" value="log" /></form>';
 		echo '<span style="text-align:right" class="batchoperations">';
 		if ($filter <> 'all') {
-			echo ' type: <b>'.$filter.'</b>';
+			$filter_text .= ' 種別: <b>'.$filter.'</b>';
 		}
 		if ($filtertype <> 'all') {
-			echo ' event: <b>'.$filtertype.'</b>';
+			$filter_text .= ' イベント: <b>'.$filtertype.'</b>';
 		}
 		if ($keyword > '') {
-			echo ' keyword: <b>'.$keyword.'</b>';
+			$filter_text .= ' キーワード: <b>'.$keyword.'</b>';
 		}
+		
+		if( $filter_text ){
+			echo "絞込み条件: ".$filter_text;
+		}
+		
 		echo '</span></td></tr>';
 		echo $pager;
 		$extraaction = '&filter='.$filter.'&filtertype='.urlencode($filtertype).'&startpos='.$startpos.'&keyword='.$keyword.'&ipp='.$ipp.'&ticket='.$ticket;
-		echo '<tr><th>Date</th><th>event</th><th>content</th><th>action</th></tr><form method="post"><input type="hidden" name="ticket" value="'.$ticket.'" />';
+		echo '<tr><th>日付</th><th>イベント</th><th>文例</th><th>&nbsp;</th></tr><form method="post"><input type="hidden" name="ticket" value="'.$ticket.'" />';
 		$i = 0;
 		while ($arr = mysql_fetch_array($res)) {
 			echo '<tr onmouseover="focusRow(this);" onmouseout="blurRow(this);"><td>'.$arr['logtime'].'<br /><b>'.$arr['catcode'].'</b></td><td>'.$arr['log'].'</td><td><input id="batch'.$i.'" name="batch['.$i.']" value="'.$arr['id'].'" type="checkbox"><label for="batch'.$i.'">'.htmlspecialchars(str_replace('^^', ' ',$arr['content']),ENT_QUOTES).'</label></td>';
-			echo '<td><a href="'.htmlspecialchars(serverVar('PHP_SELF').'?page=trainlog&catcode=ham&id='.$arr['id'].$extraaction,ENT_QUOTES).'"><nobr>train ham</nobr></a>';
-			echo ' <a href="'.htmlspecialchars(serverVar('PHP_SELF').'?page=trainlog&catcode=spam&id='.$arr['id'].$extraaction,ENT_QUOTES).'"><nobr>train spam</nobr></a>';
-			echo '<br /><a href="'.htmlspecialchars(serverVar('PHP_SELF').'?page=explain&id='.$arr['id'].$extraaction,ENT_QUOTES).'"><nobr>explain</nobr></a>';
+			echo '<td><a href="'.htmlspecialchars(serverVar('PHP_SELF').'?page=trainlog&catcode=ham&id='.$arr['id'].$extraaction,ENT_QUOTES).'"><nobr>hamとして学習</nobr></a>';
+			echo ' <a href="'.htmlspecialchars(serverVar('PHP_SELF').'?page=trainlog&catcode=spam&id='.$arr['id'].$extraaction,ENT_QUOTES).'"><nobr>spamとして学習</nobr></a>';
+			echo '<br /><a href="'.htmlspecialchars(serverVar('PHP_SELF').'?page=explain&id='.$arr['id'].$extraaction,ENT_QUOTES).'"><nobr>評価の詳細</nobr></a>';
 			if (strstr($arr['log'], 'itemid:')) {
-				echo '<br /><br /><a style="color:red" href="'.htmlspecialchars(serverVar('PHP_SELF').'?page=promote&id='.$arr['id'].$extraaction,ENT_QUOTES).'"><nobr>publish</nobr></a>';
+				echo '<br /><br /><a style="color:red" href="'.htmlspecialchars(serverVar('PHP_SELF').'?page=promote&id='.$arr['id'].$extraaction,ENT_QUOTES).'"><nobr>復活</nobr></a>';
 			}
 			echo '</td>';
 			echo '</tr>';
 			$i++;
 		}
 		if (mysql_num_rows($res) == 0) {
-			echo '<tr><td colspan="4"><b>Eventlog is empty</b></td></tr>';
+			echo '<tr><td colspan="4"><b>ログは空です。</b></td></tr>';
 		}
-		echo '<tr><td colspan="4"><div class="batchoperations">with selected:<select name="batchaction">';
-		echo '<option value="tspam">Train spam</option>';
-		echo '<option value="tham">Train ham</option>';
-		echo '<option value="delete">Delete</option></select><input name="page" value="batch" type="hidden">';
+		echo '<tr><td colspan="4"><div class="batchoperations">選択したものを次の通り処理する:<select name="batchaction">';
+		echo '<option value="tspam">spamとして学習</option>';
+		echo '<option value="tham">hamとして学習</option>';
+		echo '<option value="delete">削除</option></select><input name="page" value="batch" type="hidden">';
 		echo '<input type="hidden" name="ipp" value="'.$ipp.'"/><input type="hidden" name="filter" value="'.$filter.'" /><input type="hidden" name="filtertype" value="'.$filtertype.'" /><input type="hidden" name="keyword" value="'.$keyword.'" />';
-		echo '<input value="Execute" type="submit">(
-				 <a href="" onclick="if (event && event.preventDefault) event.preventDefault(); return batchSelectAll(1); ">select all</a> -
-				 <a href="" onclick="if (event && event.preventDefault) event.preventDefault(); return batchSelectAll(0); ">deselect all</a>
+		echo '<input value="実行" type="submit">(
+				 <a href="" onclick="if (event && event.preventDefault) event.preventDefault(); return batchSelectAll(1); ">全て選択</a> -
+				 <a href="" onclick="if (event && event.preventDefault) event.preventDefault(); return batchSelectAll(0); ">選択解除</a>
 				)
 			</div></td></tr></form>';
-		echo '<tr><td colspan="4"><div class="batchoperations"><form action="" method="get" style="display:inline"><input type="hidden" name="ticket" value="'.$ticket.'" /><input type="hidden" name="ipp" value="'.$ipp.'"/><input type="hidden" name="page" value="clearlog" /><input type="hidden" name="amount" value="cp" /><input type="hidden" name="filter" value="'.$filter.'" /><input type="hidden" name="filtertype" value="'.$filtertype.'" /><input type="hidden" name="keyword" value="'.$keyword.'" /><input type="submit" value="Clear first '.$ipp.'" /></form> <form action="" method="get" style="display:inline"><input type="hidden" name="ticket" value="'.$ticket.'" /><input type="hidden" name="ipp" value="'.$ipp.'"/><input type="hidden" name="page" value="clearlog" /><input type="hidden" name="amount" value="cf" /><input type="hidden" name="filter" value="'.$filter.'" /><input type="hidden" name="filtertype" value="'.$filtertype.'" /><input type="hidden" name="keyword" value="'.$keyword.'" /><input type="submit" value="Clear current filtered logs" /></form> <form action="" method="get" style="display:inline"><input type="hidden" name="ticket" value="'.$ticket.'" /><input type="hidden" name="page" value="clearlog" /><input type="submit" value="Clear complete log" /></form></div></td></tr>';
-		echo '<tr><th colspan="2">Page '.$cp.' of '.$ap.'</th><td colspan="2">Browse: <form style="display:inline"><input type="hidden" name="ticket" value="'.$ticket.'" /><input type="text" size="3" name="ipp" value="'.$ipp.'" /> items per page. <input type="submit" value="Go" /><input type="hidden" name="amount" value="cp" /><input type="hidden" name="filter" value="'.$filter.'" /><input type="hidden" name="filtertype" value="'.$filtertype.'" /><input type="hidden" name="keyword" value="'.$keyword.'" /><input type="hidden" name="page" value="log" /></form></td></tr>';
+		echo '<tr><td colspan="4"><div class="batchoperations"><form action="" method="get" style="display:inline"><input type="hidden" name="ticket" value="'.$ticket.'" /><input type="hidden" name="ipp" value="'.$ipp.'"/><input type="hidden" name="page" value="clearlog" /><input type="hidden" name="amount" value="cp" /><input type="hidden" name="filter" value="'.$filter.'" /><input type="hidden" name="filtertype" value="'.$filtertype.'" /><input type="hidden" name="keyword" value="'.$keyword.'" /><input type="submit" value="最初の'.$ipp.'件を削除" /></form> <form action="" method="get" style="display:inline"><input type="hidden" name="ticket" value="'.$ticket.'" /><input type="hidden" name="ipp" value="'.$ipp.'"/><input type="hidden" name="page" value="clearlog" /><input type="hidden" name="amount" value="cf" /><input type="hidden" name="filter" value="'.$filter.'" /><input type="hidden" name="filtertype" value="'.$filtertype.'" /><input type="hidden" name="keyword" value="'.$keyword.'" /><input type="submit" value="現在の絞込み条件に該当するログを削除" /></form> <form action="" method="get" style="display:inline"><input type="hidden" name="ticket" value="'.$ticket.'" /><input type="hidden" name="page" value="clearlog" /><input type="submit" value="全てのログを削除" /></form></div></td></tr>';
+		echo '<tr><th colspan="2">'.$cp.'/'.$ap.'ページ</th><td colspan="2">表示: <form style="display:inline"><input type="hidden" name="ticket" value="'.$ticket.'" /><input type="text" size="3" name="ipp" value="'.$ipp.'" />行を１ページに表示する <input type="submit" value="変更" /><input type="hidden" name="amount" value="cp" /><input type="hidden" name="filter" value="'.$filter.'" /><input type="hidden" name="filtertype" value="'.$filtertype.'" /><input type="hidden" name="keyword" value="'.$keyword.'" /><input type="hidden" name="page" value="log" /></form></td></tr>';
 		echo $pager;
 		echo '</table>';
 	}
@@ -511,20 +591,20 @@
 		echo "<form action=\"".serverVar('PHP_SELF')."\" method=\"get\">\n";
 		echo $manager->addTicketHidden();
 		echo "<input type=\"hidden\" name=\"page\" value=\"train\" />\n";
-		echo "<select name=\"catcode\"><option value=\"ham\">Ham (not spam)</option><option value=\"spam\" selected=\"1\">Spam</option></select><br />";
+		echo "<select name=\"catcode\"><option value=\"ham\">ham(spamでないもの)として学習</option><option value=\"spam\" selected=\"1\">spamとして学習</option></select><br />";
 		echo "<textarea class=\"sb_textinput\" cols=\"60\" rows=\"6\" name=\"expression\" ></textarea><br />";
-		echo "<input type=\"submit\" value=\"Train\" />\n";
+		echo "<input type=\"submit\" value=\"学習する\" />\n";
 		echo "</form>\n";
 	}
 	
 	function sb_testform() {
 		global $manager;
-		echo "<h2>Enter a message that needs to be tested against Spam Bayes</h2>";
+		echo "<h2>文例を入力</h2>";
 		echo "<form action=\"".serverVar('PHP_SELF')."\" method=\"get\">\n";
 		echo $manager->addTicketHidden();
 		echo "<input type=\"hidden\" name=\"page\" value=\"test\" />\n";
 		echo "<textarea class=\"sb_textinput\" cols=\"60\" rows=\"6\" name=\"expression\" ></textarea><br />";
-		echo "<input type=\"submit\" value=\"Test this!\" />\n";
+		echo "<input type=\"submit\" value=\"この文例をテストする\" />\n";
 		echo "</form>\n";
 	}
 	
@@ -535,13 +615,13 @@
 		$pager = '<tr>';
 		if ($startpos >= $ipp) {
 			$pager .= '<td><form action="" method="get" style="display:inline"><input type="hidden" name="page" value="'.$action.'" />';
-			$pager .= '<input type="hidden" value="'.($startpos - $ipp).'" name="startpos" /><input type="hidden" name="ticket" value="'.$ticket.'" /><input type="submit" value="Previous page" /><input type="hidden" name="filter" value="'.$filter.'" /><input type="hidden" name="filtertype" value="'.$filtertype.'" /><input type="hidden" name="keyword" value="'.$keyword.'" /><input type="hidden" name="ipp" value="'.$ipp.'"/></form></td>'.$filterform;
+			$pager .= '<input type="hidden" value="'.($startpos - $ipp).'" name="startpos" /><input type="hidden" name="ticket" value="'.$ticket.'" /><input type="submit" value="前ページ" /><input type="hidden" name="filter" value="'.$filter.'" /><input type="hidden" name="filtertype" value="'.$filtertype.'" /><input type="hidden" name="keyword" value="'.$keyword.'" /><input type="hidden" name="ipp" value="'.$ipp.'"/></form></td>'.$filterform;
 		} else {
 			$pager .= '<td></td>'.$filterform;
 		}
 		if (($total - $ipp) > $startpos) {
 			$pager .= '<td><form action="" method="get" style="display:inline"><input type="hidden" name="page" value="'.$action.'" />';
-			$pager .= '<input type="hidden" value="'.($startpos + $ipp).'" name="startpos" /><input type="hidden" name="ticket" value="'.$ticket.'" /><input type="submit" value="Next page" /><input type="hidden" name="filter" value="'.$filter.'" /><input type="hidden" name="filtertype" value="'.$filtertype.'" /><input type="hidden" name="keyword" value="'.$keyword.'" /><input type="hidden" name="ipp" value="'.$ipp.'"/></form></td>';
+			$pager .= '<input type="hidden" value="'.($startpos + $ipp).'" name="startpos" /><input type="hidden" name="ticket" value="'.$ticket.'" /><input type="submit" value="次ページ" /><input type="hidden" name="filter" value="'.$filter.'" /><input type="hidden" name="filtertype" value="'.$filtertype.'" /><input type="hidden" name="keyword" value="'.$keyword.'" /><input type="hidden" name="ipp" value="'.$ipp.'"/></form></td>';
 		} else {
 			$pager .= '<td></td>';
 		}
@@ -554,23 +634,23 @@
 		$ticket = $manager->_generateTicket();
 
 		$selected   = $filter == 'all' ? 'selected':'';
-		$filterform = '<td colspan="2"><form style="display:inline">Show: <select name="filter"><option value="all" '.$selected.'>All</option>';
+		$filterform = '<td colspan="2"><form style="display:inline">絞込み: <select name="filter"><option value="all" '.$selected.'>全て</option>';
 		$selected   = $filter == 'ham' ? 'selected':'';
-		$filterform .= '<option value="ham" '.$selected.'>Ham (not spam)</option>';
+		$filterform .= '<option value="ham" '.$selected.'>hamのみ</option>';
 		$selected   = $filter == 'spam' ? 'selected':'';
-		$filterform .= '<option value="spam" '.$selected.'>Spam</option></select> <input type="hidden" name="page" value="log"/><input type="hidden" name="ipp" value="'.$ipp.'"/>';
+		$filterform .= '<option value="spam" '.$selected.'>spamのみ</option></select> <input type="hidden" name="page" value="log"/><input type="hidden" name="ipp" value="'.$ipp.'"/>';
 	
 		$logtypes   = $oPluginAdmin->plugin->spambayes->nbs->getlogtypes();
 		$selected   = $filtertype == 'all' ? 'selected':'';
-		$filterform .= '<select name="filtertype"><option value="all" '.$selected.'>All events</option>';
+		$filterform .= '<select name="filtertype"><option value="all" '.$selected.'>全てのイベント</option>';
 		foreach($logtypes as $logtype) {
 			$selected = $filtertype == $logtype ? 'selected' : '';
 			$show = explode(' ',$logtype);
 			$show = $show[0] == 'event' ? $show[1] : $show[0];
 			$filterform .= '<option value="'.$logtype.'" '.$selected.'>'.$show.'</option>';
 		}
-		$filterform .= '</select><input type="hidden" name="ticket" value="'.$ticket.'" /><input type="submit" value="Apply filter" /></form>';
-		$filterform .= '&nbsp;|&nbsp;<form style="display:inline"><input type="hidden" name="ticket" value="'.$ticket.'" /><input type="hidden" name="page" value="log"/><input type="hidden" name="filter" value="'.$filter.'"/><input type="hidden" name="filtertype" value="'.$filtertype.'"/><input type="hidden" name="ipp" value="'.$ipp.'"/><input type="text" name="keyword" value="'.$keyword.'" /><input type="submit" value="search" /></form>';
+		$filterform .= '</select><input type="hidden" name="ticket" value="'.$ticket.'" /><input type="submit" value="適用" /></form>';
+		$filterform .= '&nbsp;|&nbsp;<form style="display:inline"><input type="hidden" name="ticket" value="'.$ticket.'" /><input type="hidden" name="page" value="log"/><input type="hidden" name="filter" value="'.$filter.'"/><input type="hidden" name="filtertype" value="'.$filtertype.'"/><input type="hidden" name="ipp" value="'.$ipp.'"/><input type="text" name="keyword" value="'.$keyword.'" /><input type="submit" value="検索" /></form>';
 		$filterform .= '</td>';
 		return $filterform;
 	}

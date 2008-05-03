@@ -2,7 +2,7 @@
 
 /**
   * Modified by hsur ( http://blog.cles.jp/np_cles )
-  * $Id: spambayes.php,v 1.5 2007-06-25 11:47:30 hsur Exp $
+  * $Id: spambayes.php,v 1.6 2008-05-03 22:38:17 hsur Exp $
 
     ***** BEGIN LICENSE BLOCK *****
 	This file is part of PHP Naive Bayesian Filter.
@@ -29,10 +29,13 @@
 	the GNU Lesser General Public License Version 2.1 or later (the "LGPL"),
 	in which case the provisions of the LGPL are applicable instead
 	of those above.
-***** END LICENSE BLOCK ******/
+	***** END LICENSE BLOCK ******/
 
 //define('NP_SPAMBAYES_TOKENIZER', '/usr/local/bin/mecab -F "%h\t%m\t%f[6]\n" -E ""');
 define('NP_SPAMBAYES_APIURL', 'http://api.jlp.yahoo.co.jp/MAService/V1/parse');
+
+require_once(dirname(__FILE__).'/../sharedlibs/sharedlibs.php');
+require_once('cles/AsyncHTTP.php');
 
 class NaiveBayesian {
 	/** min token length for it to be taken into consideration */
@@ -146,7 +149,7 @@ class NaiveBayesian {
 			echo '<td>'.$value['spam'].'</td>';
 			echo '</tr>';
 		}
-		echo '<tr><td>Rescaled probability:</td><th>'.$scores['ham'].'</th><th>'.$scores['spam'].'</th></tr>';
+		echo '<tr><td>調整後のスコア:</td><th>'.$scores['ham'].'</th><th>'.$scores['spam'].'</th></tr>';
 		echo '</table>';
 		//debug: print_r ($scores);
 	}
@@ -281,7 +284,12 @@ class NaiveBayesian {
 			$postData['response'] = 'baseform';
 			$postData['sentence'] = $string;
 				
-			$data = $this->_http(NP_SPAMBAYES_APIURL, 'POST', '', $postData);
+			$ahttp = new cles_AsyncHTTP();
+			$ahttp->asyncMode = false;
+			$ahttp->userAgent = 'NP_SpamBayesJP';
+			$ahttp->setRequest(NP_SPAMBAYES_APIURL, 'POST', '', $postData);
+			list($data) = $ahttp->getResponses();
+			
 			if( $data ){
 				$p = new NP_SpamBayes_XMLParser();
 				$rawtokens = $p->parse($data);
@@ -298,7 +306,10 @@ class NaiveBayesian {
 				}
 				
 				$p->free();
+			} else {
+				ACTIONLOG :: add(WARNING, 'NP_SpamBayes: AsyncHTTP Error['.$ahttp->getErrorNo(0).']'.$ahttp->getError(0));
 			}
+						
 		} else if( defined('NP_SPAMBAYES_TOKENIZER') && function_exists(proc_open) ) {
 			// using mecab
 			$string = preg_replace('/\r|\n/', '', $string);
@@ -343,68 +354,6 @@ class NaiveBayesian {
 		return $tokens;
 	} // function _getTokens
 
-	function _http($url, $method = "GET", $headers = "", $post = array ("")) {
-		$URL = parse_url($url);
-
-		if (isset ($URL['query'])) {
-			$URL['query'] = "?".$URL['query'];
-		} else {
-			$URL['query'] = "";
-		}
-
-		if (!isset ($URL['port']))
-		$URL['port'] = 80;
-
-		$request = $method." ".$URL['path'].$URL['query']." HTTP/1.0\r\n";
-
-		$request .= "Host: ".$URL['host']."\r\n";
-		$request .= "User-Agent: NP_SpamBayes\r\n";
-
-		if (isset ($URL['user']) && isset ($URL['pass'])) {
-			$request .= "Authorization: Basic ".base64_encode($URL['user'].":".$URL['pass'])."\r\n";
-		}
-
-		$request .= $headers;
-
-		if (strtoupper($method) == "POST") {
-			while (list ($name, $value) = each($post)) {
-				$POST[] = $name."=".urlencode($value);
-			}
-			$postdata = implode("&", $POST);
-			$request .= "Content-Type: application/x-www-form-urlencoded\r\n";
-			$request .= "Content-Length: ".strlen($postdata)."\r\n";
-			$request .= "\r\n";
-			$request .= $postdata;
-		} else {
-			$request .= "\r\n";
-		}
-
-		/* debug
-		$test = fopen("/tmp/postdata.dat","wb");
-		fwrite($test, $request);
-		fclose($test);
-		*/
-
-		$fp = fsockopen($URL['host'], $URL['port'], $errno, $errstr, 20);
-
-		if ($fp) {
-			socket_set_timeout($fp, 20);
-			fputs($fp, $request);
-			$response = "";
-			while (!feof($fp)) {
-				$response .= fgets($fp, 4096);
-			}
-			fclose($fp);
-			$DATA = split("\r\n\r\n", $response, 2);
-			return $DATA[1];
-		} else {
-			$host = $URL['host'];
-			$port = $URL['port'];
-			ACTIONLOG :: add(WARNING, 'NP_SpamBayes: HTTP Error: '."[$errno]($host:$port) $errstr");
-			return null;
-		}
-	}
-
 	/** clean a string from the diacritics
 	@author Antoine Bajolet [phpdig_at_toiletoine.net]
 	@author SPIP [http://uzine.net/spip/]
@@ -433,18 +382,24 @@ class NaiveBayesian {
 
 class NP_SpamBayes_XMLParser {
 	function NP_SpamBayes_XMLParser(){
-		$this->parser = xml_parser_create();
+		$this->parser = xml_parser_create('UTF-8');
 		xml_set_object($this->parser, $this);
 		xml_set_element_handler($this->parser, "_open", "_close");
 		xml_set_character_data_handler($this->parser, "_cdata");
-
-		$this->target = null ;
+		
+		$this->isError = false;
 		$this->inTarget = false;
 	}
 
 	function parse($data){
 		$this->words = array();
 		xml_parse($this->parser, $data);
+		$errcode = xml_get_error_code($this->parser);
+	    if ( $errcode != XML_ERROR_NONE ) {
+	    	$this->isError = true;
+	    	$this->words = array();
+			$this->words[] = 'XML Parse Error: ' . xml_error_string($errcode) . ' in '. xml_get_current_line_number($this->parser);
+	    }
 		return $this->words;
 	}
 
@@ -468,7 +423,7 @@ class NP_SpamBayes_XMLParser {
 	}
 
 	function _close($parser, $name){
-		if( $name == $this->target ) $this->inTarget = null;
+		if( $name == $this->inTarget ) $this->inTarget = null;
 	}
 
 	function _cdata($parser, $data){

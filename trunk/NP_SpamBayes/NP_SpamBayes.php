@@ -1,9 +1,9 @@
 <?php
 
 /**
-  * NP_SpamBayes(JP) ($Revision: 1.6 $)
+  * NP_SpamBayes(JP) ($Revision: 1.7 $)
   * by hsur ( http://blog.cles.jp/np_cles )
-  * $Id: NP_SpamBayes.php,v 1.6 2007-06-25 11:47:33 hsur Exp $
+  * $Id: NP_SpamBayes.php,v 1.7 2008-05-03 22:38:17 hsur Exp $
   *
   * Copyright (C) 2007 cles All rights reserved.
 */
@@ -83,7 +83,7 @@ class NP_SpamBayes extends NucleusPlugin {
 	}
 
 	function getEventList() {
-		return array('QuickMenu', 'SpamCheck');
+		return array('QuickMenu', 'SpamCheck', 'FormExtra');
 	}
 
 	function hasAdminArea() {
@@ -144,8 +144,8 @@ class NP_SpamBayes extends NucleusPlugin {
 	function getName() 		  { return 'SpamBayes(JP)'; }
 	function getAuthor()  	  { return 'xiffy + hsur'; }
 	function getURL()  		  { return 'http://blog.cles.jp/np_cles/category/31/subcatid/17'; }
-	function getVersion() 	  { return '1.1.0 jp1.6b'; }
-	function getDescription() { return 'SpamBayes filter for comment and trackback spam. In adherence with Spam API 1.0 for Nucleus';	}
+	function getVersion() 	  { return '1.1.0 jp2.0'; }
+	function getDescription() { return 'Yahoo!の形態素解析APIとBayesianフィルタによってコメント/トラックバックspamを防ぎます。';	}
 	function supportsFeature($what) {
 		switch($what) {
 			case 'SqlTablePrefix':
@@ -175,17 +175,29 @@ class NP_SpamBayes extends NucleusPlugin {
 			);
 		}
 	}
-
+	
+	function event_FormExtra(&$data) {
+		switch ($data['type']) {
+			case 'commentform-notloggedin' :
+			case 'membermailform-notloggedin': 
+				break;
+			default :
+				return;
+		}
+		
+		echo '<!-- Begin Yahoo! JAPAN Web Services Attribution Snippet --><a href="http://developer.yahoo.co.jp/about"><img src="http://i.yimg.jp/images/yjdn/yjdn_attbtn1_125_17.gif" title="Webサービス by Yahoo! JAPAN" alt="Web Services by Yahoo! JAPAN" width="125" height="17" border="0" style="margin:4px 15px 15px 15px" /></a><!-- End Yahoo! JAPAN Web Services Attribution Snippet --><br />';
+	}
+	
 	function install() {
 		// create some options
-		$this->createOption('probability','Score at which point we sould consider a text as spam?','text','0.95');
-		$this->createOption('ignorelist','Which words should not be taken into consideration?','textarea','you the for and');
-		$this->createOption('enableTrainall','Show SpamBayes train all ham in menu?','yesno','no');
-		$this->createOption('enableQuickmenu','Show SpamBayes in quickmenu?','yesno','yes');
-		$this->createOption('enableLogging','Use SpamBayes action logging? (this could slow down during a spamrun and can cost huge amounts of db space!)','yesno','no');
+		$this->createOption('probability','spam判定するためのスコアの閾値(0.00～1.00)','text','0.95');
+		$this->createOption('ignorelist','無視する単語(カンマもしくはスペース区切り)','textarea','you the for and');
+		$this->createOption('enableTrainall','メニューに「全てを学習」を表示するか','yesno','no');
+		$this->createOption('enableQuickmenu','管理画面の左メニューにSpamBayesを表示する','yesno','yes');
+		$this->createOption('enableLogging','spamの履歴を保存 (DBに十分な容量が必要です。)','yesno','yes');
 		
 		$this->createOption('appid','Yahoo!Japan AppID','text','');
-		$this->createOption('DropTable','Clear the database when uninstalling','yesno','no');
+		$this->createOption('DropTable','アンインストール時に全てのデータを削除する','yesno','no');
 
 		// create some sql tables as well
 		sql_query("CREATE TABLE IF NOT EXISTS ".$this->table_cat." (catcode varchar(50) NOT NULL default '', probability double NOT NULL default '0', wordcount bigint(20) NOT NULL default '0',  PRIMARY KEY (catcode))");
