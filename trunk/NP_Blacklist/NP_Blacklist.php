@@ -1,9 +1,9 @@
 <?php
 
 /**
-  * NP_Blacklist(JP) ($Revision: 1.12 $)
+  * NP_Blacklist(JP) ($Revision: 1.13 $)
   * by hsur ( http://blog.cles.jp/np_cles )
-  * $Id: NP_Blacklist.php,v 1.12 2007-05-04 15:11:12 hsur Exp $
+  * $Id: NP_Blacklist.php,v 1.13 2008-05-04 00:41:54 hsur Exp $
   *
   * Based on NP_Blacklist 0.98
   * by xiffy
@@ -11,7 +11,7 @@
 */
 
 /*
-  * Copyright (C) 2005-2007 cles All rights reserved.
+  * Copyright (C) 2005-2008 cles All rights reserved.
   *
   * This program is free software; you can redistribute it and/or
   * modify it under the terms of the GNU General Public License
@@ -41,10 +41,10 @@ class NP_Blacklist extends NucleusPlugin {
 		return 'http://blog.cles.jp/np_cles/category/31/subcatid/11';
 	}
 	function getVersion() {
-		return '1.2';
+		return '1.3';
 	}
 	function getDescription() {
-		return '[$Revision: 1.12 $]<br />'.NP_BLACKLIST_description;
+		return '[$Revision: 1.13 $]<br />'.NP_BLACKLIST_description;
 	}
 	function supportsFeature($what) {
 		switch ($what) {
@@ -61,7 +61,6 @@ class NP_Blacklist extends NucleusPlugin {
 		$this->createOption('redirect', NP_BLACKLIST_redirect, 'text', '');
 		$this->createOption('ipblock', NP_BLACKLIST_ipblock, 'yesno', 'yes');
 		$this->createOption('ipthreshold', NP_BLACKLIST_ipthreshold, 'text', '10');
-		$this->createOption('BulkfeedsKey', NP_BLACKLIST_BulkfeedsKey, 'text', '');
 		$this->createOption('SkipNameResolve', NP_BLACKLIST_SkipNameResolve, 'yesno', 'yes');
 
 		$this->_initSettings();
@@ -184,75 +183,6 @@ class NP_Blacklist extends NucleusPlugin {
 			}
 
 			return $result;
-		}
-	}
-
-	function submitSpamToBulkfeeds($url) {
-		if (is_array($url))
-			$url = implode("\n", $url);
-
-		$postData['apikey'] = $this->getOption('BulkfeedsKey');
-		if (!$postData['apikey'])
-			return "BulkfeedsKey not found. see http://bulkfeeds.net/app/register_api.html";
-		$postData['url'] = $url;
-
-		$data = $this->_http('http://bulkfeeds.net:80/app/submit_spam.xml', 'POST', '', $postData);
-		return $data;
-	}
-
-	function _http($url, $method = "GET", $headers = "", $post = array ("")) {
-		$URL = parse_url($url);
-
-		if (isset ($URL['query'])) {
-			$URL['query'] = "?".$URL['query'];
-		} else {
-			$URL['query'] = "";
-		}
-
-		if (!isset ($URL['port']))
-			$URL['port'] = 80;
-
-		$request = $method." ".$URL['path'].$URL['query']." HTTP/1.0\r\n";
-
-		$request .= "Host: ".$URL['host']."\r\n";
-		$request .= "User-Agent: NP_Blacklist/".phpversion()."\r\n";
-
-		if (isset ($URL['user']) && isset ($URL['pass'])) {
-			$request .= "Authorization: Basic ".base64_encode($URL['user'].":".$URL['pass'])."\r\n";
-		}
-
-		$request .= $headers;
-
-		if (strtoupper($method) == "POST") {
-			while (list ($name, $value) = each($post)) {
-				$POST[] = $name."=".urlencode($value);
-			}
-			$postdata = implode("&", $POST);
-			$request .= "Content-Type: application/x-www-form-urlencoded\r\n";
-			$request .= "Content-Length: ".strlen($postdata)."\r\n";
-			$request .= "\r\n";
-			$request .= $postdata;
-		} else {
-			$request .= "\r\n";
-		}
-
-		$fp = fsockopen($URL['host'], $URL['port'], $errno, $errstr, 20);
-
-		if ($fp) {
-			socket_set_timeout($fp, 20);
-			fputs($fp, $request);
-			$response = "";
-			while (!feof($fp)) {
-				$response .= fgets($fp, 4096);
-			}
-			fclose($fp);
-			$DATA = split("\r\n\r\n", $response, 2);
-			return $DATA[1];
-		} else {
-			$host = $URL['host'];
-			$port = $URL['port'];
-			ACTIONLOG :: add(WARNING, $this->getName().':'."[$errno]($host:$port) $errstr");
-			return "";
 		}
 	}
 

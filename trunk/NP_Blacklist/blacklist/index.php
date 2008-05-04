@@ -9,6 +9,7 @@
 	include($DIR_LIBS . 'PLUGINADMIN.php');
 	require_once($DIR_PLUGINS . 'sharedlibs/sharedlibs.php');
 	require_once('cles/Template.php');
+	require_once('cles/Feedback.php');
 
 	if ($blogid) {$isblogadmin = $member->isBlogAdmin($blogid);}
 	else $isblogadmin = 0;
@@ -34,6 +35,8 @@
 	// create the admin area page
 	$oPluginAdmin = new PluginAdmin('Blacklist');
 	$oPluginAdmin->start();
+	$fb =& new cles_Feedback($oPluginAdmin);
+	
 	// get the plugin options; stored in the DB
     $pbl_config['enabled']       = $oPluginAdmin->plugin->getOption('enabled');
     $pbl_config['redirect']      = $oPluginAdmin->plugin->getOption('redirect');
@@ -119,15 +122,7 @@
 			}
 			$tplVars['snippet'] = pbl_htaccess($type);
 			break;
-			
-		case 'spamsubmission':
-			$url = requestVar('url');
-			if( requestVar('type') == 'send' && ! empty($url) ){
-				$tplVars['message'] = $oPluginAdmin->plugin->submitSpamToBulkfeeds( $url );
-				$action = 'spamsubmission_result';
-			}
-			break;
-			
+
 		default:
 			break;
 	}
@@ -191,13 +186,10 @@
 		case 'htaccess':
 			$content = $templateEngine->fetch('htaccess', NP_BLACKLIST_TEMPLATEDIR_INDEX);
 			break;
-		
-		case 'spamsubmission':
-			$content = $templateEngine->fetch('spamsubmission_form', NP_BLACKLIST_TEMPLATEDIR_INDEX);
-			break;
-		
-		case 'spamsubmission_result':
-			$content = $templateEngine->fetch('spamsubmission_result', NP_BLACKLIST_TEMPLATEDIR_INDEX);
+			
+		case 'report':
+			$content = '';
+			$fb->printForm();
 			break;
 			
 		default:

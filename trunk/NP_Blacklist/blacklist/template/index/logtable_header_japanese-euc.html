@@ -8,7 +8,7 @@
 	<form action="{{indexurl}}" method="post">
 		<input type="hidden" name="action" value="resetlog" />
 		<input type="hidden" name="ticket" value="{{ticket|}}" />
-		<input type="submit" value="ログ消去" />
+		<input type="submit" value="ログ消去" onClick="return confirm('ログ消去してもよろしいですか？');"/>
 	</form>
 </div>
 

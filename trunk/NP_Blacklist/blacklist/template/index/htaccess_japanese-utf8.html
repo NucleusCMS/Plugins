@@ -21,13 +21,13 @@
 		<input type="hidden" name="ticket" value="{{ticket|}}" />
 		<input type="hidden" name="action" value="htaccess" />
 		<input type="hidden" name="type" value="reset_ip" />
-		<input type="submit" name="submit" value="IPブラックリストのリセット" />
+		<input type="submit" name="submit" value="IPブラックリストのリセット" onClick="return confirm('IPブラックリストをリセットしてもよろしいですか？');"/>
 	</form>
 	<form action="{{indexurl}}" method="post" style="display:inline">
 		<input type="hidden" name="ticket" value="{{ticket|}}" />
 		<input type="hidden" name="action" value="htaccess" />
 		<input type="hidden" name="type" value="reset_rule" />
-		<input type="submit" name="submit" value="Rewriteルールのリセット" />
+		<input type="submit" name="submit" value="Rewriteルールのリセット" onClick="return confirm('Rewriteルールをリセットしてもよろしいですか？');"/>
 	</form><br />
 	<span style="color: red;">
 		ルールのリセットを行うと、これまでに蓄積された各データが全て消去されます。<br />
