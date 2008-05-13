@@ -1,0 +1,115 @@
+img {
+	border: none;
+} 
+
+/*-------------------------------------------------
+  Forms
+-------------------------------------------------*/
+.loginform, .searchform
+{
+	margin: 5px 0;
+}
+.commentform, .mailform
+{
+	margin-top: 10px;
+    padding: 10px;
+    background: #EEEEEE;
+    /* Rounded borders, for Mozilla browsers */
+    /* -moz-border-radius: 10px; */
+}
+.commentform img{
+    margin: 5px 0 0 0;
+}
+.formfield
+{
+	font-size: 11px;
+	background: white;
+	color: #494949;
+	border-top: 1px solid #868686;
+	border-left: 1px solid #868686;
+	border-bottom: 1px solid #D4D2CF;
+	border-right: 1px solid #D4D2CF;
+	margin: 1px 0 0 0;
+}
+.formbutton
+{
+	font-size: 11px;
+	background: white;
+	color: #494949;
+	border-top: 1px solid #D4D2CF;
+	border-left: 1px solid #D4D2CF;
+	border-bottom: 1px solid #868686;
+	border-right: 1px solid #868686;
+	margin: 1px 0 0 0;
+}
+.commentform .formfield, .commentform .formbutton {
+	display: block;
+}
+.searchform .formfield
+{
+	width: 130px;
+    font-family: Arial, Tahoma, Trebuchet MS, Verdana, sans-serif;
+	padding: 2px 0;
+	margin: 0 2px 2px 0;
+}
+.searchform .formbutton
+{
+	width: 60px;
+    font-family: Tahoma, Arial, Trebuchet MS, Verdana, sans-serif;
+	padding: 2px 2px;
+}
+.loginform .formfield
+{
+	width: 130px;
+    font-family: Arial, Tahoma, Trebuchet MS, Verdana, sans-serif;
+	padding: 2px 0;
+	margin: 0 2px 2px 0;
+}
+.loginform .formbutton
+{
+	width: 60px;
+    font-family: Tahoma, Arial, Trebuchet MS, Verdana, sans-serif;
+	padding: 2px 2px;
+}
+.mainform .formfield
+{
+	width: 280px;
+    font-family: Arial, Tahoma, Trebuchet MS, Verdana, sans-serif;
+	padding: 2px 0;
+	margin: 0 2px 2px 0;
+}
+.mailform .formbutton
+{
+	width: 100px;
+    font-family: Tahoma, Arial, Trebuchet MS, Verdana, sans-serif;
+	padding: 2px 2px;
+}
+#nucleus_cf_title, #nucleus_cf_name, #nucleus_cf_mail, #nucleus_cf_email
+{
+    width: 700px;
+    font-family: Arial, Trebuchet MS, Verdana, sans-serif;
+}
+.commentform textarea, .commentform .formfield, .mailform textarea, .mailform .formfield
+{
+    width: 700px;
+}
+.commentform .formbutton
+{
+	width: 100px;
+	height: 22px;
+    font-family: Tahoma, Arial, Trebuchet MS, Verdana, sans-serif;
+}
+.error
+{
+	color: red;
+	font-weight: bold;
+}
+/* znSmiley, lines contain '>' */
+.znsm_re {
+	color: #090;
+}
+/* <img /> */
+.znsm_img {
+	vertical-align: middle;
+	border: none;
+}
