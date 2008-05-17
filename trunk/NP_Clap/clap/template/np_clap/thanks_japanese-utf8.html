@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="{{charset}}"?> 
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"> 
+<html xmlns="http://www.w3.org/1999/xhtml" lang="ja" xml:lang="ja">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset={{charset}}" />
+<title>拍手送信完了 - NP_Clap</title>
+</head>
+<body>
+<center>
+{{img}}<br />
+<font size="2">{{text}}</font><br />
+<br />
+<a href="{{returnurl}}">元のページに戻る</a><br />
+<br />
+<br />
+<form method="post" action="{{actionurl}}">
+
+<font size="2">お名前:<input type="text" name="user" size="50" /></font><br />
+<font size="2">メールアドレス/ＵＲＬ:<input type="text" name="mail_or_url" size="50" /></font><br />
+<font size="2">ついでに一言あればどうぞ(拍手だけでも送れます)</font><br />
+<textarea name="comment" rows="4" cols="50"></textarea><br />
+
+<input type="submit" value="もっと送る" />
+
+<!-- hidden -->
+<!-- contentid: {{contentid}} -->
+<input type="hidden" name="key" value="{{key}}" />
+<input type="hidden" name="returnurl" value="{{returnurl}}" />
+<input type="hidden" name="action" value="plugin" />
+<input type="hidden" name="name" value="Clap" />
+<input type="hidden" name="type" value="{{type}}" />
+<!-- hidden -->
+
+</form>
+
+<br />
+<font size="2">Powered by <a href="http://blog.cles.jp/np_cles/category/31/subcatid/13" target="_blank">NP_Clap</a></font><br />
+</center>
+</body></html>

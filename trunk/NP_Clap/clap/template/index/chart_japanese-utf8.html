@@ -1,0 +1,36 @@
+<script type="text/javascript">
+	actionurl = '{{actionurl}}';
+	ticket = '{{ticket|}}'
+</script>
+<script type="text/javascript" src="{{plugindirurl}}js/prototype-1.4.0.js"></script>
+<script type="text/javascript" src="{{plugindirurl}}js/chart.js"></script>
+<!-- WebFX Chart -->
+<script type="text/javascript" src="{{plugindirurl}}chart/iecanvas.js"></script>
+<script type="text/javascript" src="{{plugindirurl}}chart/excanvas.js"></script>
+<script type="text/javascript" src="{{plugindirurl}}chart/wz_jsgraphics.js"></script>
+<script type="text/javascript" src="{{plugindirurl}}chart/chart.js"></script>
+<script type="text/javascript" src="{{plugindirurl}}chart/canvaschartpainter.js"></script>
+<script type="text/javascript" src="{{plugindirurl}}chart/jgchartpainter.js"></script>
+
+<link rel="stylesheet" type="text/css" href="{{plugindirurl}}chart/canvaschart.css" />
+
+<h2>検索条件</h2>
+
+<select id="year"></select>
+<select id="month"></select>
+
+<div id="message"></div>
+
+<h2>統計 [<span id="date"></span>]</h2>
+
+<h3>エントリ別</h3>
+<div id="key" class="chart" style="width: 600px; height: 300px;"></div>
+
+<h3>日別</h3>
+<div id="daysOfMonth" class="chart" style="width: 600px; height: 300px;"></div>
+
+<h3>曜日別</h3>
+<div id="daysOfWeek" class="chart" style="width: 600px; height: 300px;"></div>
+
+<h3>時間帯別</h3>
+<div id="hours" class="chart" style="width: 600px; height: 300px;"></div>

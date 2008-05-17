@@ -1,0 +1,10 @@
+<form id="clap_{{key}}" action="{{actionurl_wo_key}}" method="POST" style="display:inline">
+<input type="submit" value="{{count}}へぇ" />
+</form>
+<script type="text/javascript">
+var k = document.createElement('input');
+k.type = 'hidden';
+k.name = 'key';
+k.value = '{{key}}';
+document.forms['clap_{{key}}'].appendChild(k);
+</script>

@@ -1,0 +1,33 @@
+.chart {
+	font: menu;
+	background: white;
+	color: black;
+	overflow: hidden;
+	position: relative;
+	line-height: normal;
+	font-size: x-small;
+}
+
+.chart .legend {
+	float: left;
+	border: 1px solid black;
+	background: white;
+	padding: 5px 10px 5px 10px;
+	line-height: normal;
+}
+
+.chart .legend ul {
+	margin: 0px;
+	padding: 0px 0px 0px 20px;
+	line-height: normal;
+}
+
+.chart .legend ul li {
+	list-style: square;
+	line-height: normal;
+}
+
+.chart .legend ul li span {
+	color: black;
+	line-height: normal;
+}

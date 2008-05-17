@@ -1,0 +1,9 @@
+		<tr onmouseover="focusRow(this);" onmouseout="blurRow(this);">
+			<td>{{timestamp|}}</td>
+			<td>{{ipaddr}}</td>
+			<td>
+				{{comment}} 
+				<em>(<a href="{{mail_or_url|}}">{{user|}}</a>)</em><br />
+			</td>
+			<td><a href="{{indexurl}}?action=delete&amp;key={{key|}}&amp;offset={{offset|}}&amp;id={{id}}&amp;ticket={{ticket|}}"><img alt="削除" border="0" src="{{plugindirurl}}silk/cross.png" /></a></td>			
+		</tr>

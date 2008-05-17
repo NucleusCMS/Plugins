@@ -1,0 +1,7 @@
+item: http://blog.cles.jp/item/{{key}}
+名前: {{user}}
+URL/メールアドレス: {{mail_or_url}}
+IPアドレス: {{ipaddr}}({{hostname}})
+UserAgent: {{useragent}}
+Referer: {{referer}}
+コメント: {{comment}}

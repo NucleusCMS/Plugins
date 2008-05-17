@@ -1,0 +1,10 @@
+		<tr onmouseover="focusRow(this);" onmouseout="blurRow(this);">
+			<td>{{timestamp|}}</td>
+			<td>{{key|}}</td>
+			<td>{{ipaddr}}</td>
+			<td>
+				{{comment}} 
+				<em>(<a href="{{mail_or_url|}}">{{user|}}</a>)</em><br />
+			</td>
+			<td><a href="{{indexurl}}?action=detail&amp;key={{key|}}&amp;ticket={{ticket|}}"><img border="0" alt="¾ÜºÙ" src="{{plugindirurl}}silk/magnifier.png" /></a></td>			
+		</tr>

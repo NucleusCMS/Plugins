@@ -1,0 +1,8 @@
+		<tr onmouseover='focusRow(this);' onmouseout='blurRow(this);'>
+			<td>{{id}}</td>
+			<td>{{comment}}</td>
+			<td>{{image}}</td>
+			<td><a href="{{actionurl}}?action=plugin&amp;name=Clap&amp;type=preview&amp;id={{id}}&amp;ticket={{ticket|}}" target="_blank"><img border="0" alt="プレビュー" src="{{plugindirurl}}silk/page_white_magnify.png" /></a></td>	
+			<td><a href="{{indexurl}}?action=thanksedit&amp;id={{id}}&amp;ticket={{ticket|}}"><img border="0" alt="編集" src="{{plugindirurl}}silk/page_white_edit.png" /></a></td>	
+			<td><a href="{{indexurl}}?action=thanksdelete&amp;id={{id}}&amp;ticket={{ticket|}}"><img border="0" alt="削除" src="{{plugindirurl}}silk/page_white_delete.png" /></a></td>	
+		</tr>

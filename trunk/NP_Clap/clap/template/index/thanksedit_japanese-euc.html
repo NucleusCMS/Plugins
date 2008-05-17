@@ -1,0 +1,52 @@
+<h2>コンテンツの編集・新規追加</h2>
+
+<form method="post" action="{{indexurl}}">
+<input type="hidden" name="action" value="thankssave" />
+<input type="hidden" name="id" value="{{id}}" />
+<input type="hidden" name="ticket" value="{{ticket|}}" />
+
+<script language="JavaScript">
+//<![CDATA[
+	function checkAll(blogid, checked){
+		var tags = document.getElementsByTagName('input');
+		for(var i=0; i < tags.length; i++){
+			var t = tags[i];
+			if( t.type == 'checkbox' && t.name.indexOf('assoc') == 0 && t.id.indexOf(blogid+'_') == 0 ){
+				t.checked = checked;
+			}
+		}
+		return false;
+	}
+//]]>
+</script>
+
+<table>
+	<thead>
+		<tr>
+			<th>項目</th>
+			<th>値</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr onmouseover='focusRow(this);' onmouseout='blurRow(this);'>
+			<td>コメント</td>
+			<td><textarea name="comment" rows="15" cols="70">{{comment|}}</textarea></td>
+		</tr>
+		<tr onmouseover='focusRow(this);' onmouseout='blurRow(this);'>
+			<td>画像（使用しない場合には空欄にしてください）</td>
+			<td><input type="text" name="image" size="100" value="{{image|}}" /></td>
+		</tr>
+		<tr onmouseover='focusRow(this);' onmouseout='blurRow(this);'>
+			<td>表示対象にするカテゴリ</td>
+			<td>{{assoc}}
+			その他のKey:<input type="text" name="assoc_etc" size="80" value="{{assoc_etc|}}" /><br />
+			※,(カンマ)で区切って複数のkeyを入力できます。
+			</td>
+		</tr>
+		<tr onmouseover='focusRow(this);' onmouseout='blurRow(this);'>
+			<td>コンテンツの保存</td>
+			<td><input type="submit" value="コンテンツの保存" /></td>
+		</tr>
+	</tbody>
+</table>
+</form>
