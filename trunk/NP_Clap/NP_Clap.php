@@ -2,10 +2,10 @@
 // vim: tabstop=2:shiftwidth=2
 
 /**
-  * NP_Clap ($Revision: 1.1 $)
+  * NP_Clap ($Revision: 1.2 $)
   * by hsur ( http://blog.cles.jp/np_cles )
   * 
-  * $Id: NP_Clap.php,v 1.1 2008-05-17 19:11:11 hsur Exp $
+  * $Id: NP_Clap.php,v 1.2 2008-05-18 07:15:15 hsur Exp $
 */
 
 /*
@@ -64,7 +64,7 @@ class NP_Clap extends NucleusPlugin {
 
 	// version of the plugin
 	function getVersion() {
-		return '1.6.0';
+		return '1.6.1';
 	}
 
 	function install() {
@@ -151,7 +151,7 @@ class NP_Clap extends NucleusPlugin {
 	
 	// a description to be shown on the installed plugins listing
 	function getDescription() {
-		return '[$Revision: 1.1 $]<br />'.NP_CLAP_description ;
+		return '[$Revision: 1.2 $]<br />'.NP_CLAP_description ;
 	}
 	
 	function supportsFeature($what) {
