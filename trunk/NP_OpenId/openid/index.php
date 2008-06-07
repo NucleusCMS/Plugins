@@ -2,10 +2,10 @@
 // vim: tabstop=2:shiftwidth=2
 
 /**
-  * index.php ($Revision: 1.1 $)
+  * index.php ($Revision: 1.2 $)
   * 
   * by hsur ( http://blog.cles.jp/np_cles )
-  * $Id: index.php,v 1.1 2008-02-03 13:11:22 hsur Exp $
+  * $Id: index.php,v 1.2 2008-06-07 19:33:43 hsur Exp $
 */
 
 /*
@@ -73,20 +73,22 @@ if (isset ($_POST['page'])) {
 }
 
 // create the admin area page
-$oPluginAdmin = new PluginAdmin('TypeKey');
+$oPluginAdmin = new PluginAdmin('OpenId');
 $oPluginAdmin->start();
 $fb =& new cles_Feedback($oPluginAdmin);
 
 // menu
 echo "<h2>OpenId menu</h2>\n";
 echo "<ul>\n";
-echo "<li><a href=\"".serverVar('PHP_SELF')."?page=report\"><span style=\"font-weight:bold; color:red\">" . $fb->getMenuStr() . "</span></a></li>\n";
+if( strpos(getLanguageName(), 'japanese') !== false )
+	echo "<li><a href=\"".serverVar('PHP_SELF')."?page=report\"><span style=\"font-weight:bold; color:red\">" . $fb->getMenuStr() . "</span></a></li>\n";
 echo "</ul>\n";
 
 //action
 switch ($action) {
 	case 'report' :
-		$fb->printForm();
+		if( strpos(getLanguageName(), 'japanese') !== false )
+			$fb->printForm();
 		break;
 
 	default :

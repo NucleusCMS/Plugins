@@ -2,9 +2,9 @@
 // vim: tabstop=2:shiftwidth=2
 
 /**
-  * NP_OpenId ($Revision: 1.1 $)
+  * NP_OpenId ($Revision: 1.2 $)
   * by hsur ( http://blog.cles.jp/np_cles )
-  * $Id: NP_OpenId.php,v 1.1 2008-02-03 13:11:23 hsur Exp $
+  * $Id: NP_OpenId.php,v 1.2 2008-06-07 19:33:43 hsur Exp $
   *
 */
 
@@ -36,6 +36,7 @@
   * but you are not obligated to do so. If you do not wish to do so, delete
   * this exception statement from your version.
 */
+
 // ParanoidHTTPFetcher bug?
 define('Auth_Yadis_CURL_OVERRIDE', '1');
 
@@ -44,10 +45,11 @@ define('NP_OPENID_COOKIE', 'EXTAUTH');
 
 // libs
 require(dirname(__FILE__).'/sharedlibs/sharedlibs.php');
-require_once "Auth/OpenID/Consumer.php";
-require_once "cles/SQLStoreForNucleus.php";
-require_once "Auth/OpenID/SReg.php";
-require_once "Auth/OpenID/PAPE.php";
+require_once 'cles/Template.php';
+require_once 'Auth/OpenID/Consumer.php';
+require_once 'cles/SQLStoreForNucleus.php';
+require_once 'Auth/OpenID/SReg.php';
+require_once 'Auth/OpenID/PAPE.php';
 
 class NP_OpenId extends NucleusPlugin {
 
@@ -61,7 +63,7 @@ class NP_OpenId extends NucleusPlugin {
 		return 'http://blog.cles.jp/np_cles/category/31/subcatid/21';
 	}
 	function getVersion() {
-		return '1.0.0';
+		return '1.1.0';
 	}
 	function getMinNucleusVersion() {
 		return 330;
@@ -82,7 +84,7 @@ class NP_OpenId extends NucleusPlugin {
 		);
 	}
 	function getDescription() {
-		return '[$Revision: 1.1 $]<br />Adds OpenID authentication to anonymous comment, to prevent robots from spamming.';
+		return '[$Revision: 1.2 $]<br />Adds OpenID authentication to anonymous comment, to prevent robots from spamming.';
 	}
 	function supportsFeature($what) {
 		switch ($what) {
@@ -108,7 +110,7 @@ class NP_OpenId extends NucleusPlugin {
 
 		$this->store = new cles_SQLStoreForNucleus();
 		$this->consumer = new Auth_OpenID_Consumer($this->store);
-		$this->loginedUser = null;
+		$this->loggedinUser = null;
 		$this->comments = array();
 	}
 
@@ -149,18 +151,8 @@ class NP_OpenId extends NucleusPlugin {
         );
 		
 		global $CONF;
-		$loginedHtml = "<p>Thanks for signing in(<%identity%>). Now you can comment or send mail. (<a href=\"<%url%>\" rel=\"nofollow\">Sign out</a>/<a href=\"<%profileUpdateUrl%>\" rel=\"nofollow\" target=\"_blank\">Update Profile</a>)\n<script type=\"text/javascript\">\n(function(){\nvar onload_org = window.onload;\nwindow.onload = function(){\nif(onload_org) onload_org();\ndocument.getElementById('nucleus_cf_name').value = '<%nick%> [OpenID]';\ndocument.getElementById('nucleus_cf_name').style.background = '#FFFFCC';\ndocument.getElementById('nucleus_cf_name').readOnly = true;\ndocument.getElementById('nucleus_cf_email').value = '<%email%>';\ndocument.getElementById('nucleus_cf_email').style.background = '#FFFFCC';\ndocument.getElementById('nucleus_cf_email').readOnly = true;\n}\n})()\n</script></p>";
-		$notLoginedHtml =  '<p>If you have a OpenID identity, you can sign in to use it here.<br /><form method="post" action="<%url%>">Identity URL: <input style="padding-left:20px; background:url('.$CONF['PluginURL'].'openid/openid.png) no-repeat left center #FFF;" type="text" name="openid_identifier" value="" size="50"/><input type="submit" value="Sign in" /></form></p>';
-		$templateHtml =  '<a href="<%identity%>" rel="nofollow" title="OpenID Profile"><img src="' . $CONF['PluginURL'] . 'openid/openid.png" border="0"/><%identity%></a>';
-		$templateAdminHtml = '<a href="<%identity%>" rel="nofollow" title="OpenID Profile"><img src="' . $CONF['PluginURL'] . 'openid/openid.png" border="0"/><%identity%></a>';
-
 		$this->createOption('permitComment', 'Permit comments w/o login?', 'yesno', 'yes', '');
 		$this->createOption('permitMail', 'Permit mail w/o login?', 'yesno', 'yes', '');
-		
-		$this->createOption('LoginedHtml', 'Logined Template', 'textarea', $loginedHtml, '');
-		$this->createOption('NotLoginedHtml', 'Not Logined Template', 'textarea', $notLoginedHtml, '');
-		$this->createOption('TemplateHtml', 'Template html', 'textarea', $templateHtml, '');
-		$this->createOption('TemplateAdminHtml', 'Template admin html', 'textarea', $templateAdminHtml, '');
 		
 		$this->createOption('CommentFormError', 'Error message (comment)', 'text', 'To submit comment, you need to sign-in to OpenID.', '');
 		$this->createOption('MemberMailError', 'Error message  (mail form)', 'text', 'To send email, you need to sign-in to OpenID.', '');
@@ -169,25 +161,26 @@ class NP_OpenId extends NucleusPlugin {
 		$this->createOption('debug', 'Debug mode ?', 'yesno', 'no');
 		
 		$this->createOption('enableLinkedWith', 'Enable local account linked with OpenID account ? ', 'yesno', 'no');
-		$this->createMemberOption('linkedWith', 'Linked with following account (hash value)', 'text', '');
+		$this->createMemberOption('linkedWith', 'Linked with following account', 'text', '');
 	}
 
 	function unInstall() {
+		sql_query('DROP TABLE '.sql_table('plugin_openid_assc'));
+		sql_query('DROP TABLE '.sql_table('plugin_openid_nonce'));
+		
 		if ($this->getOption('dropdb') == 'yes'){
 			sql_query('DROP TABLE '.sql_table('plugin_openid'));
 			sql_query('DROP TABLE '.sql_table('plugin_openid_profile'));
 			sql_query('DROP TABLE '.sql_table('plugin_openid_comment'));
-			sql_query('DROP TABLE '.sql_table('plugin_openid_assc'));
-			sql_query('DROP TABLE '.sql_table('plugin_openid_nonce'));
 		}
 	}
 	function doAction($type) {
 		switch ($type) {
 			case 'verify' :
 				if( $this->login() ){
-					$this->_info('Authentication success: identity=' . $this->loginedUser['identity']);
-					$this->_doLoginLocal($this->loginedUser['identity']);
+					$this->_info('Authentication success: identity=' . $this->loggedinUser['identity']);
 					$url = preg_replace('/action=logout&?/','', requestVar('return_url'));
+					$this->_doLoginLocal($this->loggedinUser['identity']);
 					$this->_redirect( $url );
 				} else {
 					$this->_info('Authentication failure');
@@ -203,21 +196,24 @@ class NP_OpenId extends NucleusPlugin {
 				$this->logout();
 				$this->_redirect( requestVar('url') );
 				break;
-				
+			
 			case 'updateProfile':
-				if( $this->isLogined() ){
+				$te = $this->_getTemplateEngine();
+				$aVars = array();
+				if( $this->isLoggedin() ){
 					$profile = array();
-					$profile['nick'] = requestVar('nick');
-					$profile['email'] = requestVar('email');
-
-					if( requestVar('submit') )	
-						$this->_doUpdateProfile($profile);
+					$aVars['nick'] = requestVar('nick');
+					$aVars['email'] = requestVar('email');
+					
+					$this->_doUpdateProfile($aVars);
+					echo $te->fetchAndFill('updatesucceeded', $aVars, strtolower(__CLASS__));
 				} else {
-					$this->_info('Authentication failure');
-					return 'Authentication failure';
+					$aVars['message'] = 'You aren\'t logged in.';
+					echo $te->fetchAndFill('updatefailed', $aVars, strtolower(__CLASS__));
 				}
-				break;
-			default :
+				exit;
+				//break;
+			default:
 				return 'Unknown action: '.$type;
 		}
 		return '';
@@ -277,17 +273,17 @@ class NP_OpenId extends NucleusPlugin {
 		$query = sprintf('REPLACE INTO ' . sql_table('plugin_openid_profile') 
 				. ' ( identity, nick, email, ts ) '
 				. " values('%s', '%s', '%s', now())",
-				 mysql_real_escape_string( $this->loginedUser['identity']  ),
+				 mysql_real_escape_string( $this->loggedinUser['identity']  ),
 				 mysql_real_escape_string( $profile['nick']  ),
 				 mysql_real_escape_string( $profile['email'] )
 		);
 		sql_query($query);
 
-		$this->loginedUser['nick'] = $profile['nick'];
-		$this->loginedUser['email'] = $profile['email'];
+		$this->loggedinUser['nick'] = $profile['nick'];
+		$this->loggedinUser['email'] = $profile['email'];
 
-		setcookie($CONF['CookiePrefix'] . 'comment_user', $this->loginedUser['nick'], 0, $CONF['CookiePath'], $CONF['CookieDomain'], $CONF['CookieSecure']);
-		setcookie($CONF['CookiePrefix'] . 'comment_email', $this->loginedUser['email'], 0, $CONF['CookiePath'], $CONF['CookieDomain'], $CONF['CookieSecure']);
+		setcookie($CONF['CookiePrefix'] . 'comment_user', $this->loggedinUser['nick'], 0, $CONF['CookiePath'], $CONF['CookieDomain'], $CONF['CookieSecure']);
+		setcookie($CONF['CookiePrefix'] . 'comment_email', $this->loggedinUser['email'], 0, $CONF['CookiePath'], $CONF['CookieDomain'], $CONF['CookieSecure']);
 	}
 	
 	function _doLoginLocal($name){
@@ -346,9 +342,9 @@ class NP_OpenId extends NucleusPlugin {
 		return md5(uniqid(mt_rand()));
 	}
 	
-	function isLogined(){
+	function isLoggedin(){
 		global $CONF;
-		if( $this->loginedUser ) return true;
+		if( $this->loggedinUser ) return true;
 		
 		$cookie = cookieVar($CONF['CookiePrefix'] . NP_OPENID_AUTH_COOKIE);
 		if( ! $cookie ) return false;
@@ -360,8 +356,8 @@ class NP_OpenId extends NucleusPlugin {
 		);
 		$res = sql_query($query);
 		if( @mysql_num_rows($res) > 0) {
-			$this->loginedUser = mysql_fetch_assoc($res);
-			$this->loginedUser = array_merge($this->loginedUser, unserialize($this->loginedUser['sreg']));
+			$this->loggedinUser = mysql_fetch_assoc($res);
+			$this->loggedinUser = array_merge($this->loggedinUser, unserialize($this->loggedinUser['sreg']));
 			return true;
 		}
 		return false;
@@ -410,12 +406,12 @@ class NP_OpenId extends NucleusPlugin {
 		$res = sql_query($query);		
 		
 		if( @mysql_num_rows($res) > 0) {
-			$this->loginedUser = mysql_fetch_assoc($res);
-			$this->loginedUser = array_merge($this->loginedUser, unserialize($this->loginedUser['sreg']));
+			$this->loggedinUser = mysql_fetch_assoc($res);
+			$this->loggedinUser = array_merge($this->loggedinUser, unserialize($this->loggedinUser['sreg']));
 			
 			setcookie($CONF['CookiePrefix'] . NP_OPENID_AUTH_COOKIE , $cookie, 0, $CONF['CookiePath'], $CONF['CookieDomain'], $CONF['CookieSecure']);
-			setcookie($CONF['CookiePrefix'] . 'comment_user', $this->loginedUser['nick'], 0, $CONF['CookiePath'], $CONF['CookieDomain'], $CONF['CookieSecure']);
-			setcookie($CONF['CookiePrefix'] . 'comment_email', $this->loginedUser['email'], 0, $CONF['CookiePath'], $CONF['CookieDomain'], $CONF['CookieSecure']);
+			setcookie($CONF['CookiePrefix'] . 'comment_user', $this->loggedinUser['nick'], 0, $CONF['CookiePath'], $CONF['CookieDomain'], $CONF['CookieSecure']);
+			setcookie($CONF['CookiePrefix'] . 'comment_email', $this->loggedinUser['email'], 0, $CONF['CookiePath'], $CONF['CookieDomain'], $CONF['CookieSecure']);
 			return true;
 		}
 		
@@ -424,7 +420,7 @@ class NP_OpenId extends NucleusPlugin {
 		
 	function logout(){
 		global $CONF;
-		$this->loginedUser = null;
+		$this->loggedinUser = null;
 		setcookie($CONF['CookiePrefix'] . NP_OPENID_AUTH_COOKIE, '', 0, $CONF['CookiePath'], $CONF['CookieDomain'], $CONF['CookieSecure']);
 		setcookie($CONF['CookiePrefix'] . 'comment_user', '', 0, $CONF['CookiePath'], $CONF['CookieDomain'], $CONF['CookieSecure']);
 		setcookie($CONF['CookiePrefix'] . 'comment_email', '', 0, $CONF['CookiePath'], $CONF['CookieDomain'], $CONF['CookieSecure']);
@@ -437,7 +433,7 @@ class NP_OpenId extends NucleusPlugin {
             return;
         }
 		
-		if( $this->isLogined() ){
+		if( $this->isLoggedin() ){
 			$data['externalauth']['result'] = true;
 			$data['externalauth']['plugin'] = $this->getName();
 		}
@@ -452,25 +448,34 @@ class NP_OpenId extends NucleusPlugin {
 		$manager->notify('ExternalAuth', array ('externalauth' => &$externalauth));
 		if (isset($externalauth['result']) && $externalauth['result'] == true) return;
 		
+		$te = $this->_getTemplateEngine();
 		$aVars = array();
-		if( $this->isLogined() ){
-			// Logined
+		$aVars['PluginURL'] = $CONF['PluginURL'];
+		
+		$te = $this->_getTemplateEngine();		
+		if( $this->isLoggedin() ){
+			// Loggedin
 			$return_url = $CONF['PluginURL'] . 'openid/rd.php?action=rd&url='
 						. urlencode( 'http://'.serverVar("HTTP_HOST") .serverVar("REQUEST_URI") );			
-			$aVars['url'] = htmlspecialchars( $return_url, ENT_QUOTES );
-			$aVars['nick'] = $this->loginedUser['nick'];
-			$aVars['email'] = $this->loginedUser['email'];
-			$aVars['ts'] = $this->loginedUser['ts'];
-			$aVars['profileUpdateUrl'] = $CONF['PluginURL'] . 'openid/profile.php';
-			$aVars['identity'] = $this->loginedUser['identity'];
+			$aVars['url'] = $return_url;
+			$aVars['nick'] = $this->loggedinUser['nick'];
+			$aVars['email'] = $this->loggedinUser['email'];
+			$aVars['ts'] = $this->loggedinUser['ts'];
+			$aVars['identity'] = $this->loggedinUser['identity'];
+			$aVars['visible'] = $aVars['nick'] ? 'false' : 'true' ;
 			
-			echo TEMPLATE::fill($this->getOption('LoginedHtml'), $aVars);
+			$actionUrl = parse_url($CONF['ActionURL']);
+			$aVars['updateUrl'] = $actionUrl['path'];
+			
+			echo $te->fetchAndFill('yui', $aVars, strtolower(__CLASS__));
+			echo $te->fetchAndFill('loggedin', $aVars, strtolower(__CLASS__));
+			echo $te->fetchAndFill('form', $aVars, strtolower(__CLASS__));
 		} else {
-			// not logined
+			// Not loggedin
 			$aVars['url'] = $CONF['PluginURL'] . 'openid/rd.php?action=doauth&return_url='
 						. urlencode( 'http://'.serverVar("HTTP_HOST") .serverVar("REQUEST_URI") );	
 
-		    echo TEMPLATE::fill($this->getOption('NotLoginedHtml'), $aVars);
+			echo $te->fetchAndFill('notloggedin', $aVars, strtolower(__CLASS__));
 		}		
 	}
 	
@@ -491,7 +496,7 @@ class NP_OpenId extends NucleusPlugin {
 		$manager->notify('ExternalAuth', array ('externalauth' => &$externalauth));
 		if (isset($externalauth['result']) && $externalauth['result'] == true) return;
 
-		$this->isLogined();
+		$this->isLoggedin();
 	}
 
 	function event_ValidateForm(&$data) {
@@ -504,11 +509,11 @@ class NP_OpenId extends NucleusPlugin {
 		
 		switch ($data['type']) {
 			case 'comment' :
-				if( (! $this->isLogined() ) && $this->getOption('permitComment') == 'no' )
+				if( (! $this->isLoggedin() ) && $this->getOption('permitComment') == 'no' )
 					$data['error'] = $this->getOption('CommentFormError');
 				break;
 			case 'membermail' :
-				if( (! $this->isLogined() ) && $this->getOption('permitMail') == 'no' )
+				if( (! $this->isLoggedin() ) && $this->getOption('permitMail') == 'no' )
 					$data['error'] = $this->getOption('MemberMailError');
 				break;
 			default :
@@ -520,22 +525,22 @@ class NP_OpenId extends NucleusPlugin {
 		global $member;
 		if( $member->isLoggedIn() ) return;
 		
-		if( ! $this->isLogined() ) return;
-		$data['comment']['user'] = $this->loginedUser['nick'].' [OpenID]';
+		if( ! $this->isLoggedin() ) return;
+		$data['comment']['user'] = $this->loggedinUser['nick'].' [OpenID]';
 	}
 	
 	function event_PostAddComment(&$data) {
 		global $member;
 		if( $member->isLoggedIn() ) return;
 		
-		if( ! $this->isLogined() ) return;
+		if( ! $this->isLoggedin() ) return;
 		global $itemid;
 		$query = sprintf('INSERT INTO ' . sql_table('plugin_openid_comment') 
 				. '( cnumber, citem, identity, ts ) '
 				. "values('%s', '%s', '%s', now() )",
 				 mysql_real_escape_string( $data['commentid'] ),
 				 mysql_real_escape_string( intval($itemid) ),
-				 mysql_real_escape_string( $this->loginedUser['identity']  )
+				 mysql_real_escape_string( $this->loggedinUser['identity']  )
 		);
 		sql_query($query);
 	}
@@ -549,17 +554,19 @@ class NP_OpenId extends NucleusPlugin {
 	}
 	
 	function event_LoginSuccess(&$data) {
-		if( $this->isLogined() )
+		if( $this->isLoggedin() ){
 			$this->logout();
+		}
 	}
 	
 	function event_Logout(&$data) {
-		if( $this->isLogined() )
+		if( $this->isLoggedin() ){
 			$this->logout();
+		}
 	}
 	
 	function doTemplateCommentsVar(&$item, &$comment){
-		global $member;
+		global $member, $CONF;
 		$itemid = intval($item['itemid']);
 		if( ! $this->comments[$itemid] ){
 			$this->comments[$itemid]['cached'] = true;
@@ -578,14 +585,27 @@ class NP_OpenId extends NucleusPlugin {
 		$cnumber = $comment['commentid'];
 		if( $openIdComment = $this->comments[$itemid][$cnumber] ){
 			$aVars['identity'] =  $openIdComment['identity'];
+			$aVars['PluginURL'] =  $CONF['PluginURL'];
+			
 			$sreg = unserialize($openIdComment['sreg']);
 			if( is_array($sreg) )
 				$aVars = array_merge($aVars, $sreg);
 			
-			if ( $member->isLoggedIn() )
-				echo TEMPLATE::fill($this->getOption('TemplateAdminHtml'), $aVars);
-			else
-				echo TEMPLATE::fill($this->getOption('TemplateHtml'), $aVars);
+			$te = $this->_getTemplateEngine();
+			if ( $member->isLoggedIn() ){
+				echo $te->fetchAndFill('admin', $aVars, strtolower(__CLASS__));
+			} else {
+				echo $te->fetchAndFill('user', $aVars, strtolower(__CLASS__));
+			}
 		}
 	}
+	
+	function _getTemplateEngine(){
+		if( ! $this->templateEngine )
+			$this->templateEngine =& new cles_Template(dirname(__FILE__).'/openid/template');
+			
+		$this->templateEngine->defaultLang = 'english';
+		return $this->templateEngine;
+	}
+	
 }

@@ -1,0 +1,79 @@
+<!-- css -->
+<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/2.5.2/build/fonts/fonts-min.css" />
+<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/2.5.2/build/button/assets/skins/sam/button.css" />
+<link rel="stylesheet" type="text/css" href="http://yui.yahooapis.com/2.5.2/build/container/assets/skins/sam/container.css" />
+
+<!-- js --> 
+<script type="text/javascript" src="http://yui.yahooapis.com/2.5.2/build/utilities/utilities.js"></script> 
+<script type="text/javascript" src="http://yui.yahooapis.com/2.5.2/build/button/button-min.js"></script> 
+<script type="text/javascript" src="http://yui.yahooapis.com/2.5.2/build/container/container-min.js"></script>
+
+<script type="text/javascript">
+YAHOO.namespace("openid.container");
+
+function init() {
+	
+	// Define various event handlers for Dialog
+	var handleSubmit = function() {
+		document.getElementById("resp").innerHTML = '';
+		this.submit();
+	};
+	var handleCancel = function() {
+		document.getElementById("resp").innerHTML = '';
+		this.cancel();
+	};
+	var handleSuccess = function(o) {
+		var response = o.responseText;
+		//debug
+		//document.getElementById("resp").innerHTML = response;
+		eval(response);
+	};
+	var handleFailure = function(o) {
+		document.getElementById("resp").innerHTML = "Submission failed: " + o.status;
+	};
+
+	// Instantiate the Dialog
+	YAHOO.openid.container.profile = new YAHOO.widget.Dialog("profile", 
+							{ width : "30em",
+							  fixedcenter : true,
+							  visible : {{visible}}, 
+							  constraintoviewport : true,
+							  buttons : [ { text:"Submit", handler:handleSubmit, isDefault:true },
+								      { text:"Cancel", handler:handleCancel } ]
+							});
+
+	// Validate the entries in the form to require that both first and last name are entered
+	YAHOO.openid.container.profile.validate = function() {
+		var data = this.getData();
+		if ( data.nick == "" ) {
+			alert("Please enter your nickname.");
+			return false;
+		} else {
+			return true;
+		}
+	};
+
+	// Wire up the success and failure handlers
+	YAHOO.openid.container.profile.callback = { success: handleSuccess,
+						     failure: handleFailure };
+	
+	// Render the Dialog
+	YAHOO.openid.container.profile.render();
+
+	YAHOO.util.Event.addListener("show", "click", YAHOO.openid.container.profile.show, YAHOO.openid.container.profile, true);
+}
+YAHOO.util.Event.onDOMReady(init);
+
+(function(){
+	var onload_org = window.onload;
+	window.onload = function(){
+	if(onload_org) onload_org();
+	document.getElementById('nucleus_cf_name').value = '{{nick}} [OpenID]';
+	document.getElementById('nucleus_cf_name').style.background = '#FFFFCC';
+	document.getElementById('nucleus_cf_name').readOnly = true;
+	document.getElementById('nucleus_cf_email').value = '{{email}}';
+	document.getElementById('nucleus_cf_email').style.background = '#FFFFCC';
+	document.getElementById('nucleus_cf_email').readOnly = true;
+	}
+})()
+</script>

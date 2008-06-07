@@ -2,10 +2,10 @@
 // vim: tabstop=2:shiftwidth=2
 
 /**
-  * Feedback.php ($Revision: 1.1 $)
+  * Feedback.php ($Revision: 1.2 $)
   * 
   * by hsur ( http://blog.cles.jp/np_cles )
-  * $Id: Feedback.php,v 1.1 2008-02-03 13:11:23 hsur Exp $
+  * $Id: Feedback.php,v 1.2 2008-06-07 19:33:43 hsur Exp $
 */
 
 /*
@@ -55,14 +55,31 @@ class cles_Feedback {
 		echo "<h2>動作確認/不具合報告</h2>";
 		echo '<p>下記より、作者への動作確認/不具合の報告を行うことができます。</p>';
 
+		// js
+		echo '<script langage="JavaScript">
+//<![CDATA[
+function selectall(){
+	var elements = document.getElementsByTagName(\'input\');
+	for( var i=0; i < elements.length; i++){
+		var e = elements[i];
+		if( e.type == \'checkbox\' ){
+			e.checked = true;
+		}
+	}
+	return false;
+}
+//]]>
+</script>';
+		
 		echo "<h3>収集する情報と公開について</h3>";
 		echo '<p>デフォルトで必要最低限の環境情報（赤字のもの）を開発者のサーバへ送信します。<br />
 							<span style="font-weight:bold; color:red">差し支えない範囲で環境情報の提供にご協力ください。</span></p>
 							<p>※　収集した情報は統計処理、及びプラグインのBugFixのみに利用されます。また統計処理した結果については公表することがあります。</p>';
-
+		echo '<p><a href="#" onclick="javascript:selectall();return false;">全て送信する場合はここをクリック</a></p>';
+		
 		echo "<h3>サイト固有コードについて</h3>";
-		echo '<p>動作報告の重複を取り除くため、管理画面のURLのmd5を計算したものを送信しています。この情報から管理画面のURLを復元することはできないようになっています。<a href="http://computers.yahoo.co.jp/dict/security/hash/677.html" target="_blank">md5の解説についてはこちらをご覧ください。(Yahoo!コンピュータ用語辞典)</a></p>';
-
+		echo '<p>動作報告の重複を取り除くため、管理画面のURLのmd5を計算したものを送信しています。この情報から管理画面のURLを復元することはできないようになっています。<a href="http://e-words.jp/w/MD5.html" target="_blank">md5の解説についてはこちらをご覧ください。(e-WordsIT用語辞典)</a></p>';
+		
 		// form 
 		echo '<form method="post" action="http://blog.cles.jp/support/report.php">' . "\n";
 
@@ -71,20 +88,24 @@ class cles_Feedback {
 		echo "<tr>\n";
 		echo "<th>項目の説明</th>\n";
 		echo "<th>送信される値</th>\n";
-		echo "<th>送信する</th>\n";
+		echo "<th><a href=\"#\" onclick=\"javascript:selectall();return false;\">全てチェック</a></th>\n";
 		echo "</tr>\n";
 
 		$res = sql_query("show variables like 'version'");
 		$assoc = mysql_fetch_assoc($res);
 		$mysqlVersion = $assoc['Value'];
-		$gdinfo = gd_info();
+		
+		if( function_exists('gd_info') )
+			$gdinfo = @gd_info();
+		else
+			$gdinfo['GD Version'] = 'GD is not supported';
 
 		global $CONF;
 
 		$this->_printtr('siteid', 'サイトの固有コード', md5(trim($CONF['AdminURL'])));
 		$this->_printtr('plugin_name', 'プラグイン名', $this->oPluginAdmin->plugin->getName());
 		$this->_printtr('plugin_version', 'プラグインのバージョン', $this->oPluginAdmin->plugin->getVersion());
-		$this->_printtr('plugin_info', 'プラグインの情報', $extra, true);
+		$this->_printtr('plugin_info', '追加情報', $extra, true);
 		$this->_printtr('nucleus_version', 'Nucleusのバージョン', $nucleus['version'], true);
 		$this->_printtr('nucleus_charset', 'Nucleusのキャラクタセット', _CHARSET);
 		$this->_printtr('php_version', 'PHPのバージョン', PHP_VERSION, true);
@@ -96,8 +117,8 @@ class cles_Feedback {
 		$this->_printtr('mysql_version', 'MySQLのバージョン', $mysqlVersion, true);
 
 		echo "<tr>\n";
-		echo "<td>このプラグインは機能しましたか？</td>\n";
-		echo '<td colspan="2"><input type="radio" name="user_intention" value="ok" />はい <br/> <input type="radio" name="intention" value="ng" />いいえ'."</td>\n";
+		echo "<td colspan=\"2\">このプラグインは機能しましたか？</td>\n";
+		echo '<td><input type="radio" name="user_intention" value="ok" />はい <br/> <input type="radio" name="intention" value="ng" />いいえ'."</td>\n";
 		echo "</tr>\n";
 
 		echo "<tr>\n";
@@ -111,11 +132,11 @@ class cles_Feedback {
 		echo "</tr>\n";
 		
 		echo "<tr>\n";
-		echo "<td>リンク集作成の際、リンクをはらせていただけますか？</td>\n";
-		echo '<td colspan="2"><input type="radio" name="user_disclose" value="yes" />はい <br/> <input type="radio" name="intention" value="no" />いいえ'."</td>\n";
+		echo "<td colspan=\"2\">リンク集作成の際、リンクをはらせていただけますか？</td>\n";
+		echo '<td><input type="radio" name="user_disclose" value="yes" />はい <br/> <input type="radio" name="intention" value="no" />いいえ'."</td>\n";
 		echo "</tr>\n";
 
-		echo '<tr><td colspan="3"><div align="right"><input type="submit" name="submit" value="動作確認を送信する" /></div></td></tr>';
+		echo '<tr><td colspan="3"><div align="right"><a href="#" onclick="javascript:selectall();return false;">全てチェック</a> <input type="submit" name="submit" value="動作確認を送信する" /></div></td></tr>';
 		echo "</table>\n";
 		echo "</form>\n";
 		
@@ -134,14 +155,15 @@ class cles_Feedback {
 		} else {
 			echo '<td><span style="font-weight:bold; color:red">'.$desc."</span></td>\n";
 			echo '<td><span style="font-weight:bold; color:red">'.htmlspecialchars($value)."</span></td>\n";
-			echo '<td><span style="font-weight:bold; color:red"><input type="checkbox" name="dummy" value="dummy" checked="checked" disabled="disabled" /><input type="hidden" name="'.htmlspecialchars($name).'" value="'.htmlspecialchars($value).'" /></span></td>'."\n";
+			echo '<td>必須<input type="hidden" name="'.htmlspecialchars($name).'" value="'.htmlspecialchars($value).'" readonly="readonly" checked="checked"/></td>'."\n";
 		}
 		echo "</tr>\n";
 	}
 	
 	function _supportedImageTypes() {
+		if( !function_exists('gd_info') ) return "";
+		
 		$aSupportedTypes = array ();
-	
 		$aPossibleImageTypeBits = array (IMG_GIF => 'GIF', IMG_JPG => 'JPG', IMG_PNG => 'PNG', IMG_WBMP => 'WBMP');
 	
 		foreach ($aPossibleImageTypeBits as $iImageTypeBits => $sImageTypeString) {

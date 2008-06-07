@@ -1,10 +1,10 @@
 <?php
 
 /**
- * MySQLStoreForNucleus.php ($Revision: 1.1 $)
+ * MySQLStoreForNucleus.php ($Revision: 1.2 $)
  * based on Auth_OpenID_SQLStore
  * by hsur ( http://blog.cles.jp/np_cles )
- * $Id: SQLStoreForNucleus.php,v 1.1 2008-02-03 13:11:23 hsur Exp $
+ * $Id: SQLStoreForNucleus.php,v 1.2 2008-06-07 19:33:43 hsur Exp $
  */
 
 /*
@@ -100,7 +100,7 @@ class cles_SQLStoreForNucleus extends Auth_OpenID_OpenIDStore {
     {
         $this->sql['nonce_table'] =
             "CREATE TABLE ".$this->nonces_table_name." (\n".
-            "  server_url VARCHAR(2047),\n".
+            "  server_url VARBINARY(255),\n".
             "  timestamp INTEGER,\n".
             "  salt CHAR(40),\n".
             "  UNIQUE (server_url(150), timestamp, salt)\n".
@@ -108,7 +108,7 @@ class cles_SQLStoreForNucleus extends Auth_OpenID_OpenIDStore {
 
         $this->sql['assoc_table'] =
             "CREATE TABLE ".$this->associations_table_name." (\n".
-            "  server_url BLOB,\n".
+            "  server_url VARBINARY(255),\n".
             "  handle VARCHAR(255),\n".
             "  secret BLOB,\n".
             "  issued INTEGER,\n".

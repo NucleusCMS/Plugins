@@ -2,10 +2,10 @@
 // vim: tabstop=2:shiftwidth=2
 
 /**
-  * rd.php ($Revision: 1.1 $)
+  * rd.php ($Revision: 1.2 $)
   * 
   * by hsur ( http://blog.cles.jp/np_cles )
-  * $Id: rd.php,v 1.1 2008-02-03 13:11:22 hsur Exp $
+  * $Id: rd.php,v 1.2 2008-06-07 19:33:43 hsur Exp $
 */
 
 /*

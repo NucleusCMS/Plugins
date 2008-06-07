@@ -2,10 +2,10 @@
 // vim: tabstop=2:shiftwidth=2
 
 /**
-  * Template.php ($Revision: 1.1 $)
+  * Template.php ($Revision: 1.2 $)
   * 
   * by hsur ( http://blog.cles.jp/np_cles )
-  * $Id: Template.php,v 1.1 2008-02-03 13:11:23 hsur Exp $
+  * $Id: Template.php,v 1.2 2008-06-07 19:33:43 hsur Exp $
 */
 
 /*
@@ -72,5 +72,10 @@ class cles_Template {
 		if( $default === null )
 			return preg_replace($this->defalutPattern, '("$2") ? htmlspecialchars($values["$1"], ENT_QUOTES) : $values["$1"]', $template);
 		return preg_replace($this->defalutPattern, 'isset($values["$1"]) ? ("$2" ? htmlspecialchars($values["$1"], ENT_QUOTES) : $values["$1"]) : "{{$1}}" ', $template);
+	}
+	
+	function fetchAndFill($name, $values, $dir = null, $suffix = 'html', $default = null){
+		$tpl = $this->fetch($name, $dir, $suffix);
+		return $this->fill($tpl, $values, $default);
 	}
 }
