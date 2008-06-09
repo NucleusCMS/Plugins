@@ -19,7 +19,7 @@
 //
 // Modified by hsur
 // http://blog.cles.jp
-// $Id: blacklist_lib.php,v 1.12 2008-05-04 00:41:54 hsur Exp $
+// $Id: blacklist_lib.php,v 1.13 2008-06-09 10:33:40 hsur Exp $
 
 define('__WEBLOG_ROOT', dirname(dirname(realpath(__FILE__))));
 define('__EXT', '/blacklist');
@@ -358,7 +358,7 @@ function check_for_iprbl() {
 	list ($a, $b, $c, $d) = explode('.', $spammer_ip);
 
 	foreach ($iprbl as $rbl) {
-		if (strpos(gethostbyname("$d.$c.$b.$a.$rbl"), '127.') === 0) {
+		if ( gethostbynamel("$d.$c.$b.$a.$rbl") !== false ) {
 			return array ($rbl, $spammer_ip);
 		}
 	}
@@ -380,7 +380,7 @@ function check_for_domainrbl($comment_text) {
 		foreach ($domainrbl as $rbl) {
 			if (strlen($domain_to_test) > 3) {
 				//pbl_log('DNSBL Lookup: ' . $domain_to_test.'.'.$rbl);
-				if (strpos(gethostbyname($domain_to_test.'.'.$rbl), '127.') === 0) {
+				if ( gethostbynamel("$domain_to_test.$rbl") !== false ) {
 					return array ($rbl, $domain_to_test);
 				}
 			}

@@ -1,9 +1,9 @@
 <?php
 
 /**
-  * NP_Blacklist(JP) ($Revision: 1.13 $)
+  * NP_Blacklist(JP) ($Revision: 1.14 $)
   * by hsur ( http://blog.cles.jp/np_cles )
-  * $Id: NP_Blacklist.php,v 1.13 2008-05-04 00:41:54 hsur Exp $
+  * $Id: NP_Blacklist.php,v 1.14 2008-06-09 10:33:40 hsur Exp $
   *
   * Based on NP_Blacklist 0.98
   * by xiffy
@@ -41,10 +41,10 @@ class NP_Blacklist extends NucleusPlugin {
 		return 'http://blog.cles.jp/np_cles/category/31/subcatid/11';
 	}
 	function getVersion() {
-		return '1.3';
+		return '1.3.1';
 	}
 	function getDescription() {
-		return '[$Revision: 1.13 $]<br />'.NP_BLACKLIST_description;
+		return '[$Revision: 1.14 $]<br />'.NP_BLACKLIST_description;
 	}
 	function supportsFeature($what) {
 		switch ($what) {
