@@ -2,7 +2,7 @@
 
 <table width="100%" cellpadding="3" cellspacing="1" border="0" class="forumline">
   <tr>
-  <td class="catHead" colspan="2" height="28"><span class="cattitle"><a href="viewonline.php?sid=10078eb7dbbadbd85d2f386ceb800a0a" class="cattitle">オンライン管理</a></span></td>
+  <td class="catHead" colspan="2" height="28"><span class="cattitle">オンライン管理</span></td>
   </tr>
   <tr>
   <td class="row1" align="center" valign="middle" rowspan="2"><img src="<%skinfile(images/whosonline.gif)%>" alt="オンライン管理" /></td>

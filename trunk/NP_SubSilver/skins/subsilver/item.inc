@@ -5,7 +5,7 @@
 <table border="0" cellpadding="2" cellspacing="2" width="100%">
   <tbody><tr>
 	<td colspan="2" align="left" valign="bottom"><a class="maintitle" href="?itemid=<%itemid%>"><%itemtitle%></a>
-        <%if(admin)%><a href="<%adminurl%>?action=itemedit&itemid=<%itemid%>"><img src="<%skinfile(images/lang_english/icon_edit.gif)%>"/ alt="edit" title="edit" /></a><%endif%>
+        <%if(admin)%><a href="<%adminurl%>?action=itemedit&amp;itemid=<%itemid%>&amp;subsilver_action=returntoforum"><img src="<%skinfile(images/lang_english/icon_edit.gif)%>"/ alt="edit" title="edit" /></a><%endif%>
         <br /><span class="gensmall"><b></b><br />
 	  &nbsp; </span></td>
   </tr>
@@ -15,6 +15,7 @@
   <tbody><tr>
     <td align="left" nowrap="nowrap" valign="bottom">
       <span class="nav">
+        <%if(subSilver,member,can=postnew)%>
         <input type="image" name="subSilver_action" value="posting" src="<%skinfile(images/lang_english/post.gif)%>" alt="トピックの新規投稿" title="トピックの新規投稿" onclick="
 document.getElementById('subsilver_form_body').value='';
 document.getElementById('subsilver_form_dummy').name=this.name;
@@ -22,12 +23,15 @@ document.getElementById('subsilver_form_dummy').value=this.value;
 return true;
 " />
         &nbsp;&nbsp;
+        <%endif%>
+        <%if(subSilver,member,can=reply)%>
         <input type="image" name="subSilver_action" value="commentform" src="<%skinfile(images/lang_english/reply.gif)%>" alt="返信" title="返信" onclick="
 document.getElementById('subsilver_form_body').value='';
 document.getElementById('subsilver_form_dummy').name=this.name;
 document.getElementById('subsilver_form_dummy').value=this.value;
 return true;
 " />
+        <%endif%>
       </span>
     </td>
 	<td align="left" valign="middle"><span class="nav">&nbsp;&nbsp;&nbsp;<a href="<%sitevar(url)%>" class="nav"><%sitevar(name)%> フォーラム一覧</a> -&gt; <a class="nav" href="<%self%>?catid=<%category(id)%>&amp;blogid=<%blogsetting(id)%>"><%category(name)%></a></span></td>
@@ -60,6 +64,7 @@ return true;
   <tbody><tr>
     <td align="left" nowrap="nowrap" valign="bottom">
       <span class="nav">
+        <%if(subSilver,member,can=postnew)%>
         <input type="image" name="subSilver_action" value="posting" src="<%skinfile(images/lang_english/post.gif)%>" alt="トピックの新規投稿" title="トピックの新規投稿" onclick="
 document.getElementById('subsilver_form_body').value='';
 document.getElementById('subsilver_form_dummy').name=this.name;
@@ -67,12 +72,15 @@ document.getElementById('subsilver_form_dummy').value=this.value;
 return true;
 " />
         &nbsp;&nbsp;
+        <%endif%>
+        <%if(subSilver,member,can=reply)%>
         <input type="image" name="subSilver_action" value="commentform" src="<%skinfile(images/lang_english/reply.gif)%>" alt="返信" title="返信" onclick="
 document.getElementById('subsilver_form_body').value='';
 document.getElementById('subsilver_form_dummy').name=this.name;
 document.getElementById('subsilver_form_dummy').value=this.value;
 return true;
 " />
+        <%endif%>
       </span>
     </td>
 	<td align="right" nowrap="nowrap" valign="top">

@@ -5,10 +5,12 @@
 </tr>
 <tr>
   <td align="left" valign="middle" width="50">
+    <%if(subSilver,member,can=postnew)%>
     <form method="post" action="#nucleus_cf" style="position:absolute;">
     <input type="hidden" name="subSilver_action" value="posting" />
     <input type="image" src="<%skinfile(images/lang_english/post.gif)%>" alt="トピックの新規投稿" title="トピックの新規投稿" />
     </form><img src="<%skinfile(images/lang_english/post.gif)%>" alt="トピックの新規投稿" title="トピックの新規投稿" />
+    <%endif%>
   </td>
   <td class="nav" align="left" valign="middle" width="100%"><span class="nav">&nbsp;&nbsp;&nbsp;<a href="<%sitevar(url)%>" class="nav"><%sitevar(name)%> フォーラム一覧</a> -&gt; <a class="nav" href="?catid=<%category(id)%>&amp;blogid=<%blogsetting(id)%>"><%category(name)%></a></span></td>
   <td class="nav" align="right" nowrap="nowrap" valign="bottom">
@@ -72,10 +74,12 @@
 <table align="center" border="0" cellpadding="2" cellspacing="2" width="100%">
 <tbody><tr>
   <td align="left" valign="middle" width="50">
+    <%if(subSilver,member,can=postnew)%>
     <form method="post" action="#nucleus_cf" style="position:absolute;">
     <input type="hidden" name="subSilver_action" value="posting" />
     <input type="image" src="<%skinfile(images/lang_english/post.gif)%>" alt="トピックの新規投稿" title="トピックの新規投稿" />
     </form><img src="<%skinfile(images/lang_english/post.gif)%>" alt="トピックの新規投稿" title="トピックの新規投稿" />
+    <%endif%>
   </td>
   <td align="left" valign="middle" width="100%"><span class="nav">&nbsp;&nbsp;&nbsp;<a href="<%sitevar(url)%>" class="nav"><%sitevar(name)%> フォーラム一覧</a> -&gt; <a class="nav" href="?catid=<%category(id)%>&amp;blogid=<%blogsetting(id)%>"><%category(name)%></a></span></td>
   <td align="right" nowrap="nowrap" valign="middle"><br /><span class="nav"></span>

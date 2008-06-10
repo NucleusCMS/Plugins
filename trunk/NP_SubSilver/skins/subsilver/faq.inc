@@ -6,6 +6,7 @@
   </tr>
 </table>
 
+<%if(admin)%>
 <%subSilver(includelanguage,faq.inc)%><br />
 <%subSilver(includelanguage,faq1.inc)%><br />
 <%subSilver(includelanguage,faq2.inc)%><br />
@@ -14,3 +15,6 @@
 <%subSilver(includelanguage,faq5.inc)%><br />
 <%subSilver(includelanguage,faq6.inc)%><br />
 <%subSilver(includelanguage,faq7.inc)%><br />
+<%else%>
+FAQは現在準備中です。
+<%endif%>

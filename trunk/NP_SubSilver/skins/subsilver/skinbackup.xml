@@ -147,12 +147,10 @@ title="<:categoryicon:<%catid%>:新しい記事有り:新しい記事無し:ロ�
       <td nowrap="nowrap" valign="top"><input type="image" name="subSilver_action" value="commentform" src="<%skinfile(images/lang_english/icon_quote.gif)%>" alt="引用" title="引用" onclick="
 document.getElementById('subsilver_form_body').value=
   '[quote=<%user(realname)%>]' + document.getElementById('commentbody_<%commentid%>').innerHTML + '[/quote]';
-document.getElementById('subsilver_form_dummy').name=this.name;
-document.getElementById('subsilver_form_dummy').value=this.value;
 return true;
 " />
     <%subSilver(if,caneditcomment)%>
-      <a href="<%subSilver(adminurl)%>?action=commentedit&commentid=<%commentid%>" ><img src="<%skinfile(images/lang_english/icon_edit.gif)%>" alt="edit" title="edit" border="0" /></a>
+      <a href="<%subSilver(adminurl)%>?action=commentedit&amp;commentid=<%commentid%>&amp;subsilver_action=returntoforum" ><img src="<%skinfile(images/lang_english/icon_edit.gif)%>" alt="edit" title="edit" border="0" /></a>
     <%subSilver(endif)%>
     </td>
     </tr>

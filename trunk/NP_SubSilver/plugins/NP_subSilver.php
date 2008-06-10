@@ -3,12 +3,12 @@ class NP_subSilver extends NucleusPlugin {
 	function getName() { return 'NP_subSilver'; }
 	function getMinNucleusVersion() { return 330; }
 	function getAuthor()  { return 'Katsumi'; }
-	function getVersion() { return '0.2.9.7'; }
+	function getVersion() { return '0.3.0.0'; }
 	function getURL() {return 'http://japan.nucleuscms.org/bb/viewtopic.php?t=3257';}
 	function getDescription() { return $this->getName().' plugin'; } 
 	function supportsFeature($what) { return (int)($what=='SqlTablePrefix'); }
 	function getEventList() {
-		return array('QuickMenu','InitSkinParse','PostAuthentication',
+		return array('QuickMenu','InitSkinParse','PostAuthentication','AdminPrePageHead',
 			'SpamCheck','PostAddComment','ValidateForm',
 			'PreDeleteComment','PostDeleteComment','PreUpdateComment','PrepareCommentForEdit',
 			'PostAddItem','PostAddCategory');
@@ -64,9 +64,23 @@ try {
 /*]]>*/
 </script><?php
 	}
-/* Following event is used to check the values of blog/category settings */
+/* Following event is used to check the values of blog/category settings as well as to redirect to another page */
 	var $noblogid=false;
+	var $returntoforum='';
 	function event_PostAuthentication(){
+		// Remember forum URI
+		global $member,$CONF,$itemid;
+		if ($member->isLoggedIn()) {
+			if (@$CONF['UsingAdminArea']) {
+				if (requestVar('subsilver_action')!='returntoforum') {
+					// Set the redirect URI and forget cookie URI
+					if (serverVar('REQUEST_METHOD')=='POST') $this->returntoforum=cookieVar($CONF['CookiePrefix'] . 'subsilver_uri');
+					setcookie($CONF['CookiePrefix'] . 'subsilver_uri', '', 0, $CONF['CookiePath'], $CONF['CookieDomain'], $CONF['CookieSecure']);
+				} // else the cookie remains.
+			} elseif ($itemid) {// Set the redirect URI to cookie when not in admin page.
+				setcookie($CONF['CookiePrefix'] . 'subsilver_uri', serverVar('REQUEST_URI'), 0, $CONF['CookiePath'], $CONF['CookieDomain'], $CONF['CookieSecure']);
+			}
+		}
 		// Set blogid for the search page.
 		global $blogid,$query,$DIR_NUCLEUS;
 		if (strpos(realpath('./'),realpath($DIR_NUCLEUS))!==0 && ($query || getVar('search_author')) && !$blogid) {
@@ -74,7 +88,7 @@ try {
 			$this->noblogid=true;
 		}
 		// Restrict member's admin area.
-		global $member,$DIR_PLUGINS,$HTTP_POST_VARS,$action;
+		global $DIR_PLUGINS,$action;
 		if ($member->isAdmin()) return;
 		if (strpos(realpath('./'),realpath($DIR_PLUGINS))===0) return;
 		if (strpos(realpath('./'),realpath($DIR_NUCLEUS))!==0) return;
@@ -82,6 +96,14 @@ try {
 		if ( !(postVar('ticket') || getVar('ticket')) && (!in_array($action,$invalid)) ) return;
 		$obj=&$this->loadClass('member');
 		return $obj->event_PostAuthentication();
+	}
+	function event_AdminPrePageHead(&$data){
+		if ($this->returntoforum){
+			// Note that this occurs when cookie is set in POST mode
+			// but requestVar('subsilver_action') isn't 'returntoforum'
+			redirect($this->returntoforum);
+			exit;
+		}
 	}
 /* General stuffs when the skin parse */
 	function event_InitSkinParse(&$data){
@@ -199,7 +221,7 @@ try {
 			return $obj->posting('PostAddComment',$data);
 		} else {
 			$obj=&$this->loadClass('comments');
-			return $obj->event_PostAddComment(&$data);
+			return $obj->event_PostAddComment($data);
 		}
 	}
 	// PostAddItem event occurs when a new blog is created.
@@ -214,19 +236,19 @@ try {
 /* Following events are used when the comment is modified */
 	function event_PreDeleteComment(&$data){
 		$obj=&$this->loadClass('comments');
-		return $obj->event_PreDeleteComment(&$data);
+		return $obj->event_PreDeleteComment($data);
 	}
 	function event_PostDeleteComment(&$data){
 		$obj=&$this->loadClass('comments');
-		return $obj->event_PostDeleteComment(&$data);
+		return $obj->event_PostDeleteComment($data);
 	}
 	function event_PrepareCommentForEdit(&$data){
 		$obj=&$this->loadClass('comments');
-		return $obj->event_PrepareCommentForEdit(&$data);
+		return $obj->event_PrepareCommentForEdit($data);
 	}
 	function event_PreUpdateComment(&$data){
 		$obj=&$this->loadClass('comments');
-		return $obj->event_PreUpdateComment(&$data);
+		return $obj->event_PreUpdateComment($data);
 	}
 /* General class object manager */
 	var $classobjects=array();
