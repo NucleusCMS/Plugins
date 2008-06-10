@@ -23,13 +23,17 @@ function init() {
 		this.cancel();
 	};
 	var handleSuccess = function(o) {
-		var response = o.responseText;
-		//debug
-		//document.getElementById("resp").innerHTML = response;
-		eval(response);
+		var param = eval( "(" + o.responseText + ")" );
+		if( param['result'] == 'succeeded'){
+			document.getElementById('nucleus_cf_name').value = param['nick'] + ' [OpenID]';
+			document.getElementById('nucleus_cf_email').value = param['email'];
+			document.getElementById("resp").innerHTML = param['message'];
+		} else {
+			document.getElementById("resp").innerHTML = param['message'];
+		}
 	};
 	var handleFailure = function(o) {
-		document.getElementById("resp").innerHTML = "Submission failed: " + o.status;
+		document.getElementById("resp").innerHTML = "Error: " + o.status;
 	};
 
 	// Instantiate the Dialog

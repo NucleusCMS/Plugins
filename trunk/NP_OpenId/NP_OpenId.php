@@ -2,9 +2,9 @@
 // vim: tabstop=2:shiftwidth=2
 
 /**
-  * NP_OpenId ($Revision: 1.2 $)
+  * NP_OpenId ($Revision: 1.3 $)
   * by hsur ( http://blog.cles.jp/np_cles )
-  * $Id: NP_OpenId.php,v 1.2 2008-06-07 19:33:43 hsur Exp $
+  * $Id: NP_OpenId.php,v 1.3 2008-06-10 14:35:12 hsur Exp $
   *
 */
 
@@ -50,6 +50,7 @@ require_once 'Auth/OpenID/Consumer.php';
 require_once 'cles/SQLStoreForNucleus.php';
 require_once 'Auth/OpenID/SReg.php';
 require_once 'Auth/OpenID/PAPE.php';
+require_once 'Jsphon.php';
 
 class NP_OpenId extends NucleusPlugin {
 
@@ -63,7 +64,7 @@ class NP_OpenId extends NucleusPlugin {
 		return 'http://blog.cles.jp/np_cles/category/31/subcatid/21';
 	}
 	function getVersion() {
-		return '1.1.0';
+		return '1.1.1';
 	}
 	function getMinNucleusVersion() {
 		return 330;
@@ -84,7 +85,7 @@ class NP_OpenId extends NucleusPlugin {
 		);
 	}
 	function getDescription() {
-		return '[$Revision: 1.2 $]<br />Adds OpenID authentication to anonymous comment, to prevent robots from spamming.';
+		return '[$Revision: 1.3 $]<br />Adds OpenID authentication to anonymous comment, to prevent robots from spamming.';
 	}
 	function supportsFeature($what) {
 		switch ($what) {
@@ -107,6 +108,12 @@ class NP_OpenId extends NucleusPlugin {
 		@mkdir($store_path);
 		$this->store = new Auth_OpenID_FileStore($store_path);
 */
+		// include language file for this plugin 
+		$language = ereg_replace( '[\\|/]', '', getLanguageName()); 
+		if (file_exists($this->getDirectory().'language/'.$language.'.php')) 
+			@ include_once($this->getDirectory().'language/'.$language.'.php');
+		else
+			@ include_once($this->getDirectory().'language/english.php');
 
 		$this->store = new cles_SQLStoreForNucleus();
 		$this->consumer = new Auth_OpenID_Consumer($this->store);
@@ -198,7 +205,6 @@ class NP_OpenId extends NucleusPlugin {
 				break;
 			
 			case 'updateProfile':
-				$te = $this->_getTemplateEngine();
 				$aVars = array();
 				if( $this->isLoggedin() ){
 					$profile = array();
@@ -206,11 +212,17 @@ class NP_OpenId extends NucleusPlugin {
 					$aVars['email'] = requestVar('email');
 					
 					$this->_doUpdateProfile($aVars);
-					echo $te->fetchAndFill('updatesucceeded', $aVars, strtolower(__CLASS__));
+					
+					$aVars['message'] = NP_OPENID_updateSucceeded;
+					$aVars['result'] = 'succeeded';
 				} else {
-					$aVars['message'] = 'You aren\'t logged in.';
-					echo $te->fetchAndFill('updatefailed', $aVars, strtolower(__CLASS__));
+					$aVars['message'] = NP_OPENID_notloggedin;
+					$aVars['result'] = 'failure';
 				}
+				
+				// return JSON
+				if(_CHARSET != 'UTF-8') mb_convert_variables('UTF-8', _CHARSET, $aVars);
+				echo Jsphon::encode($aVars);
 				exit;
 				//break;
 			default:
@@ -281,9 +293,6 @@ class NP_OpenId extends NucleusPlugin {
 
 		$this->loggedinUser['nick'] = $profile['nick'];
 		$this->loggedinUser['email'] = $profile['email'];
-
-		setcookie($CONF['CookiePrefix'] . 'comment_user', $this->loggedinUser['nick'], 0, $CONF['CookiePath'], $CONF['CookieDomain'], $CONF['CookieSecure']);
-		setcookie($CONF['CookiePrefix'] . 'comment_email', $this->loggedinUser['email'], 0, $CONF['CookiePath'], $CONF['CookieDomain'], $CONF['CookieSecure']);
 	}
 	
 	function _doLoginLocal($name){
@@ -344,7 +353,7 @@ class NP_OpenId extends NucleusPlugin {
 	
 	function isLoggedin(){
 		global $CONF;
-		if( $this->loggedinUser ) return true;
+		if( $this->loggedinUser['identity'] ) return true;
 		
 		$cookie = cookieVar($CONF['CookiePrefix'] . NP_OPENID_AUTH_COOKIE);
 		if( ! $cookie ) return false;
@@ -410,8 +419,6 @@ class NP_OpenId extends NucleusPlugin {
 			$this->loggedinUser = array_merge($this->loggedinUser, unserialize($this->loggedinUser['sreg']));
 			
 			setcookie($CONF['CookiePrefix'] . NP_OPENID_AUTH_COOKIE , $cookie, 0, $CONF['CookiePath'], $CONF['CookieDomain'], $CONF['CookieSecure']);
-			setcookie($CONF['CookiePrefix'] . 'comment_user', $this->loggedinUser['nick'], 0, $CONF['CookiePath'], $CONF['CookieDomain'], $CONF['CookieSecure']);
-			setcookie($CONF['CookiePrefix'] . 'comment_email', $this->loggedinUser['email'], 0, $CONF['CookiePath'], $CONF['CookieDomain'], $CONF['CookieSecure']);
 			return true;
 		}
 		
@@ -422,8 +429,6 @@ class NP_OpenId extends NucleusPlugin {
 		global $CONF;
 		$this->loggedinUser = null;
 		setcookie($CONF['CookiePrefix'] . NP_OPENID_AUTH_COOKIE, '', 0, $CONF['CookiePath'], $CONF['CookieDomain'], $CONF['CookieSecure']);
-		setcookie($CONF['CookiePrefix'] . 'comment_user', '', 0, $CONF['CookiePath'], $CONF['CookieDomain'], $CONF['CookieSecure']);
-		setcookie($CONF['CookiePrefix'] . 'comment_email', '', 0, $CONF['CookiePath'], $CONF['CookieDomain'], $CONF['CookieSecure']);
 		return true;
 	}
 	
