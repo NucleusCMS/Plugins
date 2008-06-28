@@ -1,11 +1,11 @@
 <h3>Outline of plug-in</h3>
 
-<p>
+<div>
 
 It is a plug-in that replaces dynamic URL generated with NucleusCMS with static URL of a free name.<br />
 <em style="color:#cc0000;">Operation only in FancyURL mode and required 'mod-rewrite'.</em><br />
 Categories, the Sub-Categories, Archive list, etc. are considered to be a directory respectively.When narrowing it by the category, it becomes an image that refers to the index file that exists in the directory of a category concerned.<br />
-<ul style="margin:0 0 25px 12px;">ex.
+<ul style="margin:0 0 25px 12px;"><li>ex.</li>
 <li>Image of access to Categories:
 <ul><li>http://example.jp/nucleuscms/</li></ul></li>
 <li>Image of access to Sub-Categories:
@@ -14,17 +14,17 @@ Categories, the Sub-Categories, Archive list, etc. are considered to be a direct
 <ul><li>http://example.jp/archives/</li><li>http://example.jp/archives/nucleuscms/</li></ul></li>
 </ul>
 Member's detailed page and individual item page become images accessed a file concerned html file.<br />
-<ul style="margin:0 0 25px 12px;">ex.
+<ul style="margin:0 0 25px 12px;"><li>ex.</li>
 <li>http://example.jp/nucleuscms/plugins/NP_CustomURL.html</li>
 <li>http://example.jp/new_nucleus_comming_soon.html</li>
 <li>http://example.jp/member/Hiroyuki.html</li>
 </ul>
 
-</p>
+</div>
 
 <h3>Installation and operation beginning procedure</h3>
 
-<p>
+<div>
 
 <ol style="margin:0 0 25px 12px;">
 <li>After up-loading the "NP_CustomURL.php" file and the "customurl" directory that can be done by developing the downloaded compression file to the "plugins" directory of the server.It installs it from the management area.</li>
@@ -56,11 +56,11 @@ Even if nothing is written now by these four lines alone, it is safe.</li></ul><
 It is preparation completion by this.<br />
 <br />
 Note:Please delete or save operation in another directory the file for FancyURLs with FancyURLs now.It is not necessary because everything has been received by this plug-in.<br />
-</p>
+</div>
 
 <h3>How to use.</h3>
 
-<p>
+<div>
 
 <ul>
 <li style="margin-top:3px;">The option is additional to Brog item category member's edit page respectively, and apply a favorite name, please.</li>
@@ -84,11 +84,11 @@ Note:Please delete or save operation in another directory the file for FancyURLs
 <li style="margin-top:3px;">It can be selected whether to change URI of each Brog by the option.</li>
 </ul>
 
-</P>
+</div>
 
 <h3>Skin/Template variable</h3>
 
-<p>
+<div>
 It is possible to fill it in skin, the template, and in the article.<br />
 Useage:<code>&lt;%CustomURL(link ahead, link text, title text)%&gt;</code><br />
 <ul>
@@ -101,7 +101,7 @@ Useage:<code>&lt;%CustomURL(link ahead, link text, title text)%&gt;</code><br />
 </li>
 <li>link text:Character string placed between a tag.Only URL is generated when omitted.</li>
 <li>title text:It is set to the "title" attribute of a tag.If the link text exists, it is set to the change when omitted.Even if only the title is specified without specifying the link text, the link tag is not generated.</li>
-<li>It can be written &lt:%CustomURL%&gt; by omitting all parameters.In this case, URI of default is written by the filling in place.
+<li>It can be written &lt;%CustomURL%&gt; by omitting all parameters.In this case, URI of default is written by the filling in place.
 	<ul>
 		<li>skin:URI to the top page of present "Brog" is written.</li>
 		<li>template:URI to the written item is written.(Replacement of &lt;%itemlink%&gt;)</li>
@@ -120,7 +120,7 @@ Filling in example:
 </ul>
 When only id is filled in like skin template article both "&lt;%CustomURL(123)%&gt;", URI to the item with the id is written.<br />
 Moreover, passing set to the item with the id like item_123 can be written by writing "&lt;%CustomURL(123/path)%&gt;" only for the item.<br />
-</p>
+</div>
 
 <h3>Operation report and bug report</h3>
 
