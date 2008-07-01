@@ -76,69 +76,6 @@ class NP_EzComment2 extends NucleusPlugin
 		}
 	}
 
-	function getEventList()
-	{
-		return array('AdminPrePageFoot','AdminPrePageHead');
-	}
-
-	function event_AdminPrePageHead($data)
-	{
-		if ($data['action'] != 'templateedit' && $data['action'] != 'templateupdate') return;
-//		if ($data['action'] == 'templateedit') {
-			$templateId   = intRequestVar('templateid');
-			$tempalteName = TEMPLATE::getNameFromId($templateId);
-			$tempalteDesc = TEMPLATE::getDesc($templateId);
-			if (strpos(strtolower($tempalteName), 'ezcommentform') === false &&
-				strpos(strtolower($tempalteDesc), 'ezcommentform') === false) {
-					return;
-			}
-//		}
-		$data['extrahead'] .= '<script type="text/javascript" src="' . $this->getAdminURL() . 'jquery-1.2.1.pack.js">'
-							. '</script>'
-							. '<script type="text/javascript" src="' . $this->getAdminURL() . 'jquery.cookie.js">'
-							. '</script>';
-	}
-
-	function event_AdminPrePageFoot($data)
-	{
-		if ($data['action'] != 'templateedit' && $data['action'] != 'templateupdate') return;
-//		if ($data['action'] == 'templateedit') {
-			$templateId   = intRequestVar('templateid');
-			$tempalteName = TEMPLATE::getNameFromId($templateId);
-			$tempalteDesc = TEMPLATE::getDesc($templateId);
-			if (strpos(strtolower($tempalteName), 'ezcommentform') === false &&
-				strpos(strtolower($tempalteDesc), 'ezcommentform') === false) {
-					return;
-			}
-//		}
-		$title       = _NP_EZCOMMENT2_FORM_TEMPLATES;
-		$loggedin    = _NP_EZCOMMENT2_FORM_LOGGEDIN;
-		$notLoggedin = _NP_EZCOMMENT2_FORM_NOTLOGGEDIN;
-		echo <<<___SCRIPT___
-
-<script type="text/javascript">
-$('table').ready(function(){
-	var row = $('tr').get();
-	var title = $(row[5]).children();
-	title.text('{$title}');
-	for (var i=6;i<row.length-2;i++) {
-		var tcol = $(row[i]).children();
-		var txta = $(tcol[1]).children();
-		if ($(txta[0]).attr('name') == 'ITEM') {
-			$(tcol[0]).text('{$loggedin}');
-			$(txta[0]).attr('rows', '15')
-		} else if ($(txta[0]).attr('name') == 'COMMENTS_BODY') {
-			$(tcol[0]).text('{$notLoggedin}');
-			$(txta[0]).attr('rows', '15')
-		} else {
-			$(row[i]).remove();
-		}
-	}
-});
-</script>
-
-___SCRIPT___;
-	}
 
 	function doTemplateVar(&$item,
 							$showType       = '',
@@ -263,11 +200,11 @@ ___SCRIPT___;
 			'rememberchecked' => $checked
 		);
 		if ($member && $member->isLoggedIn()) {
-			$formType = 'ITEM';
+			$formType = 'COMMENT_FORM_LOGGEDIN';
 			$loginMember = $member->createFromID($member->getID());
 			$formdata['membername'] = $this->_hsc($loginMember->getDisplayName());
 		} else {
-			$formType = 'COMMENTS_BODY';
+			$formType = 'COMMENT_FORM_NOTLOGGEDIN';
 		}
 		$contents   = $template[$formType];
 		$formAction =& new EzCommentFormActions($commentItem, $formdata, $loginMember);
@@ -351,6 +288,15 @@ ___SCRIPT___;
 
 	}
 // LIST END -----------------------------------------
+
+	function getTemplateParts()
+	{
+		$this->languageInclude();
+		return array(
+			'COMMENT_FORM_LOGGEDIN'    => _NP_EZCOMMENT2_FORM_LOGGEDIN, 
+			'COMMENT_FORM_NOTLOGGEDIN' => _NP_EZCOMMENT2_FORM_NOTLOGGEDIN, 
+		);
+	}
 
 	function _hsc($str)
 	{
