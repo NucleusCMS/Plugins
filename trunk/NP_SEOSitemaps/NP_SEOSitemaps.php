@@ -214,7 +214,7 @@ class NP_SEOSitemaps extends NucleusPlugin
 							$bPriority = $bPriority / 10;
 							$sitemap[] = array(
 								'loc'        => $this->_prepareLink($SelfURL, $TempURL),
-								'priority'   => $bPriority,
+								'priority'   => number_format($bPriority ,1),
 								'changefreq' => 'daily'
 							);
 						}
@@ -240,7 +240,7 @@ class NP_SEOSitemaps extends NucleusPlugin
 								$cPriority  = $cPriority / 10;
 								$sitemap[] = array(
 									'loc'        => $catLoc,
-									'priority'   => $cPriority,
+									'priority'   => number_format($cPriority, 1),
 									'changefreq' => 'daily'
 								);
 							}
@@ -265,7 +265,7 @@ class NP_SEOSitemaps extends NucleusPlugin
 									if (end($path_arr) != 'ror.xml') {
 										$sitemap[] = array(
 											'loc'        => $scatLoc,
-											'priority'   => $sPriority,
+											'priority'   => number_format($sPriority, 1),
 											'changefreq' => 'daily'
 										);
 									}
@@ -349,7 +349,7 @@ class NP_SEOSitemaps extends NucleusPlugin
 								$sitemap[] = array(
 									'loc'        => $itemLoc,
 									'lastmod'    => $lastmod,
-									'priority'   => $iPriority,
+									'priority'   => number_format($iPriority, 1),
 									'changefreq' => $fq
 								);
 							} else {
@@ -520,11 +520,27 @@ class NP_SEOSitemaps extends NucleusPlugin
 			}
 		}
 
-		if ($this->getBlogOption($blog_id, 'PingYahoo') == 'yes' &&
-			$this->getBlogOption($blog_id, 'YahooAPID') != '') {
-			$baseURL = 'http://search.yahooapis.com/SiteExplorerService/V1/updateNotification?appid='
-					 . $this->getBlogOption($blog_id, 'YahooAPID')
-					 . '&url=';
+		if ($this->getBlogOption($blog_id, 'PingYahoo') == 'yes') {	// &&
+//			$this->getBlogOption($blog_id, 'YahooAPID') != '') {
+//			$baseURL = 'http://search.yahooapis.com/SiteExplorerService/V1/updateNotification?appid='
+//					 . $this->getBlogOption($blog_id, 'YahooAPID')
+//					 . '&url=';
+			$baseURL = 'http://search.yahooapis.com/SiteExplorerService/V1/ping?sitemap=';
+			$url     = $baseURL . urlencode($b_url . $siteMap);
+			$url     = preg_replace('|[^a-zA-Z0-9-~+_.?#=&;,/:@%]|i', '', $url);
+			$fp      = @fopen($url, 'r');
+			@fclose($fp);
+			$MobileMap = $this->getBlogOption($blog_id, 'MobileSitemap');
+			if (!empty($MobileMap)) {
+				$url = $baseURL . urlencode($b_url . $MobileMap);
+				$url = preg_replace('|[^a-zA-Z0-9-~+_.?#=&;,/:@%]|i', '', $url);
+				$fp  = @fopen($url, 'r');
+				@fclose($fp);
+			}
+		}
+
+		if ($this->getBlogOption($blog_id, 'PingLive') == 'yes') {
+			$baseURL = 'http://webmaster.live.com/webmaster/ping.aspx?siteMap=';
 			$utl     = $baseURL . urlencode($b_url . $siteMap);
 			$url     = preg_replace('|[^a-zA-Z0-9-~+_.?#=&;,/:@%]|i', '', $url);
 			$fp      = @fopen($url, 'r');
@@ -554,14 +570,15 @@ class NP_SEOSitemaps extends NucleusPlugin
 	function install()
 	{
 		$this->createOption('AllBlogMap',         _G_SITEMAP_ALLB,   'yesno', 'yes');
-		$this->createBlogOption('IncludeSitemap', _G_SITEMAP_INC,    'yesno', 'yes');
+		$this->createBlogOption('IncludeSitemap', _G_SITEMAP_INC,    'yesno', 'no');
 		$this->createBlogOption('PingGoogle',     _G_SITEMAP_PING_G, 'yesno', 'yes');
-		$this->createBlogOption('PingYahoo',      _G_SITEMAP_PING_Y, 'yesno', 'no');
-		$this->createBlogOption('YahooAPID',      _G_SITEMAP_YAPID,  'text',  '');
+		$this->createBlogOption('PingYahoo',      _G_SITEMAP_PING_Y, 'yesno', 'yes');
+		$this->createBlogOption('PingLive',       _G_SITEMAP_PING_L, 'yesno', 'yes');
+//		$this->createBlogOption('YahooAPID',      _G_SITEMAP_YAPID,  'text',  '');
 		$this->createBlogOption('PcSitemap',      _G_SITEMAP_PCSM,   'text',  'sitemap.xml');
-		$this->createBlogOption('MobileSitemap',  _G_SITEMAP_MBSM,   'text',  '');
+		$this->createBlogOption('MobileSitemap',  _G_SITEMAP_MBSM,   'text',  'msitemap.xml');
 		$this->createBlogOption('blogPriority',   _G_SITEMAP_BPRI,   'text',  '10', 'datatype=numerical');
 		$this->createCategoryOption('catPriority', _G_SITEMAP_CPRI,  'text',  '9', 'datatype=numerical');
-		$this->createItemOption('itemPriority',    _G_SITEMAP_IPRI,   'text',  '10', 'datatype=numerical');
+		$this->createItemOption('itemPriority',   _G_SITEMAP_IPRI,   'text',  '10', 'datatype=numerical');
 	}
 }
