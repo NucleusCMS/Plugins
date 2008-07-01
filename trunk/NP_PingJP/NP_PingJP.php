@@ -32,8 +32,8 @@
   *   v1.61 - Merge Asynchronous request code(by hsur)
   *   v1.62 - Add background mode
   *
-  * NP_PingJP.php ($Revision: 1.7 $)
-  * $Id: NP_PingJP.php,v 1.7 2008-07-01 09:52:15 shizuki Exp $
+  * NP_PingJP.php ($Revision: 1.8 $)
+  * $Id: NP_PingJP.php,v 1.8 2008-07-01 13:51:27 shizuki Exp $
   **/
 
 
@@ -427,7 +427,7 @@ var $servers = array(
 //			} else {
 //				exec("php " . $directory . "ping.php " . $data['blogid'] . " > /dev/null &");
 //			}
-			register_shutdown_function(array($this, 'sendPing'), $data['blogid'], 2)
+			register_shutdown_function(array($this, 'sendPing'), $data['blogid'], 2);
 		} else {
 			$this->sendPings($data['blogid'], 1);
 		}
@@ -470,7 +470,7 @@ var $servers = array(
 	  **/
 	function sendPing($bid, $background = 0)
 	{
-		$targets = $this->getPingingServers($bid)
+		$targets = $this->getPingingServers($bid);
 
 		$this->ahttp            = new cles_AsyncHTTP_RawPost();
 		$this->ahttp->userAgent = "Nucleus(NP_PingJP Plugin)";
@@ -565,8 +565,8 @@ var $servers = array(
 		if (_CHARSET != 'UTF-8') {
 			mb_convert_encoding($name, 'UTF-8', _CHARSET);
 		}
-		$data[1] = new xmlrpcval($name),
-		$data[2] = new xmlrpcval($burl)
+		$data[1] = new xmlrpcval($name);
+		$data[2] = new xmlrpcval($burl);
 		if ($server['method'] == 'weblogUpdates.extendedPing') {
 			$feedURL = $this->getBlogOption($myBlogid, 'pingjp_feedurl');
 			if (!$feedURL) {
