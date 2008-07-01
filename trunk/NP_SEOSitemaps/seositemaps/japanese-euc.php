@@ -8,3 +8,6 @@
 	define('_G_SITEMAP_INC',    "AllBlog モードのときにこのブログを含める");
 	define('_G_SITEMAP_PCSM',   "PC 用サイトマップファイルの仮想ファイル名");
 	define('_G_SITEMAP_MBSM',   "モバイル用サイトマップファイルの仮想ファイル名");
+	define('_G_SITEMAP_BPRI',   "ブログの Priority 値");
+	define('_G_SITEMAP_CPRI',   "カテゴリーの Priority 値");
+	define('_G_SITEMAP_IPRI',   "アイテムの Priority 値");

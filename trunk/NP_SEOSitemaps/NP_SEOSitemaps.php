@@ -209,9 +209,12 @@ class NP_SEOSitemaps extends NucleusPlugin
 										  . "     <ror:type>SiteMap</ror:type>\n"
 										  . "     </item>\n";
 						} else {
+							$bPriority = intval($this->getBlogOption($blog_id, 'blogPriority'));
+							if ($bPriority > 10) $bPriority = 10;
+							$bPriority = $bPriority / 10;
 							$sitemap[] = array(
 								'loc'        => $this->_prepareLink($SelfURL, $TempURL),
-								'priority'   => '1.0',
+								'priority'   => $bPriority,
 								'changefreq' => 'daily'
 							);
 						}
@@ -231,9 +234,13 @@ class NP_SEOSitemaps extends NucleusPlugin
 							$catLoc =$this->_prepareLink($SelfURL, $Link);
 
 							if (end($path_arr) != 'ror.xml') {
+								$cPriority = intval($this->getCategoryOption($cat_id, 'catPriority'));
+								if ($cPriority > 10) $priority = 10;
+								$sPriority = ($cPriority - 1) / 10;
+								$cPriority  = $cPriority / 10;
 								$sitemap[] = array(
 									'loc'        => $catLoc,
-									'priority'   => '1.0',
+									'priority'   => $cPriority,
 									'changefreq' => 'daily'
 								);
 							}
@@ -258,7 +265,7 @@ class NP_SEOSitemaps extends NucleusPlugin
 									if (end($path_arr) != 'ror.xml') {
 										$sitemap[] = array(
 											'loc'        => $scatLoc,
-											'priority'   => '1.0',
+											'priority'   => $sPriority,
 											'changefreq' => 'daily'
 										);
 									}
@@ -336,10 +343,13 @@ class NP_SEOSitemaps extends NucleusPlugin
 							$lastmod = gmdate('Y-m-d\TH:i:s', $itemTime) . $tz;
 
 							if (end($path_arr) != 'ror.xml') {
+								$iPriority = intval($this->getItemOption($item_id, 'itemPriority'));
+								if ($iPriority > 10) $iPriority = 10;
+								$iPriority = $iPriority / 10;
 								$sitemap[] = array(
 									'loc'        => $itemLoc,
 									'lastmod'    => $lastmod,
-									'priority'   => '1.0',
+									'priority'   => $iPriority,
 									'changefreq' => $fq
 								);
 							} else {
@@ -550,5 +560,8 @@ class NP_SEOSitemaps extends NucleusPlugin
 		$this->createBlogOption('YahooAPID',      _G_SITEMAP_YAPID,  'text',  '');
 		$this->createBlogOption('PcSitemap',      _G_SITEMAP_PCSM,   'text',  'sitemap.xml');
 		$this->createBlogOption('MobileSitemap',  _G_SITEMAP_MBSM,   'text',  '');
+		$this->createBlogOption('blogPriority',   _G_SITEMAP_BPRI,   'text',  '10', 'datatype=numerical');
+		$this->createCategoryOption('catPriority', _G_SITEMAP_CPRI,  'text',  '9', 'datatype=numerical');
+		$this->createItemOption('catPriority',    _G_SITEMAP_IPRI,   'text',  '10', 'datatype=numerical');
 	}
 }
