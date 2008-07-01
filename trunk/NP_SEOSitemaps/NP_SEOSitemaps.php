@@ -562,6 +562,6 @@ class NP_SEOSitemaps extends NucleusPlugin
 		$this->createBlogOption('MobileSitemap',  _G_SITEMAP_MBSM,   'text',  '');
 		$this->createBlogOption('blogPriority',   _G_SITEMAP_BPRI,   'text',  '10', 'datatype=numerical');
 		$this->createCategoryOption('catPriority', _G_SITEMAP_CPRI,  'text',  '9', 'datatype=numerical');
-		$this->createItemOption('catPriority',    _G_SITEMAP_IPRI,   'text',  '10', 'datatype=numerical');
+		$this->createItemOption('itemPriority',    _G_SITEMAP_IPRI,   'text',  '10', 'datatype=numerical');
 	}
 }
