@@ -39,6 +39,9 @@
   *               item posted time or comment posted time or item update time
   *               item update time generate by NP_UpdateTime
   *  1.1    Send Sitemaps to Yahoo!
+  *  1.2    Send Sitemaps to Live! Search
+  *         Cahge sitemap notification URI to yahoo.com No appid required
+  *         Add priority setting options
   **/
 
 class NP_SEOSitemaps extends NucleusPlugin
@@ -56,12 +59,12 @@ class NP_SEOSitemaps extends NucleusPlugin
 
 	function getURL()
 	{
-		return 'http://japan.nucleuscms.org/wiki/plugins:searchenginesitemapgenerator';
+		return 'http://japan.nucleuscms.org/wiki/plugins:seositemaps';
 	}
 
 	function getVersion()
 	{
-		return '1.1';
+		return '1.2';
 	}
 
 	function getDescription()
