@@ -1,11 +1,11 @@
 <h3>プラグインの概要</h3>
 
-<p>
+<div>
 
 NucleusCMSで作成したwebサイトのアイテム・カテゴリに好きな名前をつけて、静的URLとしてリンクを生成します。<br />
 <em style="color:#cc0000;">FancyURLモードでのみの動作、及びmod_Rewrite必須です</em><br />
 カテゴリ、サブカテゴリ、アーカイブリスト等を、それぞれディレクトリとみなし、カテゴリで絞り込んだ時は当該カテゴリのディレクトリにあるindexファイルを参照するイメージになります<br />
-<ul style="margin:0 0 25px 12px;">ex.
+<ul style="margin:0 0 25px 12px;"><li>ex.</li>
 <li>カテゴリへのアクセスのイメージ:
 <ul><li>http://example.jp/nucleuscms/</li></ul></li>
 <li>サブカテゴリへのアクセスのイメージ:
@@ -14,17 +14,17 @@ NucleusCMSで作成したwebサイトのアイテム・カテゴリに好きな�
 <ul><li>http://example.jp/archives/</li><li>http://example.jp/archives/nucleuscms/</li></ul></li>
 </ul>
 メンバーの詳細ページと個別アイテムページは、当該htmlファイルにアクセスするイメージになります<br />
-<ul style="margin:0 0 25px 12px;">ex.
+<ul style="margin:0 0 25px 12px;"><li>ex.</li>
 <li>http://example.jp/nucleuscms/plugins/NP_CustomURL.html</li>
 <li>http://example.jp/new_nucleus_comming_soon.html</li>
 <li>http://example.jp/member/Hiroyuki.html</li>
 </ul>
 
-</p>
+</div>
 
 <h3>インストール・動作開始手順</h3>
 
-<p>
+<div>
 
 <ol style="margin:0 0 25px 12px;">
 <li>ダウンロードしたファイルを解凍して出来た「NP_CustomURL.php」ファイルと「customurl」ディレクトリをサーバの plugins ディレクトリにアップロード後、「プラグインの管理」ページで「CustomURL」を選択して「プラグインのインストール」ボタンをクリックします<br />
@@ -63,11 +63,11 @@ RewriteRule ^(.*)$ index.php?curl=$1 [L,QSA]
 <li>タグ用「tag」ファイル(「NP_TagEX」「NP_MultiTags」両方対応。「NP_MultiTags」の「タグクエリー 」の変更にも対応しています)</li>
 <li>「NP_Trackback」のトラックバック受信専用「trackback」ファイル</li>
 </ul>
-</p>
+</div>
 
 <h3>使い方</h3>
 
-<p>
+<div>
 
 <ul>
 <li style="margin-top:3px;">ブログ・アイテム・カテゴリ・メンバーの編集ページにそれぞれオプションが追加してありますので、好きな名前をつけてください</li>
@@ -97,14 +97,14 @@ RewriteRule ^(.*)$ index.php?curl=$1 [L,QSA]
 <li style="margin-top:3px;">各ブログ毎にオプションで URI を変更する・しないを選択することが出来ます。このオプションを「使用しない」にした場合は、通常のFancyURLs(ex. http://example.jp/category/12/item/34)になります<br />
 	また「使用しない」にした場合でも、生成される URI が FancyURLs になるだけで、カスタマイズされた URI でリクエストがあった場合のリンクは成立しますので、このプラグインの使用をやめる場合などは外部からのリンクの書き換えが全て終わるまで、このオプションで「使用しない」を選択した状態での運用によってスムーズに移行できると思います</li>
 <li style="margin-top:3px;">デフォルトで生成されるURIの接頭語はオプション画面で変更できます</li>
-<li style="margin-top:3px;">アイテムの接頭語のみ、<%year%>、<%month%>、<%day%>の各変数が使用できます<br />この値を<%month%>-<%day%>とした場合、アイテムの投稿時に自動で作成されるURIは「08-21_(id)」のようになります</li>
+<li style="margin-top:3px;">アイテムの接頭語のみ、&lt;%year%&gt;、&lt;%month%&gt;、&lt;%day%&gt;の各変数が使用できます<br />この値を&lt;%month%&gt;-&lt;%day%&gt;とした場合、アイテムの投稿時に自動で作成されるURIは「08-21_(id)」のようになります</li>
 </ul>
 
-</P>
+</div>
 
 <h3>スキン・テンプレート変数</h3>
 
-<p>
+<div>
 スキン・テンプレート、及び記事中に記入することが出来ます<br />
 記入方法：<code>&lt;%CustomURL(リンク先, リンク文字列, リンクタイトル)%&gt;</code><br />
 <ul>
@@ -136,7 +136,7 @@ RewriteRule ^(.*)$ index.php?curl=$1 [L,QSA]
 </ul>
 スキン・テンプレート・記事共に、&lt;%CustomURL(123)%&gt;のように id のみを記入した場合は、その id を持つアイテムへの URI が書き出されます<br />
 またアイテムの場合のみ、&lt;%CustomURL(123/path)%&gt;と書くことで、item_123 のようにその id を持つアイテムに設定したパスを書き出すことが出来ます<br />
-</p>
+</div>
 
 <h3>動作報告・バグレポート</h3>
 
@@ -215,17 +215,17 @@ http://shizuki.kinezumi.net/NucleusCMS/Plugins/NP_CustomURL/NP_CustomURL.html</a
 
 <h3>プラグイン改造情報</h3>
 
-<p>
+<div>
 
 「NP_TagEX」と「NP_ContentsList」で 「http://example.jp/nucleuscms/plugins/tag/NP_CustomURL」 形式のリンクを表示させる方法<br />
 <br />
 「NP_TagEX」の場合<br />
 ・一番最後のファンクション<code>creatTagLink()</code>の最後の<code>return addLinkParams($link, $linkparams);</code>の直前に、次のコードを挿入します<br />
 <blockquote><pre style="overflow:auto;">global $manager;
-if ($manager->pluginInstalled('NP_CustomURL')) {
-    $customurls = $manager->getPlugin('NP_CustomURL');
-    $link = 'tag/' . $ready.$sep.$this->_rawencode($tag);
-    return $CONF['BlogURL'] . '/' . $customurls->_addLinkParams($link, $linkparams) . '/';
+if ($manager-&gt;pluginInstalled('NP_CustomURL')) {
+    $customurls = $manager-&gt;getPlugin('NP_CustomURL');
+    $link = 'tag/' . $ready.$sep.$this-&gt;_rawencode($tag);
+    return $CONF['BlogURL'] . '/' . $customurls-&gt;_addLinkParams($link, $linkparams) . '/';
 }
 </pre></blockquote>
 これでタグがURLの一番最後になります<br />
@@ -233,28 +233,28 @@ if ($manager->pluginInstalled('NP_CustomURL')) {
 「NP_ContentsList」の場合<br />
 ・<code>doSkinVar()</code>の467行目付近、<code>$catdata['catlink']</code>の生成が終了したところでサブカテゴリのリンクを生成する直前、
 <blockquote><pre style="overflow:auto;">// sub category ---
-if ($subcat && (!$subcurrent || $catid == $catdata['catid']) && !$subnoOpen) {
+if ($subcat &amp;&amp; (!$subcurrent || $catid == $catdata['catid']) &amp;&amp; !$subnoOpen) {
 </pre></blockquote>
 の前の行に
-<blockquote><pre style="overflow:auto;">if ($CONF['URLMode'] == 'pathinfo' && $manager->pluginInstalled('NP_CustomURL')) {
+<blockquote><pre style="overflow:auto;">if ($CONF['URLMode'] == 'pathinfo' &amp;&amp; $manager-&gt;pluginInstalled('NP_CustomURL')) {
     $catdata['catlink'] = createCategoryLink($catdata['catid']);
 }
 </pre></blockquote>の一行を追加して、カテゴリのリンクを上書きします<br />
 さらにそこからもう少し下の
-<blockquote><pre style="overflow:auto;">$subdata['sublink'] = addLinkParams($catdata['catlink'], array($subrequest => $subdata['subcatid']));
+<blockquote><pre style="overflow:auto;">$subdata['sublink'] = addLinkParams($catdata['catlink'], array($subrequest =&gt; $subdata['subcatid']));
 </pre></blockquote>
 となっている行の下に
 <blockquote><pre style="overflow:auto;">global $manager;
-if ($CONF['URLMode'] == 'pathinfo' && $manager->pluginInstalled('NP_CustomURL')) {
-    $customurls = $manager->getPlugin('NP_CustomURL');
-    $subdata['sublink'] = $customurls->_addLinkParams($catdata['catlink'], array($subrequest => $subdata['subcatid']));
+if ($CONF['URLMode'] == 'pathinfo' &amp;&amp; $manager-&gt;pluginInstalled('NP_CustomURL')) {
+    $customurls = $manager-&gt;getPlugin('NP_CustomURL');
+    $subdata['sublink'] = $customurls-&gt;_addLinkParams($catdata['catlink'], array($subrequest =&gt; $subdata['subcatid']));
 }
 </pre></blockquote>
 と追加、350行目付近の<code>$data['self'] = $data['blogurl'];</code>の前に
-<blockquote><pre style="overflow:auto;">if ($CONF['URLMode'] == 'pathinfo' && $manager->pluginInstalled('NP_CustomURL')) {
+<blockquote><pre style="overflow:auto;">if ($CONF['URLMode'] == 'pathinfo' &amp;&amp; $manager-&gt;pluginInstalled('NP_CustomURL')) {
     $data['blogurl'] = createBlogidLink($data['blogid']);
 }
 </pre></blockquote>
 を追加して終了です
 
-</p>
+</div>
