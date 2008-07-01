@@ -24,6 +24,8 @@
 	define('_PINGJP_PHP_PING_ERROR', '申し訳ありません。ping を送信中にエラーが発生しました。');
 	define('_PINGJP_SUCCESS',        '成功');
 	define('_PINGJP_FORMEXTRA',      '更新後 ping 送信しますか？');
-
+	define('_PINGJP_NON_DISPLAY',    '非表示モードで ping を送信しました。');
+	define('_PINGJP_BACKGROUND',     'バックグラウンドモードで ping を送信しました。');
+	
 
 

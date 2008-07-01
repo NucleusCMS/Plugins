@@ -32,8 +32,8 @@
   *   v1.61 - Merge Asynchronous request code(by hsur)
   *   v1.62 - Add background mode
   *
-  * NP_PingJP.php ($Revision: 1.6 $)
-  * $Id: NP_PingJP.php,v 1.6 2007-11-03 13:50:48 shizuki Exp $
+  * NP_PingJP.php ($Revision: 1.7 $)
+  * $Id: NP_PingJP.php,v 1.7 2008-07-01 09:52:15 shizuki Exp $
   **/
 
 
@@ -46,7 +46,88 @@ require("cles/AsyncHTTP/RawPost.php");
 class NP_PingJP extends NucleusPlugin
 {
 
-var $debug = false;
+var $ahttp;
+var $debug   = false;
+var $servers = array(
+	array(
+		'server' => 'pingomatic',
+		'name'   => _PINGJP_PINGOM,
+		'addr'   => 'http://rpc.pingomatic.com/',
+		'method' => 'weblogUpdates.ping',
+	),
+	array(
+		'server' => 'weblogs',
+		'name'   => _PINGJP_WEBLOGS,
+		'addr'   => 'http://rpc.weblogs.com/rpc2',
+		'method' => 'weblogUpdates.extendedPing',
+	),
+	array(
+		'server' => 'technorati',
+		'name'   => _PINGJP_TECHNOR,
+		'addr'   => 'http://rpc.technorati.com/rpc/ping',
+		'method' => 'weblogUpdates.ping',
+	),
+	array(
+		'server' => 'blogrolling',
+		'name'   => _PINGJP_BLOGR,
+		'addr'   => 'http://rpc.blogrolling.com/pinger/',
+		'method' => 'weblogUpdates.ping',
+	),
+	array(
+		'server' => 'google',
+		'name'   => _PINGJP_GOOGLE,
+		'addr'   => 'http://blogsearch.google.co.jp/ping/RPC2',
+		'method' => 'weblogUpdates.extendedPing',
+	),
+	array(
+		'server' => 'yahoo',
+		'name'   => _PINGJP_YAHOO,
+		'addr'   => 'http://api.my.yahoo.co.jp/RPC2',
+		'method' => 'weblogUpdates.ping',
+	),
+	array(
+		'server' => 'goo',
+		'name'   => _PINGJP_GOO,
+		'addr'   => 'http://blog.goo.ne.jp/XMLRPC',
+		'method' => 'weblogUpdates.ping',
+	),
+	array(
+		'server' => 'ask',
+		'name'   => _PINGJP_ASK,
+		'addr'   => 'http://ping.ask.jp/xmlrpc.m',
+		'method' => 'weblogUpdates.ping',
+	),
+	array(
+		'server' => 'blog360',
+		'name'   => _PINGJP_BLOG360,
+		'addr'   => 'http://ping.blog360.jp/rpc',
+		'method' => 'weblogUpdates.ping',
+	),
+	array(
+		'server' => 'pingoo',
+		'name'   => _PINGJP_PINGOO,
+		'addr'   => 'http://pingoo.jp/ping',
+		'method' => 'weblogUpdates.ping',
+	),
+	array(
+		'server' => 'blogs',
+		'name'   => _PINGJP_BLOGS,
+		'addr'   => 'http://ping.blo.gs/',
+		'method' => 'weblogUpdates.extendedPing',
+	),
+	array(
+		'server' => 'weblogues',
+		'name'   => _PINGJP_WEBLOGUES,
+		'addr'   => 'http://www.weblogues.com/RPC/',
+		'method' => 'weblogUpdates.extendedPing',
+	),
+	array(
+		'server' => 'bloggde',
+		'name'   => _PINGJP_BLOGGDE,
+		'addr'   => 'http://xmlrpc.blogg.de/ping',
+		'method' => 'bloggUpdates.ping',
+	),
+);
 
 	// {{{ function getName()
 
@@ -195,7 +276,7 @@ var $debug = false;
 		// Your blog URL
 		$this->createBlogOption('pingjp_updateurl',   _PINGJP_UPDURL,    'text',     '');
 		// Your RSS URL
-		$this->createBlogOption('pingjp_feedsurl',    _PINGJP_UPDFEED,   'text',     '');
+		$this->createBlogOption('pingjp_feedurl',     _PINGJP_UPDFEED,   'text',     '');
 	}
 
 	// }}}
@@ -308,7 +389,7 @@ var $debug = false;
 	function event_EditItemFormExtras($data)
 	{
 		?>
-		<div style="display:block">
+		<div id="np_pingjp_form" style="display:block">
 			<h3>NP_PingJP</h3>
 			<p>
 				<label for="np_pingjp_check"><?php echo _PINGJP_FORMEXTRA ?>:</label>
@@ -339,13 +420,14 @@ var $debug = false;
 			return;
 		}
 		if ($this->getBlogOption($data['blogid'], 'pingjp_background') == "yes") {
-			$directory = $this->getDirectory();
-			// TODO: Check
+//			$directory = $this->getDirectory();
+//			// TODO: Check
 //			if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
 //				system("start /b php " . $directory . "ping.php " . $data['blogid'] . " > nul"  );
 //			} else {
-				exec("php " . $directory . "ping.php " . $data['blogid'] . " > /dev/null &");
+//				exec("php " . $directory . "ping.php " . $data['blogid'] . " > /dev/null &");
 //			}
+			register_shutdown_function(array($this, 'sendPing'), $data['blogid'], 2)
 		} else {
 			$this->sendPings($data['blogid'], 1);
 		}
@@ -386,134 +468,25 @@ var $debug = false;
 	  *
 	  * @return void
 	  **/
-	function sendPing($myBlogId, $background = 0)
+	function sendPing($bid, $background = 0)
 	{
-		$targets = array();
-		if ($this->getBlogOption($myBlogId, 'pingjp_pingomatic') == 'yes') {
-			$data['name']  = _PINGJP_PINGOM;
-			$data['host']  = 'http://rpc.pingomatic.com/';
-			$data['meth']  = 'weblogUpdates.ping';
-			$targetHosts[] = $pinging;
-		}
+		$targets = $this->getPingingServers($bid)
 
-		if ($this->getBlogOption($myBlogId, 'pingjp_weblogs') == 'yes') { 
-			$data['name']  = _PINGJP_WEBLOGS;
-			$data['host']  = 'http://rpc.weblogs.com/rpc2';
-			$data['meth']  = 'weblogUpdates.extendedPing';
-			$targetHosts[] = $pinging;
-		}
-
-		if ($this->getBlogOption($myBlogId, 'pingjp_technorati') == 'yes') {
-			$data['name']  = _PINGJP_TECHNOR;
-			$data['host']  = 'http://rpc.technorati.com/rpc/ping';
-			$data['meth']  = 'weblogUpdates.ping';
-			$targetHosts[] = $pinging;
-		}
-
-		if ($this->getBlogOption($myBlogId, 'pingjp_blogrolling') == 'yes') {
-			$data['name']  = _PINGJP_BLOGR;
-			$data['host']  = 'http://rpc.blogrolling.com/pinger/';
-			$data['meth']  = 'weblogUpdates.ping';
-			$targetHosts[] = $pinging;
-		}
-
-		if ($this->getBlogOption($myBlogId, 'pingjp_google') == 'yes') {
-			$data['name']  = _PINGJP_GOOGLE;
-			$data['host']  = 'http://blogsearch.google.co.jp/ping/RPC2';
-			$data['meth']  = 'weblogUpdates.extendedPing';
-			$targetHosts[] = $pinging;
-		}
-
-		if ($this->getBlogOption($myBlogId, 'pingjp_yahoo') == 'yes') {
-			$data['name']  = _PINGJP_YAHOO;
-			$data['host']  = 'http://api.my.yahoo.co.jp/RPC2';
-			$data['meth']  = 'weblogUpdates.ping';
-			$targetHosts[] = $pinging;
-		}
-
-		if ($this->getBlogOption($myBlogId, 'pingjp_goo') == 'yes') {
-			$data['name']  = _PINGJP_GOO;
-			$data['host']  = 'http://blog.goo.ne.jp/XMLRPC';
-			$data['meth']  = 'weblogUpdates.ping';
-			$targetHosts[] = $pinging;
-		}
-
-		if ($this->getBlogOption($myBlogId, 'pingjp_ask') == 'yes') {
-			$data['name']  = _PINGJP_ASK;
-			$data['host']  = 'http://ping.ask.jp/xmlrpc.m';
-			$data['meth']  = 'weblogUpdates.ping';
-			$targetHosts[] = $pinging;
-		}
-
-		if ($this->getBlogOption($myBlogId, 'pingjp_blog360') == 'yes') {
-			$data['name']  = _PINGJP_BLOG360;
-			$data['host']  = 'http://ping.blog360.jp/rpc';
-			$data['meth']  = 'weblogUpdates.ping';
-			$targetHosts[] = $pinging;
-		}
-
-		if ($this->getBlogOption($myBlogId, 'pingjp_pingoo') == 'yes') {
-			$data['name']  = _PINGJP_PINGOO;
-			$data['host']  = 'http://pingoo.jp/ping';
-			$data['meth']  = 'weblogUpdates.ping';
-			$targetHosts[] = $pinging;
-		}
-
-		if ($this->getBlogOption($myBlogId, 'pingjp_blogs') == 'yes') {
-			$data['name']  = _PINGJP_BLOGS;
-			$data['host']  = 'http://ping.blo.gs/';
-			$data['meth']  = 'weblogUpdates.extendedPing';
-			$targetHosts[] = $pinging;
-		}
-
-		if ($this->getBlogOption($myBlogId, 'pingjp_weblogues') == 'yes') {
-			$data['name']  = _PINGJP_WEBLOGUES;
-			$data['host']  = 'http://www.weblogues.com/RPC/';
-			$data['meth']  = 'weblogUpdates.extendedPing';
-			$targetHosts[] = $pinging;
-		}
-
-		if ($this->getBlogOption($myBlogId, 'pingjp_bloggde') == 'yes') {
-			$data['name']  = _PINGJP_BLOGGDE;
-			$data['host']  = 'http://xmlrpc.blogg.de/ping';
-			$data['meth']  = 'bloggUpdates.ping';
-			$targetHosts[] = $pinging;
-		}
-
-		if ($this->getBlogOption($myBlogId, 'pingjp_otherurl') != '') {
-			$others  = $this->getBlogOption($myBlogId, 'pingjp_otherurl');
-			$servers = preg_split("/[\s,]+/", $others);
-			foreach ($servers as $target) {
-				if (strpos($target, ',')) {
-					list($url, $method) = explode(',', $target);
-					$parsed = parse_url($url);
-					if ($method == 'ex') {
-						$method = 'weblogUpdates.extendedPing';
-					}
-				} else {
-					$parsed = parse_url($target);
-					$method = 'weblogUpdates.ping';
-				}
-				$data['name']  = $parsed['host'];
-				$data['host']  = $target;
-				$data['meth']  = $method;
-				$targetHosts[] = $pinging;
-			}
-		}
-		$this->ahttp = new cles_AsyncHTTP_RawPost();
+		$this->ahttp            = new cles_AsyncHTTP_RawPost();
 		$this->ahttp->userAgent = "Nucleus(NP_PingJP Plugin)";
 		$this->ahttp->timeout   = 15;
+
 		$header   = "Accept-Charset: UTF-8\r\nContent-Type: text/xml\r\n";
 		$messages = array();
 		if ($background == 1) {
-			$logMsg = 'NP_PingJP: Sending ping (from non display mode)';
+			$logMsg = 'NP_PingJP: ' . _PINGJP_NON_DISPLAY;
 			ACTIONLOG::add(INFO, $logMsg);
 		} elseif ($background == 2) {
-			$logMsg = 'NP_PingJP: Sending ping (from background mode)';
+			$logMsg = 'NP_PingJP: ' . _PINGJP_BACKGROUND;
 			ACTIONLOG::add(INFO, $logMsg);
 		}
-		foreach ($targetHosts as $targetHost) {
-			$res = $this->sendUpdatePing($myBlogId, $targetHost, $header);
+		foreach ($targets as $target) {
+			$res = $this->sendUpdatePing($bid, $target, $header);
 			if ($background == 0) {
 				echo _PINGJP_PINGING . $target['name'] . ':<br />';
 			}
@@ -521,9 +494,9 @@ var $debug = false;
 		}
 		$responses = $this->ahttp->getResponses();
 		foreach ($messages as $id => $message) {
-			$target = $targetHosts[$id]['name'];
+			$target = $targets[$id]['name'];
 			if (isset($responses[$id])) {
-				$response = $msg->parseResponse($responses[$id]);
+				$response = $message->parseResponse($responses[$id]);
 				$results  = $this->processPingResult($response);
 			} else {
 				$message  = $this->ahttp->getErrorNo($id);
@@ -547,12 +520,12 @@ var $debug = false;
 			}
 			$logMsg = $target . ' : ' . $results['message'];
 			if ($results['error']) {
-				ACTIONLOG::add(WARNING, 'NP_PingJP Errror: ' . $logMsg);
+				ACTIONLOG::add(WARNING, 'NP_PingJP Error: ' . $logMsg);
 			} elseif ($this->debug) {
 				ACTIONLOG::add(INFO, 'NP_PingJP Pinged: ' . $logMsg);
 			}
 			if ($background == 0) {
-				echo $logMsg . '<br />';
+				echo $logMsg . "<br />\n";
 			}
 		}
 	}
@@ -575,46 +548,36 @@ var $debug = false;
 	  *
 	  * @return void
 	  **/
-	function sendUpdatePing($myBlogId, $pingServer, $header)
+	function sendUpdatePing($bid, $server, $header)
 	{
-		global $manager, $DIR_LIBS;
+		global $manager;
 		if (!class_exists('xmlrpcmsg')) {
 			global $DIR_LIBS;
 			include($DIR_LIBS . 'xmlrpc.inc.php');
-			$GLOBALS['xmlrpc_internalencoding']=mb_internal_encoding();
+			$GLOBALS['xmlrpc_internalencoding'] = mb_internal_encoding();
 		}
-		$b    =& $manager->getBlog($myBlogId);
+		$b    =& $manager->getBlog($bid);
 		$name =  $b->getName();
-		$burl =  $this->getBlogOption($myBlogId, 'pingjp_updateurl');
+		$burl =  $this->getBlogOption($bid, 'pingjp_updateurl');
 		if (!$burl) {
 			$burl = $b->getURL();
 		}
-		if (_CHARSET != 'ISO-8859-1' &&
-			_CHARSET != 'US-ASCII' &&
-			_CHARSET != 'UTF-8' &&
-			function_exists('mb_convert_encoding')
-		) {
+		if (_CHARSET != 'UTF-8') {
 			mb_convert_encoding($name, 'UTF-8', _CHARSET);
 		}
-		$data = array(
-			new xmlrpcval($name),
-			new xmlrpcval($burl)
-		);
-		if ($pingServer['meth'] == 'weblogUpdates.extendedPing') {
-			$feedURL = $this->getBlogOption($myBlogid, 'pingjp_feedsurl');
+		$data[1] = new xmlrpcval($name),
+		$data[2] = new xmlrpcval($burl)
+		if ($server['method'] == 'weblogUpdates.extendedPing') {
+			$feedURL = $this->getBlogOption($myBlogid, 'pingjp_feedurl');
 			if (!$feedURL) {
-				if (substr($burl, -1) != '/') {
-					$base = $burl . '/';
-				} else {
-					$base = $burl;
-				}
-				$feedURL = $base . 'xml-rss2.php?blogid=' . $myBlogId;
+				global $CONF;
+				$feedURL = $CONF['IndexURL'] . 'xml-rss2.php?blogid=' . $bid;
 			}
 			$data[3] = new xmlrpcval($burl);
 			$data[4] = new xmlrpcval($feedURL);
 		}
-		$message  = new xmlrpcmsg($pingServer['meth'], $data);
-		$reqestId = $this->ahttp->setRequest($target, 'POST', $header, $message->serialize());
+		$message  = new xmlrpcmsg($server['method'], $data);
+		$reqestId = $this->ahttp->setRequest($server['addr'], 'POST', $header, $message->serialize());
 		return array($reqestId, &$message);
 	}
 
@@ -643,13 +606,13 @@ var $debug = false;
 							. ' : ' . $response->errstring;
 		} elseif (($response == 0) && ($php_errormsg)) {
 			$ret['error']   = true;
-			$ret['message'] = _PINGJP_PHP_ERROR . $php_errormsg;
+			$ret['message'] = _PINGJP_PHP_ERROR . ' ' . $php_errormsg;
 		} elseif ($response == 0) {
 			$ret['error']   = true;
 			$ret['message'] = _PINGJP_PHP_PING_ERROR;
 		} elseif ($response->faultCode() != 0) {
 			$ret['error']   = true;
-			$ret['message'] = _PINGJP_ERROR . ': ' . $response->faultString();
+			$ret['message'] = _PINGJP_ERROR . ' : ' . $response->faultString();
 		} else {
 			$struct = $response->value();	// get response struct
 			// get values
@@ -669,6 +632,55 @@ var $debug = false;
 	}
 
 	// }}}
+	// {{{ function getPingingServers($bid)
 
-
+	/**
+	  * Process pinging result
+	  *
+	  * @param  intger
+	  *     blog ID
+	  *
+	  * @return array
+	  *     targets : array
+	  *               server : string
+	  *                        ping server
+	  *               name   : string
+	  *                        ping server name
+	  *               host   : string
+	  *                        server host addr.
+	  *               method : string
+	  *                        update ping method
+	  **/
+	function gerPingServers($bid)
+	{
+		$servers = $this->servers;
+		$targets = array();
+		foreach ($servers as $key => $server) {
+			$info = $this->getBlogOption(intval($bid), 'pingjp_' . $server['server']);
+			if ($info != 'no') {
+				$targets[] = $server;
+			}
+		}
+		$others  = $this->getBlogOption($myBlogId, 'pingjp_otherurl');
+		if ($others != '') {
+			$servers = preg_split("/[\s,]+/", $others);
+			foreach ($servers as $server) {
+				if (strpos($server, ',')) {
+					list($url, $method) = explode(',', $server);
+					$parsed = parse_url($url);
+					if ($method == 'ex') {
+						$method = 'weblogUpdates.extendedPing';
+					}
+				} else {
+					$parsed = parse_url($server);
+					$method = 'weblogUpdates.ping';
+				}
+				$targets[]['server'] = $parsed['host'];
+				$targets[]['name']   = $parsed['host'];
+				$targets[]['addr']   = $server;
+				$targets[]['method'] = $method;
+			}
+		}
+		return $targets;
+	}
 }

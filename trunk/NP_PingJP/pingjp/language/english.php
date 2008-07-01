@@ -11,7 +11,7 @@
 	define('_PINGJP_ASK',            'ask');
 	define('_PINGJP_BLOGR',          'Blogrolling.com');
 	define('_PINGJP_BLOGS',          'Blo.gs (no longer works?)');
-	define('_PINGJP_WEBLOGUES',      'Weblogues (ƒtƒ‰ƒ“ƒX‚©‚ç‚Ì‚ÝŽó•t)(no longer works?)');
+	define('_PINGJP_WEBLOGUES',      'Weblogues (ï¿½tï¿½ï¿½ï¿½ï¿½ï¿½Xï¿½ï¿½ï¿½ï¿½Ì‚ÝŽï¿½t)(no longer works?)');
 	define('_PINGJP_BLOGGDE',        'Blogg.de (not working??)');
 	define('_PINGJP_BG',             'Ping from background when a future post first appears');
 	define('_PINGJP_UPDURL',         'Blog URI send to ping servers');
@@ -23,4 +23,6 @@
 	define('_PINGJP_PHP_PING_ERROR', 'Error while trying to send ping. Sorry about that.');
 	define('_PINGJP_SUCCESS',        'Success');
 	define('_PINGJP_FORMEXTRA',      'Send ping when you edit ITEM ?');
-
+	define('_PINGJP_NON_DISPLAY',    'Sending WeblogsUpdatePing at non display mode.');
+	define('_PINGJP_BACKGROUND',     'Sending WeblogsUpdatePing at non background mode.');
+	
