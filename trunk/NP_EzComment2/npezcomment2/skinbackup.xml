@@ -1,7 +1,7 @@
 <nucleusskin>
 	<meta>
 		<template name="EzCommentTemplateDefault" />
-		<info><![CDATA[Comment form template for NP_EzComment2]]></info>
+		<info><![CDATA[Comment list/form template for NP_EzComment2]]></info>
 	</meta>
 
 
