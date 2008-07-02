@@ -1,6 +1,7 @@
 <?php
 
 //history
+//	0.80:	Fixed bug (by nakahara21)
 //	0.72:	Internationalize.
 //			Fixed typo.
 //	0.71:	Fixed security issue.
@@ -25,7 +26,7 @@ class NP_UpdateTime extends NucleusPlugin
 
 	function getVersion()
 	{
-		return '0.72';
+		return '0.80';
 	}
 
 	function getDescription()
@@ -69,7 +70,8 @@ class NP_UpdateTime extends NucleusPlugin
 		$this->createOption('DefautMode', _UPDATETIME_DEFAULT_MODE, 'select', '1', _UPDATETIME_DEFAULT_MODE_VALUE);
 		$this->createOption('BeforeTime', _UPDATETIME_BEFORE_TIME,  'text',        _UPDATETIME_BEFORE_TIME_VALUE);
 		$this->createOption('AfterTime',  _UPDATETIME_AFTER_TIME,   'text',        _UPDATETIME_AFTER_TIME_VALUE);
-		$this->createOption('DateFormat', _UPDATETIME_DATE_FORMAT,  'text',        'Y-m-d H:i:s');
+		$this->createOption('Locale',     _UPDATETIME_DATE_LOCALE,  'text',        'ja_JP.' . _CHARSET);
+		$this->createOption('DateFormat', _UPDATETIME_DATE_FORMAT,  'text',        '%Y-%m-%d %H:%M:%S');
 		$this->createOption('sLists',     _UPDATETIME_S_LISTS,      'text',        '<ul class="nobullets">');
 		$this->createOption('eLists',     _UPDATETIME_E_LISTS,      'text',        '</ul>');
 		$this->createOption('sItems',     _UPDATETIME_S_ITEMS,      'text',        '<li>');
@@ -105,9 +107,9 @@ class NP_UpdateTime extends NucleusPlugin
 		$updateOver = _UPDATETIME_OVERWRITE;
 		$recordOnly = _UPDATETIME_RECORDEONLY;
 		$noAction   = _UPDATETIME_NOACTION;
-		$printData  = '<h3 style="margin-bottom:0;">' . $updateMode . "</h3>\n"
+		$printData  = '<h3 id="np_updatetime_ares" style="margin-bottom:0;">' . $updateMode . "</h3>\n"
 					. '<input type="radio" name="updatetime" value="2" id="updatetime_2"' . $checkedFlag[2] . ' />'
-					. '<label for="updatetime_2">' . $updateOverwrite . "</label><br />\n"
+					. '<label for="updatetime_2">' . $updateOver . "</label><br />\n"
 					. '<input type="radio" name="updatetime" value="1" id="updatetime_1"' . $checkedFlag[1] . ' />'
 					. '<label for="updatetime_1">' . $recordOnly . "</label><br />\n"
 					. '<input type="radio" name="updatetime" value="0" id="updatetime_0"' . $checkedFlag[0] . ' />'
@@ -127,6 +129,9 @@ class NP_UpdateTime extends NucleusPlugin
 
 		$updatetime = mysqldate($data['blog']->getCorrectTime());
 		if ($recd == 2) {
+			$upQuery    = 'UPDATE ' . sql_table('item')
+						. ' SET   itime   = ' . $updatetime
+						. ' WHERE inumber = ' . intval($data['itemid']);
 			$upTimeQue  = 'SELECT itime as result '
 						. 'FROM ' . sql_table('item')
 						. ' WHERE inumber=' . intval($data['itemid']);
@@ -134,10 +139,7 @@ class NP_UpdateTime extends NucleusPlugin
 						. 'FROM ' . sql_table('plugin_rectime')
 						. ' WHERE up_id = ' . intval($data['itemid']);
 			$updatetime = '"' . quickQuery($upTimeQue) . '"';
-			$tmptime = '"' . quickQuery($tmpTimeQue) . '"';
-			$upQuery    = 'UPDATE ' . sql_table('item')
-						. ' SET   itime   = ' . $updatetime
-						. ' WHERE inumber = ' . intval($data['itemid']);
+			$tmptime    = '"' . quickQuery($tmpTimeQue) . '"';
 			if ($tmptime > $updatetime) {
 				$updatetime = $tmptime;
 			}
@@ -149,7 +151,7 @@ class NP_UpdateTime extends NucleusPlugin
 		$query = 'INSERT INTO ' . sql_table('plugin_rectime')
 			   . ' (up_id, updatetime) '
 			   . 'VALUES'
-			   . ' (' . intval($data['itemid']) . ', "' . $updatetime . '")';
+			   . ' (' . intval($data['itemid']) . ', ' . $updatetime . ')';
 		$res   = sql_query($query);
 		if (strpos($res, 'mySQL')) {
 			return '<p>Could not save data: ' . $res;
@@ -219,6 +221,7 @@ class NP_UpdateTime extends NucleusPlugin
 
 	function doTemplateVar(&$item)
 	{
+		setlocale(LC_TIME, $this->getOption('Locale'));
 		$query = 'SELECT'
 			   . '   r.up_id,'
 			   . '   UNIX_TIMESTAMP(r.updatetime) as updatetime,'
@@ -231,7 +234,8 @@ class NP_UpdateTime extends NucleusPlugin
 			   . ' and r.up_id = i.inumber';
 		$res   = sql_query($query);
 		if ($row = mysql_fetch_assoc($res)) {
-			$data['utime'] = date($this->getOption('DateFormat'), $row['updatetime']);
+//			$data['utime'] = date($this->getOption('DateFormat'), $row['updatetime']);
+			$data['utime'] = strftime($this->getOption('DateFormat'), $row['updatetime']);
 			if ($row['updatetime'] > $row['itemtime']) {
 				echo TEMPLATE::fill($this->getOption('AfterTime'), $data);
 			} elseif ($row['updatetime'] < $row['itemtime']) {
