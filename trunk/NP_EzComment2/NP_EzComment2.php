@@ -2,6 +2,8 @@
 
 class NP_EzComment2 extends NucleusPlugin
 {
+	var $loggedin = false;
+
 	function getName()
 	{
 		return 'Ez Comment II';
@@ -37,9 +39,27 @@ class NP_EzComment2 extends NucleusPlugin
 		}
 	}
 
+	function getEventList()
+	{
+		global $manager;
+		return array(
+			'ExternalAuth'
+		);
+	}
+
+	function event_ExternalAuth(&$data)
+	{
+		global $manager;
+		$authPlug =& $manager->getPlugin('NP_' . $data['externalauth']['source']);
+		if( $authPlug->isLoggedin() ){
+			$data['externalauth']['result'] = true;
+			$data['externalauth']['plugin'] = $this->getName();
+		}
+	}
+
 	function install()
 	{
-		if (!TEMPLATE::exists('EzCommentFormDefault')) {
+		if (!TEMPLATE::exists('EzCommentTemplateDefault')) {
 			global $DIR_LIBS;
 			include_once($DIR_LIBS . 'skinie.php');
 			$importer = new SKINIMPORT();
@@ -60,10 +80,23 @@ class NP_EzComment2 extends NucleusPlugin
 				continue;
 			}
 			if ($aErrors) {
-				$message = implode("<br />\n", $$aErrors);
+				$message = implode("<br />\n", $aErrors);
 				doError($message);
 			}
+			createBlogOption('secret', 'Enable seacret comment ?', 'yesno', 'no');
+			createOption('tabledel', 'Database table drop when uninstall ?', 'yesno', 'no');
+			$sql = 'CREATE TABLE IF NOT EXISTS %s ('
+				 . 'comid  int(11) NOT NULL,'
+				 . 'secflg int(11) NOT NULL,'
+				 . 'PRIMARY KEY(comid) );';
+			sql_query(sprintf($sql, sql_table('plug_ezcomment2')));
 		}
+	}
+
+	function uninstall()
+	{
+		if ($this->getOption('tabledel') == 'yes')
+			sql_query('DROP TABLE '.sql_table('plug_ezcomment2'));
 	}
 
 	function init()
@@ -81,8 +114,8 @@ class NP_EzComment2 extends NucleusPlugin
 							$showType       = '',
 							$showMode       = '5/1/1',
 							$destinationurl = '',
-							$formTemplate   = 'EzCommentFormDefault',
-							$listTemplate   = 'EzCommentListDefault')
+							$formTemplate   = 'EzCommentTemplateDefault',
+							$listTemplate   = 'EzCommentTemplateDefault')
 	{
 		$this->doSkinVar('template', $showType, $showMode, $destinationurl, $formTemplate, $listTemplate, $item);
 	}
@@ -91,12 +124,12 @@ class NP_EzComment2 extends NucleusPlugin
 					   $showType       = '',
 					   $showMode       = '5/1/1',
 					   $destinationurl = '',
-					   $formTemplate   = 'EzCommentFormDefault',
-					   $listTemplate   = 'EzCommentListDefault',
+					   $formTemplate   = 'EzCommentTemplateDefault',
+					   $listTemplate   = 'EzCommentTemplateDefault',
 					  &$commentItem    = '')
 	{
-		global $manager, $member, $itemid;
 		if ($skinType != 'item' && $skinType != 'template') return;
+		global $manager, $member, $itemid;
 		if (!$commentItem && $itemid) {
 			$commentItem = $manager->getItem($itemid, 0, 0);
 			if (is_array($commentItem)) {
@@ -119,8 +152,8 @@ class NP_EzComment2 extends NucleusPlugin
 		if (!$maxToShow) $maxToShow = 5;
 		if (!$sortOrder) $sortOrder = 1;
 		if (!$commentOrder) $commentOrder = 1;
-		if (!$formTemplate) $formTemplate = 'EzCommentFormDefault';
-		if (!$listTemplate) $listTemplate = 'EzCommentListDefault';
+		if (!$formTemplate) $formTemplate = 'EzCommentTemplateDefault';
+		if (!$listTemplate) $listTemplate = 'EzCommentTemplateDefault';
 
 		switch ($showType) {
 			case 'list':
