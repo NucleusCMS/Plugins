@@ -2,8 +2,8 @@
 
 class NP_EzComment2 extends NucleusPlugin
 {
-	var $isLoggedin = false;
-	var $isMemberLoggedin = false;
+	var $authModule  = null;
+	var $flgLoggedin = false;
 
 	function getName()
 	{
@@ -51,17 +51,22 @@ class NP_EzComment2 extends NucleusPlugin
 
 	function event_ExternalAuth(&$data)
 	{
-		if ($this->isLoggedin) return;
+		if ($this->flgLoggedin) return;
 		global $manager;
-		$authPlug =& $manager->getPlugin('NP_' . $data['externalauth']['source']);
-		if( $authPlug->isLoggedin() ){
-			$this->isLoggedin = true;
+		$pluginName = 'NP_' . $data['externalauth']['source'];
+		if ($manager->pluginInstalled($pluginName)) {
+			$authPlugin =& $manager->getPlugin($pluginName);
+			if( $authPlugin->isLoggedin() ){
+				$this->flgLoggedin = true;
+				$this->authModule  = $authPlugin;
+			}
 		}
 	}
 
 	function event_LoginSuccess($data)
 	{
-		$this->isMemberLoggedin = true;
+		$this->flgLoggedin = true;
+		$this->authModule  = $data['member'];
 	}
 
 	function install()
@@ -90,13 +95,16 @@ class NP_EzComment2 extends NucleusPlugin
 				$message = implode("<br />\n", $aErrors);
 				doError($message);
 			}
-			createBlogOption('secret', 'Enable seacret comment ?', 'yesno', 'no');
-			createOption('tabledel', 'Database table drop when uninstall ?', 'yesno', 'no');
+			createBlogOption('secret',     _NP_EZCOMMENT2_OP_SECRETMODE,  'yesno', 'no');
+			createBlogOption('secComment', _NP_EZCOMMENT2_OP_SUBSTIUTION, 'text',  _NP_EZCOMMENT2_OP_SUBSTIUTION_VAL);
+			createBlogOption('secLabel',   _NP_EZCOMMENT2_OP_CHECKLABEL,  'text',  _NP_EZCOMMENT2_OP_CHECKLABEL_VAL);
+			createOption('tabledel',       _NP_EZCOMMENT2_OP_DROPTABLE,   'yesno', 'no');
 			$sql = 'CREATE TABLE IF NOT EXISTS %s ('
-				 . 'comid  int(11) NOT NULL,'
-				 . 'secflg int(11) NOT NULL,'
-				 . 'PRIMARY KEY(comid) );';
+				 . '`comid`  int(11) NOT NULL,'
+				 . '`secflg` tinyint(1) NULL,'
+				 . 'PRIMARY KEY(`comid`) );';
 			sql_query(sprintf($sql, sql_table('plug_ezcomment2')));
+			$this->updateTable();
 		}
 	}
 
@@ -116,6 +124,15 @@ class NP_EzComment2 extends NucleusPlugin
 		}
 	}
 
+	function updateTable()
+	{
+		$sql = 'SELECT cnumber FROM ' . sql_table('comment') . ' ORDER BY cnumber';
+		$res = sql_query($sql);
+		$sql = 'INSERT INTO ' . sql_table('plug_ezcomment2') . '(`comid`) VALUES (%d)';
+		while ($cid = mysql_fetch_assoc($res)) {
+			sql_query(sprintf($sql, $cid['cnumber']));
+		}
+	}
 
 	function doTemplateVar(&$item,
 							$showType       = '',
@@ -296,9 +313,12 @@ class NP_EzComment2 extends NucleusPlugin
 			   . 'c.ctime, '
 			   . 'c.chost   as host, '
 			   . 'c.cip     as ip, '
-			   . 'c.cblog   as blogid'
-			   . ' FROM ' . sql_table('comment') . ' as c'
-			   . ' WHERE c.citem=' . intval($commentItem->itemid)
+			   . 'c.cblog   as blogid, '
+			   . 's.secflg  as secret'
+			   . ' FROM ' . sql_table('comment') . ' as c, '
+			   .            sql_table('plug_ezcomment2') . ' as s '
+			   . ' WHERE c.citem = ' . intval($commentItem->itemid) . ', '
+			   . ' AND   s.comid = c.cnumber '
 			   . ' ORDER BY c.ctime '
 			   . $order;
 		if ($maxToShow) {
@@ -311,11 +331,29 @@ class NP_EzComment2 extends NucleusPlugin
 		$comments = sql_query($query);
 		$viewnum  = mysql_num_rows($comments);
 		$actions->setViewnum($viewnum);
+		if ($this->getBlogOption($bid, 'secret') == 'yes') {
+			$secretMode = true;
+			if ($this->flgLoggedin)
+				$secretComments = $this->getSecretComments();
+		}
 
 		$parser->parse($template['COMMENTS_HEADER']);
 
 		while ( $comment = mysql_fetch_assoc($comments) ) {
 			$comment['timestamp'] = strtotime($comment['ctime']);
+			if ($comment['secret']) {
+				global $member;
+				if (!$this->flgLoggedin ||
+					( !$menber->blogAdminRights($bid) &&
+					  !in_array($comment['commentid'], $secretComments)) )
+				{
+					$comment['body']   = $this->getBlogOption($bid, 'secComment');
+					$comment['userid'] = $b->getURL();
+					$comment['email']  = '#';
+					$comment['host']   = '127.0.0.1';
+					$comment['ip']     = '127.0.0.1';
+				}
+			}
 			$actions->setCurrentComment($comment);
 			$manager->notify('PreComment', array('comment' => &$comment));
 			$parser->parse($template['COMMENTS_BODY']);

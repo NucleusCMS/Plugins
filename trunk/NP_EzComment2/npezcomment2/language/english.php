@@ -8,3 +8,10 @@ define('_NP_EZCOMMENT2_DESC', 'Insert a comment form and a list of comments.'
 define('_NP_EZCOMMENT2_FORM_TEMPLATES',   'NP_EzComment2 CommentForm Template');
 define('_NP_EZCOMMENT2_FORM_LOGGEDIN',    'Comment form for loggedin');
 define('_NP_EZCOMMENT2_FORM_NOTLOGGEDIN', 'Comment form for not loggedin');
+
+define('_NP_EZCOMMENT2_OP_SECRETMODE',      'Is the secret mode made effective ?');
+define('_NP_EZCOMMENT2_OP_SUBSTIUTION',     'Substitution seacret comment.');
+define('_NP_EZCOMMENT2_OP_CHECKLABEL',      'Label in a check box.');
+define('_NP_EZCOMMENT2_OP_DROPTABLE',       'When uninstalling, is a table eliminated ?');
+define('_NP_EZCOMMENT2_OP_SUBSTIUTION_VAL', 'Only an administrator can read this comment.');
+define('_NP_EZCOMMENT2_OP_CHECKLABEL_VAL',  'Indication is permitted only an administrator.');
