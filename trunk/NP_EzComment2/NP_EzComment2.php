@@ -2,7 +2,8 @@
 
 class NP_EzComment2 extends NucleusPlugin
 {
-	var $loggedin = false;
+	var $isLoggedin = false;
+	var $isMemberLoggedin = false;
 
 	function getName()
 	{
@@ -43,18 +44,24 @@ class NP_EzComment2 extends NucleusPlugin
 	{
 		global $manager;
 		return array(
-			'ExternalAuth'
+			'ExternalAuth',
+			'LoginSuccess',
 		);
 	}
 
 	function event_ExternalAuth(&$data)
 	{
+		if ($this->isLoggedin) return;
 		global $manager;
 		$authPlug =& $manager->getPlugin('NP_' . $data['externalauth']['source']);
 		if( $authPlug->isLoggedin() ){
-			$data['externalauth']['result'] = true;
-			$data['externalauth']['plugin'] = $this->getName();
+			$this->isLoggedin = true;
 		}
+	}
+
+	function event_LoginSuccess($data)
+	{
+		$this->isMemberLoggedin = true;
 	}
 
 	function install()
