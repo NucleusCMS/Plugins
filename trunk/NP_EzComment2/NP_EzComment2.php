@@ -46,12 +46,16 @@ class NP_EzComment2 extends NucleusPlugin
 		return array(
 			'ExternalAuth',
 			'LoginSuccess',
+			'FormExtra',
+			'PostAddComment',
 		);
 	}
 
 	function event_ExternalAuth(&$data)
 	{
 		if ($this->flgLoggedin) return;
+		$authPlugins = array('OpenId');
+		if (!in_array($data['externalauth']['source'], $authPlugins)) return;
 		global $manager;
 		$pluginName = 'NP_' . $data['externalauth']['source'];
 		if ($manager->pluginInstalled($pluginName)) {
@@ -67,6 +71,23 @@ class NP_EzComment2 extends NucleusPlugin
 	{
 		$this->flgLoggedin = true;
 		$this->authModule  = $data['member'];
+	}
+
+	function event_PostAddComment($data) {
+		global $manager;
+		$comment = $data['comment'];
+		if (intval(getNucleusVersion()) >= 330) {
+			$email = $comment['email'];
+		} else {
+			$email = $comment['userid'];
+		}
+		if (postVar('EzComment2_Secret')) {
+			$secCheck = 1;
+		} else {
+			$secCheck = 0;
+		}
+		$sql = 'INSERT INTO ' . sql_table('plug_ezcomment2') . '(`comid`, `secflg`) VALUES (%d, %d)';
+		sql_query(sprintf($sql, $comment['commentid'], $secCheck));
 	}
 
 	function install()
@@ -108,6 +129,12 @@ class NP_EzComment2 extends NucleusPlugin
 		}
 	}
 
+	function event_FormExtra(&$data) {
+		$this->numcalled++;
+		echo '<br /><input type="checkbox" value="1" name="EzComment2_Secret" id="EzComment2_Secret_' . $this->numcalled . '" />';
+		echo '<label for="EzComment2_Secret_' . $this->numcalled . '">'.$this->getOption('secLabel').'</label><br />';
+	}
+
 	function uninstall()
 	{
 		if ($this->getOption('tabledel') == 'yes')
@@ -122,6 +149,7 @@ class NP_EzComment2 extends NucleusPlugin
 		} else {
 			include_once($this->getDirectory() . 'language/english.php');
 		}
+		$this->numcalled = 0;
 	}
 
 	function updateTable()
