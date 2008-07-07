@@ -1,35 +1,136 @@
 <?php
+/**
+ * SHOW Comment Form/List PLUG-IN FOR NucleusCMS
+ * PHP versions 5
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * (see nucleus/documentation/index.html#license for more info)
+ *
+ * @author    shizuki
+ * @copyright 2008 shizuki
+ * @license   http://www.gnu.org/licenses/gpl.txt  GNU GENERAL PUBLIC LICENSE Version 2, June 1991
+ * @version   $Date: 2008-07-07 10:24:00 $ $Revision: 1.7 $
+ * @link      http://japan.nucleuscms.org/wiki/plugins:showblogs
+ * @since     File available since Release 1.0
+ */
+
+/**
+ * version history
+ *
+ * $Log: not supported by cvs2svn $
+ **/
 
 class NP_EzComment2 extends NucleusPlugin
 {
-	var $authModule  = null;
-	var $flgLoggedin = false;
+	// {{{ properties
 
+	/**
+	 * The calling number of times by the index page.
+	 *
+	 * @var integer
+	 */
+	var $numcalled;
+
+	/**
+	 * OpenID authentication module.
+	 *
+	 * @var object
+	 */
+	var $authOpenID;
+
+	// }}}
+	// {{{ getName()
+
+	/**
+	 * Plugin Name
+	 *
+	 * @return string
+	 */
 	function getName()
 	{
 		return 'Ez Comment II';
 	}
 
+	// }}}
+	// {{{ getAuthor()
+
+	/**
+	 * Author Name
+	 *
+	 * @return string
+	 */
 	function getAuthor()
 	{
 		return 'shizuki';
 	}
 
+	// }}}
+	// {{{ getURL()
+
+	/**
+	 * I get a plug-in, the address of the possible site or author's mail address.
+	 *
+	 * @return string
+	 */
 	function getURL()
 	{
 		return 'http://japan.nucleuscms.org/wiki/plugins:ezcomment2';
 	}
 
-	function getVersion()
+	// }}}
+	// {{{ getPluginDep()
+
+	/**
+	 * Plugin Dependency.
+	 *
+	 * @return array
+	 */
+	function getPluginDep()
 	{
-		return '1.0';
+		return array(
+			'NP_OpenIdt',
+			'NP_znSpecialTemplateParts',
+		);
 	}
 
+	// }}}
+	// {{{ getVersion()
+
+	/**
+	 * Plugin Version.
+	 *
+	 * @return string
+	 */
+	function getVersion()
+	{
+		return '$Date: 2008-07-07 10:24:00 $ $Revision: 1.7 $';
+	}
+
+	// }}}
+	// {{{ getDescription()
+
+	/**
+	 * Plugin Description
+	 *
+	 * @return string
+	 */
 	function getDescription()
 	{
 		return  _NP_EZCOMMENT2_DESC;
 	}
 
+	// }}}
+	// {{{ supportsFeature($what)
+
+	/**
+	 * Supports Nucleus Feature
+	 *
+	 * @param  string
+	 * @return boolean
+	 */
 	function supportsFeature($what)
 	{
 		switch ($what) {
@@ -40,59 +141,49 @@ class NP_EzComment2 extends NucleusPlugin
 		}
 	}
 
+	// }}}
+	// {{{ getEventList()
+
+	/**
+	 * List of feature event
+	 *
+	 * @return array
+	 */
 	function getEventList()
 	{
 		global $manager;
 		return array(
-			'ExternalAuth',
-			'LoginSuccess',
 			'FormExtra',
 			'PostAddComment',
 		);
 	}
 
-	function event_ExternalAuth(&$data)
+	// }}}
+	// {{{ getTableList()
+
+	/**
+	  * Database tables for plugin used
+	  *
+	  * @return array
+	  **/
+	function getTableList()
 	{
-		if ($this->flgLoggedin) return;
-		$authPlugins = array('OpenId');
-		if (!in_array($data['externalauth']['source'], $authPlugins)) return;
-		global $manager;
-		$pluginName = 'NP_' . $data['externalauth']['source'];
-		if ($manager->pluginInstalled($pluginName)) {
-			$authPlugin =& $manager->getPlugin($pluginName);
-			if( $authPlugin->isLoggedin() ){
-				$this->flgLoggedin = true;
-				$this->authModule  = $authPlugin;
-			}
-		}
+		return array(
+			sql_table('plug_ezcomment2'),
+			);
 	}
 
-	function event_LoginSuccess($data)
-	{
-		$this->flgLoggedin = true;
-		$this->authModule  = $data['member'];
-	}
+	// }}}
+	// {{{ install()
 
-	function event_PostAddComment($data) {
-		global $manager;
-		$comment = $data['comment'];
-		if (intval(getNucleusVersion()) >= 330) {
-			$email = $comment['email'];
-		} else {
-			$email = $comment['userid'];
-		}
-		if (postVar('EzComment2_Secret')) {
-			$secCheck = 1;
-		} else {
-			$secCheck = 0;
-		}
-		$sql = 'INSERT INTO ' . sql_table('plug_ezcomment2') . '(`comid`, `secflg`) VALUES (%d, %d)';
-		sql_query(sprintf($sql, $comment['commentid'], $secCheck));
-	}
-
+	/**
+	 * Install function
+	 *
+	 * @return void.
+	 */
 	function install()
 	{
-		if (!TEMPLATE::exists('EzCommentTemplateDefault')) {
+		if (!TEMPLATE::exists('EzCommentTemplate')) {
 			global $DIR_LIBS;
 			include_once($DIR_LIBS . 'skinie.php');
 			$importer = new SKINIMPORT();
@@ -116,68 +207,156 @@ class NP_EzComment2 extends NucleusPlugin
 				$message = implode("<br />\n", $aErrors);
 				doError($message);
 			}
-			createBlogOption('secret',     _NP_EZCOMMENT2_OP_SECRETMODE,  'yesno', 'no');
-			createBlogOption('secComment', _NP_EZCOMMENT2_OP_SUBSTIUTION, 'text',  _NP_EZCOMMENT2_OP_SUBSTIUTION_VAL);
-			createBlogOption('secLabel',   _NP_EZCOMMENT2_OP_CHECKLABEL,  'text',  _NP_EZCOMMENT2_OP_CHECKLABEL_VAL);
-			createOption('tabledel',       _NP_EZCOMMENT2_OP_DROPTABLE,   'yesno', 'no');
+			$this->createBlogOption('secret',     _NP_EZCOMMENT2_OP_SECRETMODE,  'yesno', 'no');
+			$this->createBlogOption('secComment', _NP_EZCOMMENT2_OP_SUBSTIUTION, 'text',  _NP_EZCOMMENT2_OP_SUBSTIUTION_VAL);
+			$this->createBlogOption('secLabel',   _NP_EZCOMMENT2_OP_CHECKLABEL,  'text',  _NP_EZCOMMENT2_OP_CHECKLABEL_VAL);
+			$this->createOption('tabledel',       _NP_EZCOMMENT2_OP_DROPTABLE,   'yesno', 'no');
 			$sql = 'CREATE TABLE IF NOT EXISTS %s ('
-				 . '`comid`  int(11) NOT NULL,'
-				 . '`secflg` tinyint(1) NULL,'
+				 . '`comid`  int(11)  NOT NULL, '
+				 . '`secflg` tinyint(1)   NULL, '
+				 . '`module` varchar(15)  NULL, '
+				 . '`userID` varchar(255) NULL, '
 				 . 'PRIMARY KEY(`comid`) );';
 			sql_query(sprintf($sql, sql_table('plug_ezcomment2')));
 			$this->updateTable();
 		}
 	}
 
-	function event_FormExtra(&$data) {
-		$this->numcalled++;
-		echo '<br /><input type="checkbox" value="1" name="EzComment2_Secret" id="EzComment2_Secret_' . $this->numcalled . '" />';
-		echo '<label for="EzComment2_Secret_' . $this->numcalled . '">'.$this->getOption('secLabel').'</label><br />';
-	}
+	// }}}
+	// {{{ uninstall()
 
+	/**
+	 * Un Install function
+	 *
+	 * @return void.
+	 */
 	function uninstall()
 	{
 		if ($this->getOption('tabledel') == 'yes')
 			sql_query('DROP TABLE '.sql_table('plug_ezcomment2'));
 	}
 
+	// }}}
+	// {{{ init()
+
+	/**
+	 * Initialize
+	 *
+	 * @return void.
+	 */
 	function init()
 	{
-		$language = ereg_replace( '[\\|/]', '', getLanguageName());
-		if (file_exists($this->getDirectory() . 'language/' . $language . '.php')) {
-			include_once($this->getDirectory() . 'language/' . $language . '.php');
-		} else {
-			include_once($this->getDirectory() . 'language/english.php');
+		$this->languageInclude();
+		$this->numcalled  = 0;
+		global $manager;
+		if ($manager->pluginInstalled('NP_OpenId') && !$this->authOpenID) {
+			$this->authOpenID = $manager->getPlugin('NP_OpenId');
 		}
-		$this->numcalled = 0;
 	}
 
-	function updateTable()
+	// }}}
+	// {{{ event_PostAddComment($data)
+
+	/**
+	 * After adding a comment to the database.
+	 *
+	 * @param  array
+	 *			commentid integer
+	 *			comment   array
+	 *			spamcheck array
+	 * @return void.
+	 */
+	function event_PostAddComment($data)
 	{
-		$sql = 'SELECT cnumber FROM ' . sql_table('comment') . ' ORDER BY cnumber';
-		$res = sql_query($sql);
-		$sql = 'INSERT INTO ' . sql_table('plug_ezcomment2') . '(`comid`) VALUES (%d)';
-		while ($cid = mysql_fetch_assoc($res)) {
-			sql_query(sprintf($sql, $cid['cnumber']));
+		global $member;
+		switch (true) {
+			case $member->isLoggedin():
+				$userID = $member->getID();
+				$module = 'Nucleus';
+				break;
+			case ($this->authOpenID && $this->authOpenID->isLoggedin()):
+				$userID = $this->authOpenID->loggedinUser['identity'];
+				$module = 'OpenID';
+				break;
+			default:
+				break;
+		}
+		if (postVar('EzComment2_Secret')) {
+			$secCheck = 1;
+		} else {
+			$secCheck = null;
+		}
+		$sql = 'INSERT INTO ' . sql_table('plug_ezcomment2')
+			 . ' (`comid`, `secflg`, `module`, `userID`) VALUES (%d, %d, %s, %s)';
+		sql_query(sprintf($sql, $data['commentid'], $secCheck, $module, $userID));
+	}
+
+	// }}}
+	// {{{ event_FormExtra(&$data)
+
+	/**
+	 * Inside one of the comment, membermail or account activation forms.
+	 *
+	 * @param  array
+	 *			type string
+	 * @return void.
+	 */
+	function event_FormExtra(&$data)
+	{
+		global $blogid;
+		$this->numcalled++;
+		if ($blogid && $this->getBlogOption($blogid, 'secret') == 'yes') {
+			echo '<br /><input type="checkbox" value="1" name="EzComment2_Secret" id="EzComment2_Secret_' . $this->numcalled . '" />';
+			echo '<label for="EzComment2_Secret_' . $this->numcalled . '">'.$this->getBlogOption($bid, 'secLabel').'</label><br />';
 		}
 	}
 
+	// }}}
+	// {{{ doTemplateVar()
+
+	/**
+	 * Basically the same as doSkinVar,
+	 * but this time for calls of the <%plugin(...)%>-var in templates (item header/body/footer and dateheader/footer).
+	 *
+	 * @param  object item object(refarence)
+	 * @param  string
+	 * @param  string
+	 * @param  string
+	 * @param  string
+	 * @param  string
+	 * @return void.
+	 */
 	function doTemplateVar(&$item,
 							$showType       = '',
 							$showMode       = '5/1/1',
 							$destinationurl = '',
-							$formTemplate   = 'EzCommentTemplateDefault',
-							$listTemplate   = 'EzCommentTemplateDefault')
+							$formTemplate   = 'EzCommentTemplate',
+							$listTemplate   = 'EzCommentTemplate')
 	{
 		$this->doSkinVar('template', $showType, $showMode, $destinationurl, $formTemplate, $listTemplate, $item);
 	}
 
+	// }}}
+	// {{{ doSkinVar()
+
+	/**
+	 * When plugins are called using the <%plugin(...)%>-skinvar, this method will be called. 
+	 *
+	 * @param  string
+	 * @param  string
+	 * @param  string
+	 * @param  string
+	 * @param  string
+	 * @param  string
+	 * @param  object item object(refarence)
+	 * @return void.
+	 */
 	function doSkinVar($skinType,
 					   $showType       = '',
 					   $showMode       = '5/1/1',
 					   $destinationurl = '',
-					   $formTemplate   = 'EzCommentTemplateDefault',
-					   $listTemplate   = 'EzCommentTemplateDefault',
+					   $formTemplate   = 'EzCommentTemplate',
+					   $listTemplate   = 'EzCommentTemplate',
 					  &$commentItem    = '')
 	{
 		if ($skinType != 'item' && $skinType != 'template') return;
@@ -203,43 +382,137 @@ class NP_EzComment2 extends NucleusPlugin
 		list($maxToShow, $sortOrder, $commentOrder) = explode('/', $showMode);
 		if (!$maxToShow) $maxToShow = 5;
 		if (!$sortOrder) $sortOrder = 1;
-		if (!$commentOrder) $commentOrder = 1;
-		if (!$formTemplate) $formTemplate = 'EzCommentTemplateDefault';
-		if (!$listTemplate) $listTemplate = 'EzCommentTemplateDefault';
+		if ($commentOrder > 0) {
+			$commentOrder = true;
+		} else {
+			$commentOrder = false;
+		}
+		if (!$formTemplate) $formTemplate = 'EzCommentTemplate';
+		if (!$listTemplate) $listTemplate = 'EzCommentTemplate';
 
 		switch ($showType) {
 			case 'list':
 				$listTemplate = TEMPLATE::read($listTemplate);
-				$this->showComment($commentItem, $listTemplate, $maxToShow, $commentOrder);
+				$this->showComment($commentItem, $listTemplate, $maxToShow, $commentOrder, $skinType);
 				break;
 			case 'form':
 				$formTemplate = TEMPLATE::read($formTemplate);
-				$this->showForm($commentItem, $formTemplate, $destinationurl);
+				$this->showForm($commentItem, $formTemplate, $destinationurl, $skinType);
 				break;
 			default:
 				$listTemplate = TEMPLATE::read($listTemplate);
 				$formTemplate = TEMPLATE::read($formTemplate);
 				if ($sortOrder) {
-					$this->showComment($commentItem, $listTemplate, $maxToShow, $commentOrder);
-					$this->showForm($commentItem, $formTemplate, $destinationurl);
+					$this->showComment($commentItem, $listTemplate, $maxToShow, $commentOrder, $skinType);
+					$this->showForm($commentItem, $formTemplate, $destinationurl, $skinType);
 				} else {
-					$this->showForm($commentItem, $formTemplate, $destinationurl);
-					$this->showComment($commentItem, $listTemplate, $maxToShow, $commentOrder);
+					$this->showForm($commentItem, $formTemplate, $destinationurl, $skinType);
+					$this->showComment($commentItem, $listTemplate, $maxToShow, $commentOrder, $skinType);
 				}
 				break;
 		}
 	}
 
-// FORM START ---------------------------------------
-	function showForm($commentItem, $template, $destinationurl)
+	// }}}
+	// {{{ languageInclude()
+
+	/**
+	 * Include language file
+	 *
+	 * @return void.
+	 */
+	function languageInclude()
 	{
-		global $CONF, $manager, $member, $catid, $subcatid;
-		$bid =  getBlogIDFromItemID($commentItem->itemid);
-		$b   =& $manager->getBlog($bid);
-		$b->readSettings();
-		if (!$member->isLoggedIn() && !$b->commentsEnabled()) {
-			return;
+		$language = ereg_replace( '[\\|/]', '', getLanguageName());
+		if (file_exists($this->getDirectory() . 'language/' . $language . '.php')) {
+			include_once($this->getDirectory() . 'language/' . $language . '.php');
+		} else {
+			include_once($this->getDirectory() . 'language/english.php');
 		}
+	}
+
+	// }}}
+	// {{{ updateTable()
+
+	/**
+	 * Update database table
+	 *
+	 * @return void.
+	 */
+	function updateTable()
+	{
+		$sql = 'SELECT cnumber FROM ' . sql_table('comment') . ' ORDER BY cnumber';
+		$res = sql_query($sql);
+		$sql = 'REPLACE INTO ' . sql_table('plug_ezcomment2') . '(`comid`) VALUES (%d)';
+		while ($cid = mysql_fetch_assoc($res)) {
+			sql_query(sprintf($sql, $cid['cnumber']));
+		}
+	}
+
+	// }}}
+	// {{{ plugOpenIDdoSkinVar()
+
+	/**
+	 * Overwride NP_OpenId's doSkinVar()
+	 * 
+	 * @param  string
+	 * @param  integer
+	 * @return void.
+	 */
+	function plugOpenIDdoSkinVar($skinType, $iid = 0)
+	{
+		global $CONF, $manager, $member;
+		if ($member->isLoggedIn()) return;
+		$authOpenID   = $this->authOpenID;
+		if (!$authOpenID) return;
+		$externalauth = array ( 'source' => $authOpenID->getName() );
+		$manager->notify('ExternalAuth', array ('externalauth' => &$externalauth));
+		if (isset($externalauth['result']) && $externalauth['result'] == true) return;
+		$templateEngine     = $authOpenID->_getTemplateEngine();
+		$aVars              = array();
+		$aVars['PluginURL'] = $CONF['PluginURL'];
+		if ($authOpenID->isLoggedin()) {
+			// Loggedin
+			if ($skinType == 'template') {
+				require_once 'cles/Template.php';
+				$templateDirectory           =  rtrim($this->getDirectory(), '/');
+				$templateEngine              =& new cles_Template($templateDirectory);
+				$templateEngine->defaultLang =  'english';
+				$aVars['itemid'] = intval($iid);
+			}
+			$nowURL             = 'http://' . serverVar("HTTP_HOST")
+								. serverVar("REQUEST_URI");
+			$aVars['url']       = $authOpenID->getAdminURL() . 'rd.php?action=rd'
+								. '&url=' . urlencode($nowURL);
+			$aVars['nick']      = $authOpenID->loggedinUser['nick'];
+			$aVars['email']     = $authOpenID->loggedinUser['email'];
+			$aVars['ts']        = $authOpenID->loggedinUser['ts'];
+			$aVars['identity']  = $authOpenID->loggedinUser['identity'];
+			$aVars['visible']   = $aVars['nick'] ? 'false' : 'true' ;
+			$actionUrl          = parse_url($CONF['ActionURL']);
+			$aVars['updateUrl'] = $actionUrl['path'];
+			echo $templateEngine->fetchAndFill('yui',         $aVars, 'np_openid');
+			echo $templateEngine->fetchAndFill('loggedin',    $aVars, 'np_openid');
+			echo $templateEngine->fetchAndFill('form',        $aVars, 'np_openid');
+		} elseif (!$authOpenID->isLoggedin()) {
+			// Not loggedin
+			$aVars['url']       = $authOpenID->getAdminURL() . 'rd.php?action=doauth'
+							    . '&return_url=' . urlencode(createItemLink(intval($iid)));
+			echo $templateEngine->fetchAndFill('notloggedin', $aVars, 'np_openid');
+		}
+	}
+
+	// }}}
+	// {{{ checkDestinationurl($destinationurl)
+
+	/**
+	 * Destinationurl check
+	 *
+	 * @param  string
+	 * @return string
+	 */
+	function checkDestinationurl($destinationurl)
+	{
 		if (stristr($destinationurl, 'action.php') || empty($destinationurl)) {
 			if (stristr($destinationurl, 'action.php')) {
 				$logMessage = 'actionurl is not longer a parameter on commentform skinvars.'
@@ -256,7 +529,20 @@ class NP_EzComment2 extends NucleusPlugin
 		} else {
 			$destinationurl = preg_replace('|[^a-z0-9-~+_.?#=&;,/:@%]|i', '', $destinationurl);
 		}
+		return $destinationurl;
+	}
 
+	// }}}
+	// {{{ getCommentatorInfo()
+
+	/**
+	 * Get commentator info.
+	 *
+	 * @return array
+	 */
+	function getCommentatorInfo()
+	{
+		global $CONF;
 		$user = cookieVar($CONF['CookiePrefix'] .'comment_user');
 		if (!$user) {
 			$user = postVar('user');
@@ -270,6 +556,36 @@ class NP_EzComment2 extends NucleusPlugin
 			$email = postVar('email');
 		}
 		$body    = postVar('body');
+		return array(
+			$user,
+			$userid,
+			$email,
+			$body
+		);
+	}
+	// {{{ showForm()
+
+	/**
+	 * Show comment form
+	 *
+	 * @param  object
+	 * @param  string
+	 * @param  string
+	 * @param  string
+	 * @return void.
+	 */
+	function showForm($commentItem, $template, $destinationurl, $skinType)
+	{
+		global $CONF, $manager, $member, $catid, $subcatid;
+		$bid =  getBlogIDFromItemID($commentItem->itemid);
+		$b   =& $manager->getBlog($bid);
+		$b->readSettings();
+		if (!$member->isLoggedIn() && !$b->commentsEnabled()) {
+			return;
+		}
+		$destinationurl = $this->checkDestinationurl($destinationurl);
+		list($user, $userid, $email, $body) = $this->getCommentatorInfo();
+
 		$checked = cookieVar($CONF['CookiePrefix'] .'comment_user') ? 'checked="checked" ' : '';
 
 		$formdata = array(
@@ -284,25 +600,44 @@ class NP_EzComment2 extends NucleusPlugin
 //			'membername'      => $this->_hsc($membername),
 			'rememberchecked' => $checked
 		);
+		if ($skinType == 'item') {
+			$formFlg = '_ITM';
+		} else {
+			$formFlg = '_IDX';
+		}
 		if ($member && $member->isLoggedIn()) {
-			$formType = 'COMMENT_FORM_LOGGEDIN';
+			$formType = 'FORM_LOGGEDIN' . $formFlg;
 			$loginMember = $member->createFromID($member->getID());
 			$formdata['membername'] = $this->_hsc($loginMember->getDisplayName());
 		} else {
-			$formType = 'COMMENT_FORM_NOTLOGGEDIN';
+			$formType = 'FORM_NOTLOGGEDIN' . $formFlg;
+		}
+		if ($this->authOpenID && ($skinType == 'item' || $this->numcalled == 0)) {
+			$this->plugOpenIDdoSkinVar($skinType, intval($commentItem->itemid));
 		}
 		$contents   = $template[$formType];
+		include_once($this->getDirectory() . 'EzCommentActions.php');
 		$formAction =& new EzCommentFormActions($commentItem, $formdata, $loginMember);
 		$parser     =& new PARSER($formAction->getAllowedActions(), $formAction);
 		$parser->parse(&$contents);
 	}
 
-// FORM END -----------------------------------------*/
+	// }}}
+	// {{{ showComment()
 
-// LIST START ---------------------------------------
-	function showComment($commentItem, $template, $maxToShow, $commentOrder)
+	/**
+	 * Show comments
+	 *
+	 * @param  object
+	 * @param  string
+	 * @param  string
+	 * @param  string
+	 * @param  string
+	 * @return void.
+	 */
+	function showComment($commentItem, $template, $maxToShow, $commentOrder, $skinType)
 	{
-		global $manager;
+		global $manager, $member;
 		$bid =  getBlogIDFromItemID($commentItem->itemid);
 		$b   =& $manager->getBlog($bid);
 		if (!$b->commentsEnabled()) return;
@@ -315,6 +650,7 @@ class NP_EzComment2 extends NucleusPlugin
 		$commentObj->setItemActions($itemActions);
 		$commentObj->commentcount = $commentObj->amountComments();
 		// create parser object & action handler
+		include_once($this->getDirectory() . 'EzCommentActions.php');
 		$actions =& new EzCommentActions($commentObj);
 		$parser  =& new PARSER($actions->getAllowedActions(), $actions);
 		$actions->setTemplate($template);
@@ -329,6 +665,126 @@ class NP_EzComment2 extends NucleusPlugin
 		} else {
 			$startnum = 0;
 		}
+		$comments = $this->getComments($commentOrder, intval($commentItem->itemid), $maxToShow, $startnum);
+		$viewnum  = mysql_num_rows($comments);
+		$actions->setViewnum($viewnum);
+		if ($this->getBlogOption($bid, 'secret') == 'yes') {
+			$secret = $this->setSecretJudge($bid, $member, $b);
+		}
+
+		$templateType = '';
+		if ($skinType == 'index') $templateType = '_IDX';
+		$blogURL      = $b->getURL();
+		$substitution = $this->getBlogOption($bid, 'secComment');
+		
+		$parser->parse($template['COMMENTS_HEADER' . $templateType]);
+
+		while ($comment = mysql_fetch_assoc($comments)) {
+			$comment['timestamp'] = strtotime($comment['ctime']);
+			if ($secret) {
+					$comment = $this->JudgementCommentSecrets($comment, $secret, $blogURL, $substitution);
+			}
+			$actions->setCurrentComment($comment);
+			$manager->notify('PreComment', array('comment' => &$comment));
+			$parser->parse($template['COMMENTS_BODY' . $templateType]);
+			$manager->notify('PostComment', array('comment' => &$comment));
+		}
+
+		$parser->parse($template['COMMENTS_FOOTER' . $templateType]);
+
+		mysql_free_result($comments);
+
+	}
+
+	// }}}
+	// {{{ setSecretJudge($bid)
+
+	/**
+	 * Setting for judgment of whether it's a comment of a secret.
+	 *
+	 * @param  intgre
+	 * @param  object
+	 * @param  object
+	 * @return array
+	 */
+	function setSecretJudge($bid, $member, $b)
+	{
+		$memberLoggedin = $member->isLoggedin();
+		$loginUser      = $member->getID();
+		$blogAdmin      = $member->blogAdminRights($bid);
+		$blogURL        = $b->getURL();
+		$substitution   = $this->getBlogOption($bid, 'secComment');
+		if ($this->authOpenID) {
+			$openIDLoggedin = $this->authOpenID->isLoggedin();
+			$openIDUser     = $this->authOpenID->loggedinUser['identity'];
+		}
+		return array(
+			'memberLoggedin' => $memberLoggedin,
+			'loginUser'      => $loginUser,
+			'blogAdmin'      => $blogAdmin,
+			'blogURL'        => $blogURL,
+			'substitution'   => $substitution,
+			'openIDLoggedin' => $openIDLoggedin,
+			'openIDUser'     => $openIDUser,
+		);
+	}
+
+	// }}}
+	// {{{ JudgementCommentSecrets($comment, $judge)
+
+	/**
+	 * Comment is secret ?
+	 *
+	 * @param  array
+	 * @param  array
+	 * @param  string
+	 * @param  string
+	 * @return array
+	 */
+	function JudgementCommentSecrets($comment, $judge, $blogURL, $substitution)
+	{
+		if (!(($judge['memberLoggedin'] && ($judge['loginUser']  == intval($comment['identity']) || $blogAdmin)) ||
+			($judge['openIDLoggedin'] && $judge['openIDUser'] == $comment['identity'])) && $comment['secret']) {
+				$this->changeCommentSet($comment, $blogURL, $substitution);
+			}
+		return $comment;
+	}
+
+	// }}}
+	// {{{ changeCommentSet($comment, $blogURL, $substitution)
+
+	/**
+	 * Change secret comment contents
+	 *
+	 * @param  array
+	 * @param  string
+	 * @param  string
+	 * @return array
+	 */
+	function changeCommentSet($comment, $blogURL, $substitution)
+	{
+		$comment['body']     = $substitution;
+		$comment['userid']   = $blogURL;
+		$comment['memberid'] = 0;
+		$comment['user']     = '#';
+		$comment['email']    = '#';
+		$comment['host']     = '127.0.0.1';
+		$comment['ip']       = '127.0.0.1';
+		return $comment;
+	}
+	// {{{ getComments($comment, $judge)
+
+	/**
+	 * Change in the comment contents.
+	 *
+	 * @param  boolean
+	 * @param  integre
+	 * @param  integre
+	 * @param  integre
+	 * @return resouce
+	 */
+	function getComments($commentOrder, $iid, $maxToShow, $startnum)
+	{
 		$order = ($commentOrder) ? "DESC" : "ASC";
 		$query = 'SELECT '
 			   . 'c.citem   as itemid, '
@@ -342,11 +798,14 @@ class NP_EzComment2 extends NucleusPlugin
 			   . 'c.chost   as host, '
 			   . 'c.cip     as ip, '
 			   . 'c.cblog   as blogid, '
-			   . 's.secflg  as secret'
-			   . ' FROM ' . sql_table('comment') . ' as c, '
-			   .            sql_table('plug_ezcomment2') . ' as s '
-			   . ' WHERE c.citem = ' . intval($commentItem->itemid) . ', '
-			   . ' AND   s.comid = c.cnumber '
+			   . 's.comid   as cid, '
+			   . 's.secflg  as secret, '
+			   . 's.module  as modname, '
+			   . 's.userID  as identity '
+			   . ' FROM ' . sql_table('comment') . ' as c '
+			   . ' LEFT OUTER JOIN ' . sql_table('plug_ezcomment2') . ' as s '
+			   . ' p ON c.cnumber = s.comid '
+			   . ' WHERE c.citem = ' . intval($iid)
 			   . ' ORDER BY c.ctime '
 			   . $order;
 		if ($maxToShow) {
@@ -356,189 +815,47 @@ class NP_EzComment2 extends NucleusPlugin
 				$query .=' LIMIT ' . intval($startnum) . ',' . intval($maxToShow);
 			}
 		}
-		$comments = sql_query($query);
-		$viewnum  = mysql_num_rows($comments);
-		$actions->setViewnum($viewnum);
-		if ($this->getBlogOption($bid, 'secret') == 'yes') {
-			$secretMode = true;
-			if ($this->flgLoggedin)
-				$secretComments = $this->getSecretComments();
-		}
-
-		$parser->parse($template['COMMENTS_HEADER']);
-
-		while ( $comment = mysql_fetch_assoc($comments) ) {
-			$comment['timestamp'] = strtotime($comment['ctime']);
-			if ($comment['secret']) {
-				global $member;
-				if (!$this->flgLoggedin ||
-					( !$menber->blogAdminRights($bid) &&
-					  !in_array($comment['commentid'], $secretComments)) )
-				{
-					$comment['body']   = $this->getBlogOption($bid, 'secComment');
-					$comment['userid'] = $b->getURL();
-					$comment['email']  = '#';
-					$comment['host']   = '127.0.0.1';
-					$comment['ip']     = '127.0.0.1';
-				}
-			}
-			$actions->setCurrentComment($comment);
-			$manager->notify('PreComment', array('comment' => &$comment));
-			$parser->parse($template['COMMENTS_BODY']);
-			$manager->notify('PostComment', array('comment' => &$comment));
-		}
-
-		$parser->parse($template['COMMENTS_FOOTER']);
-
-		mysql_free_result($comments);
-
+		return sql_query($query);
+		
 	}
-// LIST END -----------------------------------------
 
+	// }}}
+	// {{{ getTemplateParts()
+
+	/**
+	 * Comment form/list template via NP_znSpecialTemplateParts
+	 *
+	 * @return array
+	 */
 	function getTemplateParts()
 	{
 		$this->languageInclude();
 		return array(
-			'COMMENT_FORM_LOGGEDIN'    => _NP_EZCOMMENT2_FORM_LOGGEDIN, 
-			'COMMENT_FORM_NOTLOGGEDIN' => _NP_EZCOMMENT2_FORM_NOTLOGGEDIN, 
+			'FORM_LOGGEDIN_IDX'    => _NP_EZCOMMENT2_FORM_LOGGEDIN_IDX, 
+			'FORM_NOTLOGGEDIN_IDX' => _NP_EZCOMMENT2_FORM_NOTLOGGEDIN_IDX, 
+			'FORM_LOGGEDIN_ITM'    => _NP_EZCOMMENT2_FORM_LOGGEDIN_ITM,
+			'FORM_NOTLOGGEDIN_ITM' => _NP_EZCOMMENT2_FORM_NOTLOGGEDIN_ITM, 
+			'COMMENTS_BODY_IDX'    => _NP_EZCOMMENT2_COMMENTS_BODY_IDX, 
+			'COMMENTS_FOOTER_IDX'  => _NP_EZCOMMENT2_COMMENTS_FOOTER_IDX, 
+			'COMMENTS_HEADER_IDX'  => _NP_EZCOMMENT2_COMMENTS_HEADER_IDX,
 		);
 	}
 
+	// }}}
+	// {{{ _hsc()
+
+	/**
+	 * HTML entity
+	 *
+	 * @param  string
+	 * @return string
+	 */
 	function _hsc($str)
 	{
 		return htmlspecialchars($str, ENT_QUOTES, _CHARSET);
 	}
-}
-
-class EzCommentFormActions extends ACTIONS
-{
-
-var $commentItem;
-
-var $loginMember;
-
-	function EzCommentFormActions(&$item, $formdata, $member)
-	{
-		$this->ACTIONS('item');
-		$this->commentItem =& $item;
-		$this->formdata    =  $formdata;
-		$this->loginMember =  $member;
-	}
-
-	function getAllowedActions()
-	{
-		return array(
-					 'text',
-					 'self',
-					 'formdata',
-					 'callback',
-					 'errordiv',
-					 'ticket',
-					 'itemid',
-					 'itemlink',
-					 'itemtitle',
-					 'membername',
-					 'memberurl',
-					);
-	}
-
-	function parse_itemid() {
-		echo $this->commentItem->itemid;
-	}
+	// }}}
 	
-	function parse_itemlink($linktext = '') {
-		global $itemid;
-		$this->_itemlink($this->commentItem->itemid, $linktext);
-	}
-
-	function parse_itemtitle($format = '') {
-		switch ($format) {
-			case 'xml':
-				echo stringToXML ($this->commentItem->itemtitle);
-				break;
-			case 'attribute':
-				echo stringToAttribute ($this->commentItem->itemtitle);
-				break;
-			case 'raw':
-				echo $this->commentItem->itemtitle;
-				break;
-			default:
-				echo $this->_hsc(strip_tags($this->commentItem->itemtitle));
-				break;
-		}
-	}
-
-	function parse_membername($mode='')
-	{
-		if ($mode == 'realname') {
-			echo $this->_hsc($this->loginMember->getRealName());
-		} else {
-			echo $this->_hsc($this->loginMember->getDisplayName());
-		}
-	}
-
-	function parse_memberurl()
-	{
-		echo $this->_hsc($this->loginMember->getURL());
-	}
-
-	function _hsc($str)
-	{
-		return htmlspecialchars($str, ENT_QUOTES, _CHARSET);
-	}
-
-}
-
-class EzCommentActions extends COMMENTACTIONS
-{
-
-var $viewnum;
-
-var $postnum;
-
-	function EzCommentActions(&$comments)
-	{
-		$this->COMMENTACTIONS($comments);
-	}
-
-	function getAllowedActions()
-	{
-		$allowedActions   = $this->getDefinedActions();
-		$allowedActions[] = 'viewnum';
-		$allowedActions[] = 'postnum';
-		$allowedActions[] = 'viewparpost';
-		return $allowedActions;
-	}
-
-	function setPostnum($postnum)
-	{
-		$this->postnum = $postnum;
-	}
-
-	function setViewnum($viewnum)
-	{
-		$this->viewnum = $viewnum;
-	}
-
-	function parse_viewnum()
-	{
-		echo intval($this->viewnum);
-	}
-
-	function parse_postnum()
-	{
-		echo intval($this->postnum);
-	}
-
-	function parse_viewparpost()
-	{
-		echo intval($this->viewnum) . ' ';
-		if ($this->postnum > $this->viewnum) {
-			echo '/ ' . $this->postnum . ' ';
-		}
-		$this->parse_commentword();
-	}
-
 }
 
 
