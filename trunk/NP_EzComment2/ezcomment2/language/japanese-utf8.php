@@ -9,9 +9,9 @@ define('_NP_EZCOMMENT2_FORM_LOGGEDIN_IDX',    'メンバーがログインして
 define('_NP_EZCOMMENT2_FORM_NOTLOGGEDIN_IDX', 'ログインしていないメンバー、またはゲストに表示されるフォーム(『メインの目次ページ』用)');
 define('_NP_EZCOMMENT2_FORM_LOGGEDIN_ITM',    'メンバーがログインしているときに表示されるフォーム(『個別アイテムページ』用)');
 define('_NP_EZCOMMENT2_FORM_NOTLOGGEDIN_ITM', 'ログインしていないメンバー、またはゲストに表示されるフォーム(『個別アイテムページ』用)');
-define('COMMENTS_BODY_IDX',                   'コメントの本体(『メインの目次ページ』用)');
-define('COMMENTS_HEADER_IDX',                 'コメントのヘッダー(『メインの目次ページ』用)');
-define('COMMENTS_FOOTER_IDX',                 'コメントのフッター(『メインの目次ページ』用)');
+define('_NP_EZCOMMENT2_COMMENTS_BODY_IDX',    'コメントの本体(『メインの目次ページ』用)');
+define('_NP_EZCOMMENT2_COMMENTS_HEADER_IDX',  'コメントのヘッダー(『メインの目次ページ』用)');
+define('_NP_EZCOMMENT2_COMMENTS_FOOTER_IDX',  'コメントのフッター(『メインの目次ページ』用)');
 
 define('_NP_EZCOMMENT2_OP_SECRETMODE',       '｢ナイショコメント｣を有効にしますか？');
 define('_NP_EZCOMMENT2_OP_SUBSTIUTION',      '｢ナイショコメント｣の代替コメント');

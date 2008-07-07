@@ -12,7 +12,7 @@
  * @author    shizuki
  * @copyright 2008 shizuki
  * @license   http://www.gnu.org/licenses/gpl.txt  GNU GENERAL PUBLIC LICENSE Version 2, June 1991
- * @version   $Date: 2008-07-07 10:24:00 $ $Revision: 1.7 $
+ * @version   $Date: 2008-07-07 15:42:54 $ $Revision: 1.8 $
  * @link      http://japan.nucleuscms.org/wiki/plugins:showblogs
  * @since     File available since Release 1.0
  */
@@ -21,6 +21,13 @@
  * version history
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.7  2008/07/07 10:24:00  shizuki
+ * * Still, the human sacrifice test version.
+ * * A template was separated for for index pages and item page.
+ * * Subdivision of the showComment() function.
+ * * It's changed so as not to fly to an indication part for indication in case of and OpenID of anything but the first item of an index page.
+ * * A profile change part besides the first item of an index page is being adjusted.
+ *
  **/
 
 class NP_EzComment2 extends NucleusPlugin
@@ -91,7 +98,7 @@ class NP_EzComment2 extends NucleusPlugin
 	function getPluginDep()
 	{
 		return array(
-			'NP_OpenIdt',
+			'NP_OpenId',
 			'NP_znSpecialTemplateParts',
 		);
 	}
@@ -106,7 +113,7 @@ class NP_EzComment2 extends NucleusPlugin
 	 */
 	function getVersion()
 	{
-		return '$Date: 2008-07-07 10:24:00 $ $Revision: 1.7 $';
+		return '$Date: 2008-07-07 15:42:54 $ $Revision: 1.8 $';
 	}
 
 	// }}}
@@ -155,6 +162,7 @@ class NP_EzComment2 extends NucleusPlugin
 		return array(
 			'FormExtra',
 			'PostAddComment',
+			'PostDeleteComment',
 		);
 	}
 
@@ -207,19 +215,19 @@ class NP_EzComment2 extends NucleusPlugin
 				$message = implode("<br />\n", $aErrors);
 				doError($message);
 			}
-			$this->createBlogOption('secret',     _NP_EZCOMMENT2_OP_SECRETMODE,  'yesno', 'no');
-			$this->createBlogOption('secComment', _NP_EZCOMMENT2_OP_SUBSTIUTION, 'text',  _NP_EZCOMMENT2_OP_SUBSTIUTION_VAL);
-			$this->createBlogOption('secLabel',   _NP_EZCOMMENT2_OP_CHECKLABEL,  'text',  _NP_EZCOMMENT2_OP_CHECKLABEL_VAL);
-			$this->createOption('tabledel',       _NP_EZCOMMENT2_OP_DROPTABLE,   'yesno', 'no');
-			$sql = 'CREATE TABLE IF NOT EXISTS %s ('
-				 . '`comid`  int(11)  NOT NULL, '
-				 . '`secflg` tinyint(1)   NULL, '
-				 . '`module` varchar(15)  NULL, '
-				 . '`userID` varchar(255) NULL, '
-				 . 'PRIMARY KEY(`comid`) );';
-			sql_query(sprintf($sql, sql_table('plug_ezcomment2')));
-			$this->updateTable();
 		}
+		$this->createBlogOption('secret',     _NP_EZCOMMENT2_OP_SECRETMODE,  'yesno', 'yes');
+		$this->createBlogOption('secComment', _NP_EZCOMMENT2_OP_SUBSTIUTION, 'text',  _NP_EZCOMMENT2_OP_SUBSTIUTION_VAL);
+		$this->createBlogOption('secLabel',   _NP_EZCOMMENT2_OP_CHECKLABEL,  'text',  _NP_EZCOMMENT2_OP_CHECKLABEL_VAL);
+		$this->createOption('tabledel',       _NP_EZCOMMENT2_OP_DROPTABLE,   'yesno', 'yes');
+		$sql = 'CREATE TABLE IF NOT EXISTS %s ('
+			 . '`comid`  int(11)  NOT NULL, '
+			 . '`secflg` tinyint(1)   NULL, '
+			 . '`module` varchar(15)  NULL, '
+			 . '`userID` varchar(255) NULL, '
+			 . 'PRIMARY KEY(`comid`) );';
+		sql_query(sprintf($sql, sql_table('plug_ezcomment2')));
+		$this->updateTable();
 	}
 
 	// }}}
@@ -271,24 +279,43 @@ class NP_EzComment2 extends NucleusPlugin
 		global $member;
 		switch (true) {
 			case $member->isLoggedin():
-				$userID = $member->getID();
-				$module = 'Nucleus';
+				$userID = '"' . $member->getID() . '"';
+				$module = '"Nucleus"';
 				break;
 			case ($this->authOpenID && $this->authOpenID->isLoggedin()):
-				$userID = $this->authOpenID->loggedinUser['identity'];
-				$module = 'OpenID';
+				$userID = '"' . $this->authOpenID->loggedinUser['identity'] . '"';
+				$module = '"OpenID"';
 				break;
 			default:
+				$userID = 'NULL';
+				$module = 'NULL';
 				break;
 		}
 		if (postVar('EzComment2_Secret')) {
 			$secCheck = 1;
 		} else {
-			$secCheck = null;
+			$secCheck = 'NULL';
 		}
 		$sql = 'INSERT INTO ' . sql_table('plug_ezcomment2')
 			 . ' (`comid`, `secflg`, `module`, `userID`) VALUES (%d, %d, %s, %s)';
 		sql_query(sprintf($sql, $data['commentid'], $secCheck, $module, $userID));
+	}
+
+	// }}}
+	// {{{ event_PostDeleteComment($data)
+
+	/**
+	 * After a comment has been deleted from the database.
+	 *
+	 * @param  array
+	 *			commentid integer
+	 * @return void.
+	 */
+	function event_PostDeleteComment($data)
+	{
+		$sql = 'DELETE FROM ' . sql_table('plug_ezcomment2')
+			 . ' WHERE `comid` = %d LIMIT 1';
+		sql_query(sprintf($sql, $data['commentid']));
 	}
 
 	// }}}
@@ -303,11 +330,12 @@ class NP_EzComment2 extends NucleusPlugin
 	 */
 	function event_FormExtra(&$data)
 	{
-		global $blogid;
+		global $member, $blogid;
 		$this->numcalled++;
-		if ($blogid && $this->getBlogOption($blogid, 'secret') == 'yes') {
-			echo '<br /><input type="checkbox" value="1" name="EzComment2_Secret" id="EzComment2_Secret_' . $this->numcalled . '" />';
-			echo '<label for="EzComment2_Secret_' . $this->numcalled . '">'.$this->getBlogOption($bid, 'secLabel').'</label><br />';
+		if ($blogid && $this->getBlogOption($blogid, 'secret') == 'yes' &&
+			($member->isLoggedin() || ($this->authOpenID && $this->authOpenID->isLoggedin()))) {
+				echo '<br /><input type="checkbox" value="1" name="EzComment2_Secret" id="EzComment2_Secret_' . $this->numcalled . '" />';
+				echo '<label for="EzComment2_Secret_' . $this->numcalled . '">'.$this->getBlogOption($bid, 'secLabel').'</label><br />';
 		}
 	}
 
@@ -441,11 +469,13 @@ class NP_EzComment2 extends NucleusPlugin
 	 */
 	function updateTable()
 	{
-		$sql = 'SELECT cnumber FROM ' . sql_table('comment') . ' ORDER BY cnumber';
+		$sql = 'SELECT c.cnumber as cid FROM ' . sql_table('comment') . ' as c '
+			 . 'LEFT JOIN ' . sql_table('plug_ezcomment2') . ' as s '
+			 . 'ON c.cnumber=s.comid WHERE s.comid IS NULL';
 		$res = sql_query($sql);
-		$sql = 'REPLACE INTO ' . sql_table('plug_ezcomment2') . '(`comid`) VALUES (%d)';
+		$sql = 'INSERT INTO ' . sql_table('plug_ezcomment2') . '(`comid`) VALUES (%d)';
 		while ($cid = mysql_fetch_assoc($res)) {
-			sql_query(sprintf($sql, $cid['cnumber']));
+			sql_query(sprintf($sql, $cid['cid']));
 		}
 	}
 
@@ -511,7 +541,7 @@ class NP_EzComment2 extends NucleusPlugin
 	 * @param  string
 	 * @return string
 	 */
-	function checkDestinationurl($destinationurl)
+	function checkDestinationurl($destinationurl, $iid, $cid = 0, $scid = 0)
 	{
 		if (stristr($destinationurl, 'action.php') || empty($destinationurl)) {
 			if (stristr($destinationurl, 'action.php')) {
@@ -519,13 +549,14 @@ class NP_EzComment2 extends NucleusPlugin
 							. ' Moved to be a global setting instead.';
 				ACTIONLOG::add(WARNING, $logMessage);
 			}
-			if ($catid) {
-				$linkparams['catid'] = intval($catid);
+			if ($cid) {
+				$linkparams['catid'] = intval($cid);
 			}
-			if ($manager->pluginInstalled('NP_MultipleCategories') && $subcatid) {
-				$linkparams['subcatid'] = intval($subcatid);
+			global $manager;
+			if ($manager->pluginInstalled('NP_MultipleCategories') && $scid) {
+				$linkparams['subcatid'] = intval($scid);
 			}
-			$destinationurl = createItemLink($commentItem->itemid, $linkparams);
+			$destinationurl = createItemLink(intval($iid), $linkparams);
 		} else {
 			$destinationurl = preg_replace('|[^a-z0-9-~+_.?#=&;,/:@%]|i', '', $destinationurl);
 		}
@@ -583,7 +614,7 @@ class NP_EzComment2 extends NucleusPlugin
 		if (!$member->isLoggedIn() && !$b->commentsEnabled()) {
 			return;
 		}
-		$destinationurl = $this->checkDestinationurl($destinationurl);
+		$destinationurl = $this->checkDestinationurl($destinationurl, $commentItem->itemid, $catid, $subcatid);
 		list($user, $userid, $email, $body) = $this->getCommentatorInfo();
 
 		$checked = cookieVar($CONF['CookiePrefix'] .'comment_user') ? 'checked="checked" ' : '';
@@ -761,7 +792,7 @@ class NP_EzComment2 extends NucleusPlugin
 	 * @param  string
 	 * @return array
 	 */
-	function changeCommentSet($comment, $blogURL, $substitution)
+	function changeCommentSet(&$comment, $blogURL, $substitution)
 	{
 		$comment['body']     = $substitution;
 		$comment['userid']   = $blogURL;
@@ -804,7 +835,7 @@ class NP_EzComment2 extends NucleusPlugin
 			   . 's.userID  as identity '
 			   . ' FROM ' . sql_table('comment') . ' as c '
 			   . ' LEFT OUTER JOIN ' . sql_table('plug_ezcomment2') . ' as s '
-			   . ' p ON c.cnumber = s.comid '
+			   . ' ON c.cnumber = s.comid '
 			   . ' WHERE c.citem = ' . intval($iid)
 			   . ' ORDER BY c.ctime '
 			   . $order;

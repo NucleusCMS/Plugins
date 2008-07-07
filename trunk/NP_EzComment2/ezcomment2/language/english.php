@@ -10,9 +10,9 @@ define('_NP_EZCOMMENT2_FORM_LOGGEDIN_IDX',    'Comment form for loggedin(for ide
 define('_NP_EZCOMMENT2_FORM_NOTLOGGEDIN_IDX', 'Comment form for not loggedin(for idex page)');
 define('_NP_EZCOMMENT2_FORM_LOGGEDIN_ITM',    'Comment form for loggedin(for item page)');
 define('_NP_EZCOMMENT2_FORM_NOTLOGGEDIN_ITM', 'Comment form for not loggedin(for item page)');
-define('COMMENTS_BODY_IDX',                   'Comments body(for idex page)');
-define('COMMENTS_HEADER_IDX',                 'Comments header(for idex page)');
-define('COMMENTS_FOOTER_IDX',                 'Comments footer(for idex page)');
+define('_NP_EZCOMMENT2_COMMENTS_BODY_IDX',    'Comments body(for idex page)');
+define('_NP_EZCOMMENT2_COMMENTS_HEADER_IDX',  'Comments header(for idex page)');
+define('_NP_EZCOMMENT2_COMMENTS_FOOTER_IDX',  'Comments footer(for idex page)');
 
 define('_NP_EZCOMMENT2_OP_SECRETMODE',      'Is the secret mode made effective ?');
 define('_NP_EZCOMMENT2_OP_SUBSTIUTION',     'Substitution seacret comment.');

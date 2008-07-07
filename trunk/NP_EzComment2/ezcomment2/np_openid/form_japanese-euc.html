@@ -1,12 +1,12 @@
 <!-- Dialog -->
 <div class="yui-skin-sam">
 <div id="profile">
-	<div class="hd">�ץ��ե����빹��</div>
+	<div class="hd">プロフィール更新</div>
 	<div class="bd">
 		<form method="POST" action="{{updateUrl}}?action=plugin">
-			<label for="nick">��̾��:</label><input type="textbox" name="nick" value="{{nick}}" />
+			<label for="nick">お名前:</label><input type="text" name="nick" value="{{nick}}" />
 			<div class="clear"></div>
-			<label for="email">E-mail:</label><input type="textbox" name="email" value="{{email}}"/>
+			<label for="email">E-mail:</label><input type="text" name="email" value="{{email}}"/>
 			<div class="clear"></div>
 			<input type="hidden" name="name" value="OpenId">
 			<input type="hidden" name="type" value="updateProfile">

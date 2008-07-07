@@ -9,9 +9,9 @@ define('_NP_EZCOMMENT2_FORM_LOGGEDIN_IDX',    'есеєе╨б╝дмеэе░едеєд╖д╞дддыд╚днд╦╔
 define('_NP_EZCOMMENT2_FORM_NOTLOGGEDIN_IDX', 'еэе░едеєд╖д╞ддд╩ддесеєе╨б╝бвд▐д┐д╧е▓е╣е╚д╦╔╜╝ид╡дьдые╒ейб╝ер(б╪еседеєд╬╠▄╝бе┌б╝е╕б┘═╤)');
 define('_NP_EZCOMMENT2_FORM_LOGGEDIN_ITM',    'есеєе╨б╝дмеэе░едеєд╖д╞дддыд╚днд╦╔╜╝ид╡дьдые╒ейб╝ер(б╪╕─╩╠еведе╞ере┌б╝е╕б┘═╤)');
 define('_NP_EZCOMMENT2_FORM_NOTLOGGEDIN_ITM', 'еэе░едеєд╖д╞ддд╩ддесеєе╨б╝бвд▐д┐д╧е▓е╣е╚д╦╔╜╝ид╡дьдые╒ейб╝ер(б╪╕─╩╠еведе╞ере┌б╝е╕б┘═╤)');
-define('COMMENTS_BODY_IDX',                   'е│есеєе╚д╬╦▄┬╬(б╪еседеєд╬╠▄╝бе┌б╝е╕б┘═╤)');
-define('COMMENTS_HEADER_IDX',                 'е│есеєе╚д╬е╪е├е└б╝(б╪еседеєд╬╠▄╝бе┌б╝е╕б┘═╤)');
-define('COMMENTS_FOOTER_IDX',                 'е│есеєе╚д╬е╒е├е┐б╝(б╪еседеєд╬╠▄╝бе┌б╝е╕б┘═╤)');
+define('_NP_EZCOMMENT2_COMMENTS_BODY_IDX',    'е│есеєе╚д╬╦▄┬╬(б╪еседеєд╬╠▄╝бе┌б╝е╕б┘═╤)');
+define('_NP_EZCOMMENT2_COMMENTS_HEADER_IDX',  'е│есеєе╚д╬е╪е├е└б╝(б╪еседеєд╬╠▄╝бе┌б╝е╕б┘═╤)');
+define('_NP_EZCOMMENT2_COMMENTS_FOOTER_IDX',  'е│есеєе╚д╬е╒е├е┐б╝(б╪еседеєд╬╠▄╝бе┌б╝е╕б┘═╤)');
 
 define('_NP_EZCOMMENT2_OP_SECRETMODE',       'Ове╩еде╖ече│есеєе╚ОгдЄ═н╕·д╦д╖д▐д╣длбй');
 define('_NP_EZCOMMENT2_OP_SUBSTIUTION',      'Ове╩еде╖ече│есеєе╚Огд╬┬х┬╪е│есеєе╚');
