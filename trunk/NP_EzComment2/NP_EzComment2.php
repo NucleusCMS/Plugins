@@ -12,7 +12,7 @@
  * @author    shizuki
  * @copyright 2008 shizuki
  * @license   http://www.gnu.org/licenses/gpl.txt  GNU GENERAL PUBLIC LICENSE Version 2, June 1991
- * @version   $Date: 2008-07-08 15:14:27 $ $Revision: 1.9 $
+ * @version   $Date: 2008-07-08 16:14:57 $ $Revision: 1.10 $
  * @link      http://japan.nucleuscms.org/wiki/plugins:showblogs
  * @since     File available since Release 1.0
  */
@@ -21,6 +21,11 @@
  * version history
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.9  2008/07/08 15:14:27  shizuki
+ * * Corresponds to event_PreComment.
+ * * Fix typo.
+ * * RC2
+ *
  * Revision 1.8  2008/07/07 15:42:54  shizuki
  * * The experimental society  PHP Version: 5.2.6/MySQL Server Version (client): (5.1.25-rc-log 5.1.25-rc).
  * * The normal movement is confirmed.
@@ -130,7 +135,7 @@ class NP_EzComment2 extends NucleusPlugin
 	 */
 	function getVersion()
 	{
-		return '$Date: 2008-07-08 15:14:27 $ $Revision: 1.9 $';
+		return '$Date: 2008-07-08 16:14:57 $ $Revision: 1.10 $';
 	}
 
 	// }}}
@@ -371,10 +376,12 @@ class NP_EzComment2 extends NucleusPlugin
 	function event_PreComment(&$data)
 	{
 		if ($this->callFlg) return;
-		$sql = 'SELECT secflg as result FROM ' . sql_table('plug_ezcomment2')
+		$sql = 'SELECT secflg, userID FROM ' . sql_table('plug_ezcomment2')
 			 . ' WHERE comid = ' . intval($data['comment']['commentid']);
-		$flg = quickQuery($sql);
-		if (!$flg) return;
+		$res = sql_query($sql);
+		$flg = mysql_fetch_assoc($res);
+		if (!$flg['secflg']) return;
+		$data['comment']['identity'] = $flg['userID'];
 		global $manager, $member;
 		$bid   = intval($data['comment']['blogid']);
 		$b     = $manager->getBlog($bid);
@@ -757,7 +764,7 @@ class NP_EzComment2 extends NucleusPlugin
 		while ($comment = mysql_fetch_assoc($comments)) {
 			$comment['timestamp'] = strtotime($comment['ctime']);
 			if ($judge && $comment['secret']) {
-					$comment = $this->JudgementCommentSecrets($comment, $judge);
+				$comment = $this->JudgementCommentSecrets($comment, $judge);
 			}
 			$actions->setCurrentComment($comment);
 			$manager->notify('PreComment', array('comment' => &$comment));
@@ -825,8 +832,11 @@ class NP_EzComment2 extends NucleusPlugin
 			} elseif ($judge['blogAdmin']) {
 				echo 'admin';
 			}
-		} elseif ($judge['openIDLoggedin'] && $judge['openIDUser'] == $comment['identity']) {
-			echo 'openid';
+		} elseif ($judge['openIDLoggedin']) {
+//			echo 'openid / ';
+			echo $judge['openIDUser'].' / ';
+			echo $comment['identity'].' / ';
+				echo "honnnin";
 		}*/
 		if (!(($judge['memberLoggedin'] && ($judge['loginUser']  == intval($comment['identity']) || $judge['blogAdmin'])) ||
 			($judge['openIDLoggedin'] && $judge['openIDUser'] == $comment['identity']))) {
@@ -848,6 +858,7 @@ class NP_EzComment2 extends NucleusPlugin
 	 */
 	function changeCommentSet(&$comment, $judge)
 	{
+		global $manager;
 		$comment['body']        = $judge['substitution'];
 		$comment['short']       = $judge['substitution'];
 		$comment['excerpt']     = $judge['substitution'];
@@ -861,6 +872,10 @@ class NP_EzComment2 extends NucleusPlugin
 		$comment['userlink']    = '#';
 		$comment['host']        = '127.0.0.1';
 		$comment['ip']          = '127.0.0.1';
+		if ($manager->pluginInstalled('NP_LatestWritebacks')) {
+			$comment['commentbody'] = $judge['substitution'];
+			$comment['commentator'] = '#';
+		}
 		return $comment;
 	}
 	// {{{ getComments($comment, $judge)
