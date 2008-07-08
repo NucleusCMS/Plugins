@@ -12,7 +12,7 @@
  * @author    shizuki
  * @copyright 2008 shizuki
  * @license   http://www.gnu.org/licenses/gpl.txt  GNU GENERAL PUBLIC LICENSE Version 2, June 1991
- * @version   $Date: 2008-07-07 15:42:54 $ $Revision: 1.8 $
+ * @version   $Date: 2008-07-08 15:14:27 $ $Revision: 1.9 $
  * @link      http://japan.nucleuscms.org/wiki/plugins:showblogs
  * @since     File available since Release 1.0
  */
@@ -21,6 +21,16 @@
  * version history
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.8  2008/07/07 15:42:54  shizuki
+ * * The experimental society  PHP Version: 5.2.6/MySQL Server Version (client): (5.1.25-rc-log 5.1.25-rc).
+ * * The normal movement is confirmed.
+ * * The SQL correction/behavior when installing, is changed a little.
+ * * event_PostDeleteCommnent addition * It's corrected when being off login time and secret mode-lessly, so as not to take out a check box.
+ * * NP_OpenId is indispensable in the present.
+ * * NP_znSpecialTemplateParts is indispensable.
+ * * It's expected to add the setting which will establish a password at the time of contribution without NP_OpenId and make it hidden from now on.
+ * * It's RC edition, so please cooperate in the one with the environment.
+ *
  * Revision 1.7  2008/07/07 10:24:00  shizuki
  * * Still, the human sacrifice test version.
  * * A template was separated for for index pages and item page.
@@ -47,6 +57,13 @@ class NP_EzComment2 extends NucleusPlugin
 	 * @var object
 	 */
 	var $authOpenID;
+
+	/**
+	 * Flag of the case that one is invoker.
+	 *
+	 * @var boolean
+	 */
+	var $callFlg;
 
 	// }}}
 	// {{{ getName()
@@ -113,7 +130,7 @@ class NP_EzComment2 extends NucleusPlugin
 	 */
 	function getVersion()
 	{
-		return '$Date: 2008-07-07 15:42:54 $ $Revision: 1.8 $';
+		return '$Date: 2008-07-08 15:14:27 $ $Revision: 1.9 $';
 	}
 
 	// }}}
@@ -163,6 +180,7 @@ class NP_EzComment2 extends NucleusPlugin
 			'FormExtra',
 			'PostAddComment',
 			'PostDeleteComment',
+			'PreComment',
 		);
 	}
 
@@ -178,7 +196,7 @@ class NP_EzComment2 extends NucleusPlugin
 	{
 		return array(
 			sql_table('plug_ezcomment2'),
-			);
+		);
 	}
 
 	// }}}
@@ -255,7 +273,8 @@ class NP_EzComment2 extends NucleusPlugin
 	function init()
 	{
 		$this->languageInclude();
-		$this->numcalled  = 0;
+		$this->numcalled = 0;
+		$this->callFlg   = false;
 		global $manager;
 		if ($manager->pluginInstalled('NP_OpenId') && !$this->authOpenID) {
 			$this->authOpenID = $manager->getPlugin('NP_OpenId');
@@ -337,6 +356,31 @@ class NP_EzComment2 extends NucleusPlugin
 				echo '<br /><input type="checkbox" value="1" name="EzComment2_Secret" id="EzComment2_Secret_' . $this->numcalled . '" />';
 				echo '<label for="EzComment2_Secret_' . $this->numcalled . '">'.$this->getBlogOption($bid, 'secLabel').'</label><br />';
 		}
+	}
+
+	// }}}
+	// {{{ event_PreComment(&$data)
+
+	/**
+	 * Inside one of the comment, membermail or account activation forms.
+	 *
+	 * @param  array
+	 *			comment array
+	 * @return void.
+	 */
+	function event_PreComment(&$data)
+	{
+		if ($this->callFlg) return;
+		$sql = 'SELECT secflg as result FROM ' . sql_table('plug_ezcomment2')
+			 . ' WHERE comid = ' . intval($data['comment']['commentid']);
+		$flg = quickQuery($sql);
+		if (!$flg) return;
+		global $manager, $member;
+		$bid   = intval($data['comment']['blogid']);
+		$b     = $manager->getBlog($bid);
+		$judge = $this->setSecretJudge($bid, $member, $b);
+		$data['comment'] = $this->JudgementCommentSecrets($data['comment'], $judge);
+//		print_r($data);
 	}
 
 	// }}}
@@ -700,20 +744,20 @@ class NP_EzComment2 extends NucleusPlugin
 		$viewnum  = mysql_num_rows($comments);
 		$actions->setViewnum($viewnum);
 		if ($this->getBlogOption($bid, 'secret') == 'yes') {
-			$secret = $this->setSecretJudge($bid, $member, $b);
+			$judge = $this->setSecretJudge($bid, $member, $b);
 		}
 
 		$templateType = '';
 		if ($skinType == 'index') $templateType = '_IDX';
-		$blogURL      = $b->getURL();
-		$substitution = $this->getBlogOption($bid, 'secComment');
-		
+		$blogURL       = $b->getURL();
+		$substitution  = $this->getBlogOption($bid, 'secComment');
+		$this->callFlg = true;
 		$parser->parse($template['COMMENTS_HEADER' . $templateType]);
 
 		while ($comment = mysql_fetch_assoc($comments)) {
 			$comment['timestamp'] = strtotime($comment['ctime']);
-			if ($secret) {
-					$comment = $this->JudgementCommentSecrets($comment, $secret, $blogURL, $substitution);
+			if ($judge && $comment['secret']) {
+					$comment = $this->JudgementCommentSecrets($comment, $judge);
 			}
 			$actions->setCurrentComment($comment);
 			$manager->notify('PreComment', array('comment' => &$comment));
@@ -772,11 +816,21 @@ class NP_EzComment2 extends NucleusPlugin
 	 * @param  string
 	 * @return array
 	 */
-	function JudgementCommentSecrets($comment, $judge, $blogURL, $substitution)
+	function JudgementCommentSecrets($comment, $judge)
 	{
-		if (!(($judge['memberLoggedin'] && ($judge['loginUser']  == intval($comment['identity']) || $blogAdmin)) ||
-			($judge['openIDLoggedin'] && $judge['openIDUser'] == $comment['identity'])) && $comment['secret']) {
-				$this->changeCommentSet($comment, $blogURL, $substitution);
+/*		if ($judge['memberLoggedin']) {
+			echo 'member';
+			if ($judge['loginUser']  == intval($comment['identity'])) {
+				echo 'commentator';
+			} elseif ($judge['blogAdmin']) {
+				echo 'admin';
+			}
+		} elseif ($judge['openIDLoggedin'] && $judge['openIDUser'] == $comment['identity']) {
+			echo 'openid';
+		}*/
+		if (!(($judge['memberLoggedin'] && ($judge['loginUser']  == intval($comment['identity']) || $judge['blogAdmin'])) ||
+			($judge['openIDLoggedin'] && $judge['openIDUser'] == $comment['identity']))) {
+				$this->changeCommentSet($comment, $judge);
 			}
 		return $comment;
 	}
@@ -792,15 +846,21 @@ class NP_EzComment2 extends NucleusPlugin
 	 * @param  string
 	 * @return array
 	 */
-	function changeCommentSet(&$comment, $blogURL, $substitution)
+	function changeCommentSet(&$comment, $judge)
 	{
-		$comment['body']     = $substitution;
-		$comment['userid']   = $blogURL;
-		$comment['memberid'] = 0;
-		$comment['user']     = '#';
-		$comment['email']    = '#';
-		$comment['host']     = '127.0.0.1';
-		$comment['ip']       = '127.0.0.1';
+		$comment['body']        = $judge['substitution'];
+		$comment['short']       = $judge['substitution'];
+		$comment['excerpt']     = $judge['substitution'];
+		$comment['userid']      = $judge['blogURL'];
+		$comment['memberid']    = 0;
+		$comment['user']        = '#';
+		$comment['useremail']   = '#';
+		$comment['userwebsite'] = '#';
+		$comment['email']       = '#';
+		$comment['userlinkraw'] = '#';
+		$comment['userlink']    = '#';
+		$comment['host']        = '127.0.0.1';
+		$comment['ip']          = '127.0.0.1';
 		return $comment;
 	}
 	// {{{ getComments($comment, $judge)
