@@ -12,7 +12,7 @@
  * @author    shizuki
  * @copyright 2008 shizuki
  * @license   http://www.gnu.org/licenses/gpl.txt  GNU GENERAL PUBLIC LICENSE Version 2, June 1991
- * @version   $Date: 2008-07-09 03:51:27 $ $Revision: 1.11 $
+ * @version   $Date: 2008-07-09 03:54:07 $ $Revision: 1.12 $
  * @link      http://japan.nucleuscms.org/wiki/plugins:ezcomment2
  * @since     File available since Release 1.0
  */
@@ -139,7 +139,7 @@ class NP_EzComment2 extends NucleusPlugin
 	 */
 	function getVersion()
 	{
-		return '$Date: 2008-07-09 03:51:27 $ $$';
+		return '$Date: 2008-07-09 03:54:07 $ $Revision: 1.12 $';
 	}
 
 	// }}}
