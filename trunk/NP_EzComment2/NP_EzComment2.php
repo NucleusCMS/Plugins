@@ -12,8 +12,8 @@
  * @author    shizuki
  * @copyright 2008 shizuki
  * @license   http://www.gnu.org/licenses/gpl.txt  GNU GENERAL PUBLIC LICENSE Version 2, June 1991
- * @version   $Date: 2008-07-08 16:14:57 $ $Revision: 1.10 $
- * @link      http://japan.nucleuscms.org/wiki/plugins:showblogs
+ * @version   $Date: 2008-07-09 03:51:27 $ $Revision: 1.11 $
+ * @link      http://japan.nucleuscms.org/wiki/plugins:ezcomment2
  * @since     File available since Release 1.0
  */
 
@@ -21,6 +21,10 @@
  * version history
  *
  * $Log: not supported by cvs2svn $
+ * Revision 1.10  2008/07/08 16:14:57  shizuki
+ * *Bug fix event_PreComment
+ * *Correspondence preparations of NP_LatestWritebacks
+ *
  * Revision 1.9  2008/07/08 15:14:27  shizuki
  * * Corresponds to event_PreComment.
  * * Fix typo.
@@ -135,7 +139,7 @@ class NP_EzComment2 extends NucleusPlugin
 	 */
 	function getVersion()
 	{
-		return '$Date: 2008-07-08 16:14:57 $ $Revision: 1.10 $';
+		return '$Date: 2008-07-09 03:51:27 $ $$';
 	}
 
 	// }}}
