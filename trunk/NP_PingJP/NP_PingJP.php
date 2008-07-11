@@ -32,8 +32,8 @@
   *   v1.61 - Merge Asynchronous request code(by hsur)
   *   v1.62 - Add background mode
   *
-  * NP_PingJP.php ($Revision: 1.11 $)
-  * $Id: NP_PingJP.php,v 1.11 2008-07-11 09:06:41 shizuki Exp $
+  * NP_PingJP.php ($Revision: 1.12 $)
+  * $Id: NP_PingJP.php,v 1.12 2008-07-11 09:22:58 shizuki Exp $
   */
 
 
@@ -179,16 +179,10 @@ var $servers;
 		$this->createBlogOption('pingjp_goo',         _PINGJP_GOO,       'yesno',    'no');
 		// http://ask.jp
 		$this->createBlogOption('pingjp_ask',         _PINGJP_ASK,       'yesno',    'no');
-		// http://blog360.jp
-		$this->createBlogOption('pingjp_blog360',     _PINGJP_BLOG360,   'yesno',    'yes');
 		// http://pingoo.jp
 		$this->createBlogOption('pingjp_pingoo',      _PINGJP_PINGOO,    'yesno',    'no');
 		// http://blo.gs
 		$this->createBlogOption('pingjp_blogs',       _PINGJP_BLOGS,     'yesno',    'no');
-		// http://weblogues.com/
-		$this->createBlogOption('pingjp_weblogues',   _PINGJP_WEBLOGUES, 'yesno',    'no');
-		// http://blogg.de
-		$this->createBlogOption('pingjp_bloggde',     _PINGJP_BLOGGDE,   'yesno',    'no');
 		// other ping server
 		$this->createBlogOption('pingjp_otherurl',    _PINGJP_OTHER,     'textarea', '');
 		// background ?
@@ -265,12 +259,6 @@ var $servers;
 				'method' => 'weblogUpdates.ping',
 			),
 			array(
-				'server' => 'blog360',
-				'name'   => _PINGJP_BLOG360,
-				'addr'   => 'http://ping.blog360.jp/rpc',
-				'method' => 'weblogUpdates.ping',
-			),
-			array(
 				'server' => 'pingoo',
 				'name'   => _PINGJP_PINGOO,
 				'addr'   => 'http://pingoo.jp/ping',
@@ -281,18 +269,6 @@ var $servers;
 				'name'   => _PINGJP_BLOGS,
 				'addr'   => 'http://ping.blo.gs/',
 				'method' => 'weblogUpdates.extendedPing',
-			),
-			array(
-				'server' => 'weblogues',
-				'name'   => _PINGJP_WEBLOGUES,
-				'addr'   => 'http://www.weblogues.com/RPC/',
-				'method' => 'weblogUpdates.extendedPing',
-			),
-			array(
-				'server' => 'bloggde',
-				'name'   => _PINGJP_BLOGGDE,
-				'addr'   => 'http://xmlrpc.blogg.de/ping',
-				'method' => 'bloggUpdates.ping',
 			),
 		);
 	}
