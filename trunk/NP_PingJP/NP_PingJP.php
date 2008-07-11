@@ -32,14 +32,14 @@
   *   v1.61 - Merge Asynchronous request code(by hsur)
   *   v1.62 - Add background mode
   *
-  * NP_PingJP.php ($Revision: 1.8 $)
-  * $Id: NP_PingJP.php,v 1.8 2008-07-01 13:51:27 shizuki Exp $
-  **/
+  * NP_PingJP.php ($Revision: 1.9 $)
+  * $Id: NP_PingJP.php,v 1.9 2008-07-11 06:54:54 shizuki Exp $
+  */
 
 
   /**
-    * Require files for Asynchronous request
-    **/
+   * Require files for Asynchronous request
+   */
 require_once(dirname(__FILE__).'/sharedlibs/sharedlibs.php');
 require("cles/AsyncHTTP/RawPost.php");
 
@@ -132,11 +132,11 @@ var $servers = array(
 	// {{{ function getName()
 
 	/**
-	  * Name of the plugin
-	  *
-	  * @return string
-	  *     The name easy to understand for man of the plugin
-	  **/
+	 * Name of the plugin
+	 *
+	 * @return string
+	 *     The name easy to understand for man of the plugin
+	 */
 	function getName()
 	{
 		return 'Ping';
@@ -146,11 +146,11 @@ var $servers = array(
 	// {{{ function getAuthor()
 
 	/**
-	  * Author of the plugin
-	  *
-	  * @return string
-	  *     The name of the plugin author
-	  **/
+	 * Author of the plugin
+	 *
+	 * @return string
+	 *     The name of the plugin author
+	 */
 	function getAuthor()
 	{
 		return 'admun (Edmond Hui)+ Tokitake + shizuki';
@@ -160,11 +160,11 @@ var $servers = array(
 	// {{{ function getURL()
 
 	/**
-	  * URL of the site which can download a plugin
-	  *
-	  * @return string
-	  *     URL of the site which can download a plugin
-	  **/
+	 * URL of the site which can download a plugin
+	 *
+	 * @return string
+	 *     URL of the site which can download a plugin
+	 */
 	function getURL()
 	{
 		return 'http://shizuki.kinezumi.net/';
@@ -174,11 +174,11 @@ var $servers = array(
 	// {{{ function getVersion()
 
 	/**
-	  * Version of the plugin
-	  *
-	  * @return string
-	  *     Version of the plugin
-	  **/
+	 * Version of the plugin
+	 *
+	 * @return string
+	 *     Version of the plugin
+	 */
 	function getVersion()
 	{
 		return '1.62';
@@ -188,11 +188,11 @@ var $servers = array(
 	// {{{ function getMinNucleusVersion()
 
 	/**
-	  * Requier NucleusCMS version of the plugin
-	  *
-	  * @return string
-	  *     Requier NucleusCMS version of a plugin
-	  **/
+	 * Requier NucleusCMS version of the plugin
+	 *
+	 * @return string
+	 *     Requier NucleusCMS version of a plugin
+	 */
 	function getMinNucleusVersion()
 	{
 		return '331';
@@ -202,11 +202,11 @@ var $servers = array(
 	// {{{ function getDescription()
 
 	/**
-	  * Description of the plugin
-	  *
-	  * @return string
-	  *     Description of a plugin
-	  **/
+	 * Description of the plugin
+	 *
+	 * @return string
+	 *     Description of a plugin
+	 */
 	function getDescription()
 	{
 		return _PINGJP_DESC;
@@ -216,13 +216,12 @@ var $servers = array(
 	// {{{ function supportsFeature($what)
 
 	/**
-	  * Check whether the feature is being supported.
-	  *
-	  * @param  string
-	  *     Feature name
-	  *
-	  * @return boolean
-	  **/
+	 * Check whether the feature is being supported.
+	 *
+	 * @param  string
+	 *     Feature name
+	 * @return boolean
+	 */
 	function supportsFeature($what)
 	{
 		switch($what) {
@@ -237,10 +236,10 @@ var $servers = array(
 	// {{{ function install()
 
 	/**
-	  * Plugin installing action
-	  *
-	  * @return void
-	  **/
+	 * Plugin installing action
+	 *
+	 * @return void
+	 */
 	function install()
 	{
 		// Default, http://pingomatic.com
@@ -283,10 +282,10 @@ var $servers = array(
 	// {{{ function init()
 
 	/**
-	  * Plugin initialize action
-	  *
-	  * @return void
-	  **/
+	 * Plugin initialize action
+	 *
+	 * @return void
+	 */
 	function init()
 	{
 		$language = ereg_replace( '[\\|/]', '', getLanguageName());
@@ -301,18 +300,18 @@ var $servers = array(
 	// {{{ function getEventList()
 
 	/**
-	  * Event list plugin exist
-	  *
-	  * @return array
-	  *     exist events
-	  **/
+	 * Event list plugin exist
+	 *
+	 * @return array
+	 *     exist events
+	 */
 	function getEventList()
 	{
 		return array(
 			'SendPing',
 			'JustPosted',
-			'EditItemFormExtras',
-			'AdminPrePageHead',
+//			'EditItemFormExtras',
+//			'AdminPrePageHead',
 		);
 	}
 
@@ -320,18 +319,17 @@ var $servers = array(
 	// {{{ function event_AdminPrePageHead($data)
 
 	/**
-	  * Event ITEM updated
-	  *
-	  * @param  array
-	  *     extrahead : reference string
-	  *         Extra information
-	  *     action    : value string
-	  *         executed action or pagetype
-	  *
-	  * @return void
-	  **/
+	 * Event ITEM updated
+	 *
+	 * @param  array
+	 *     extrahead : reference string
+	 *         Extra information
+	 *     action    : value string
+	 *         executed action or pagetype
+	 * @return void
+	 */
 	function event_AdminPrePageHead($data) {
-		global $manager;
+/*		global $manager;
 		if (requestVar('np_pingjp_check') != 1 && $data['action'] == 'sendping') {
 			$blogid   = intRequestVar('blogid');
 			$redirect = $CONF['AdminURL'] . 'index.php?action=itemlist&blogid=' . $blogid;
@@ -339,56 +337,55 @@ var $servers = array(
 			$data['extrahead'] = preg_replace('|'.$pattern.'|', '', $data['extrahead']);
 			redirect($redirect);
 		}
-    }
+*/	}
 
 	// }}}
 	// {{{ function event_EditItemFormExtras($data)
 
 	/**
-	  * Event display ITEM edit form
-	  *     adding plugin specify for ITEM edit form
-	  *
-	  * @param  array
-	  *     blog      : reference object
-	  *         BLOG object
-	  *     variables : value array
-	  *         containing all sorts of information on the item that's being edited
-	  *             itemid    : intger
-	  *                 item ID
-	  *             draft     : intger(boolean)
-	  *                 ITEM draft status
-	  *                     public : 0
-	  *                     draft  : 1
-	  *             closed    : intger(boolean)
-	  *                 ITEM comments status
-	  *                     accept     : 0
-	  *                     not accept : 1
-	  *             title     : string
-	  *                 item title
-	  *             body      : string
-	  *                 item main text
-	  *             more      : string
-	  *                 item extended text
-	  *             author    : string
-	  *                 item author
-	  *             authorid  : intger
-	  *                 item author ID
-	  *             timestamp : intger
-	  *                 item timestamp
-	  *             karmapos  : intger
-	  *                 item karmapos
-	  *             karmaneg  : intger
-	  *                 item karmaneg
-	  *             catid     : intger
-	  *                 item category ID
-	  *     itemid    : value intger
-	  *         editing item ID
-	  *
-	  * @return void
-	  **/
+	 * Event display ITEM edit form
+	 *     adding plugin specify for ITEM edit form
+	 *
+	 * @param  array
+	 *     blog      : reference object
+	 *         BLOG object
+	 *     variables : value array
+	 *         containing all sorts of information on the item that's being edited
+	 *             itemid    : intger
+	 *                 item ID
+	 *             draft     : intger(boolean)
+	 *                 ITEM draft status
+	 *                     public : 0
+	 *                     draft  : 1
+	 *             closed    : intger(boolean)
+	 *                 ITEM comments status
+	 *                     accept     : 0
+	 *                     not accept : 1
+	 *             title     : string
+	 *                 item title
+	 *             body      : string
+	 *                 item main text
+	 *             more      : string
+	 *                 item extended text
+	 *             author    : string
+	 *                 item author
+	 *             authorid  : intger
+	 *                 item author ID
+	 *             timestamp : intger
+	 *                 item timestamp
+	 *             karmapos  : intger
+	 *                 item karmapos
+	 *             karmaneg  : intger
+	 *                 item karmaneg
+	 *             catid     : intger
+	 *                 item category ID
+	 *     itemid    : value intger
+	 *         editing item ID
+	 * @return void
+	 */
 	function event_EditItemFormExtras($data)
 	{
-		?>
+/*		?>
 		<div id="np_pingjp_form" style="display:block">
 			<h3>NP_PingJP</h3>
 			<p>
@@ -397,23 +394,22 @@ var $servers = array(
 			</p>
 		</div>
 		<?php
-	}
+*/	}
 
 	// }}}
 	// {{{ function event_JustPosted($data)
 
 	/**
-	  * Event ITEM timstamp as now
-	  *     send update ping or etc.
-	  *
-	  * @param  array
-	  *     blogid : value intger
-	  *         blog ID
-	  *     pinged : reference boolean
-	  *         Update ping completed as true
-	  *
-	  * @return void
-	  **/
+	 * Event ITEM timstamp as now
+	 *     send update ping or etc.
+	 *
+	 * @param  array
+	 *     blogid : value intger
+	 *         blog ID
+	 *     pinged : reference boolean
+	 *         Update ping completed as true
+	 * @return void
+	 */
 	function event_JustPosted($data)
 	{
 		if ($data['pinged'] == true) {
@@ -438,15 +434,15 @@ var $servers = array(
 	// {{{ function event_SendPing($data)
 
 	/**
-	  * Event send weblog updates ping
-	  *     when add ITEM
-	  *
-	  * @param  array
-	  *     blogid : value intger
-	  *         blog ID
-	  *
-	  * @return void
-	  **/
+	 * Event send weblog updates ping
+	 *     when add ITEM
+	 *
+	 * @param  array
+	 *     blogid : value intger
+	 *         blog ID
+	 *
+	 * @return void
+	 */
 	function event_SendPing($data)
 	{
 		$this->sendPing($data['blogid']);
@@ -456,18 +452,18 @@ var $servers = array(
 	// {{{ function sendPing($myBlogId, $background = 0)
 
 	/**
-	  * Setting ping servers
-	  *
-	  * @param  intger
-	  *     blog ID
-	  * @param  intger
-	  *     Send ping mode
-	  *         0 : display mode
-	  *         1 : non display mode
-	  *         2 : background mode
-	  *
-	  * @return void
-	  **/
+	 * Setting ping servers
+	 *
+	 * @param  intger
+	 *     blog ID
+	 * @param  intger
+	 *     Send ping mode
+	 *         0 : display mode
+	 *         1 : non display mode
+	 *         2 : background mode
+	 *
+	 * @return void
+	 */
 	function sendPing($bid, $background = 0)
 	{
 		$targets = $this->getPingingServers($bid);
@@ -534,20 +530,19 @@ var $servers = array(
 	// {{{ function sendUpdatePing($myBlogId, $pingServer, $header)
 
 	/**
-	  * Setting ping message
-	  *
-	  * @param  intger
-	  *     blog ID
-	  * @param  array
-	  *     ping server settigs
-	  *     name : name of ping server
-	  *     host : URI of ping server
-	  *     meth : method of ping server accept
-	  * @param string
-	  *     http request header
-	  *
-	  * @return void
-	  **/
+	 * Setting ping message
+	 *
+	 * @param  intger
+	 *     blog ID
+	 * @param  array
+	 *     ping server settigs
+	 *     name : name of ping server
+	 *     host : URI of ping server
+	 *     meth : method of ping server accept
+	 * @param string
+	 *     http request header
+	 * @return void
+	 */
 	function sendUpdatePing($bid, $server, $header)
 	{
 		global $manager;
@@ -585,17 +580,16 @@ var $servers = array(
 	// {{{ function processPingResult($response)
 
 	/**
-	  * Process pinging result
-	  *
-	  * @param  object
-	  *     weblog updates ping response
-	  *
-	  * @return array
-	  *     error   : boolean
-	  *               ping response status
-	  *     message : string
-	  *               ping response messages
-	  **/
+	 * Process pinging result
+	 *
+	 * @param  object
+	 *     weblog updates ping response
+	 * @return array
+	 *     error   : boolean
+	 *               ping response status
+	 *     message : string
+	 *               ping response messages
+	 */
 	function processPingResult($response)
 	{
 		global $php_errormsg;
@@ -635,22 +629,21 @@ var $servers = array(
 	// {{{ function getPingingServers($bid)
 
 	/**
-	  * Process pinging result
-	  *
-	  * @param  intger
-	  *     blog ID
-	  *
-	  * @return array
-	  *     targets : array
-	  *               server : string
-	  *                        ping server
-	  *               name   : string
-	  *                        ping server name
-	  *               host   : string
-	  *                        server host addr.
-	  *               method : string
-	  *                        update ping method
-	  **/
+	 * Process pinging result
+	 *
+	 * @param  intger
+	 *     blog ID
+	 * @return array
+	 *     targets : array
+	 *               server : string
+	 *                        ping server
+	 *               name   : string
+	 *                        ping server name
+	 *               host   : string
+	 *                        server host addr.
+	 *               method : string
+	 *                        update ping method
+	 */
 	function gerPingServers($bid)
 	{
 		$servers = $this->servers;
