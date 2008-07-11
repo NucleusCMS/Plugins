@@ -32,8 +32,8 @@
   *   v1.61 - Merge Asynchronous request code(by hsur)
   *   v1.62 - Add background mode
   *
-  * NP_PingJP.php ($Revision: 1.9 $)
-  * $Id: NP_PingJP.php,v 1.9 2008-07-11 06:54:54 shizuki Exp $
+  * NP_PingJP.php ($Revision: 1.10 $)
+  * $Id: NP_PingJP.php,v 1.10 2008-07-11 07:00:55 shizuki Exp $
   */
 
 
@@ -440,7 +440,6 @@ var $servers = array(
 	 * @param  array
 	 *     blogid : value intger
 	 *         blog ID
-	 *
 	 * @return void
 	 */
 	function event_SendPing($data)
@@ -461,7 +460,6 @@ var $servers = array(
 	 *         0 : display mode
 	 *         1 : non display mode
 	 *         2 : background mode
-	 *
 	 * @return void
 	 */
 	function sendPing($bid, $background = 0)
