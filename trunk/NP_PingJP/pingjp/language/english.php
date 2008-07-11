@@ -11,8 +11,9 @@
 	define('_PINGJP_ASK',            'ask');
 	define('_PINGJP_BLOGR',          'Blogrolling.com');
 	define('_PINGJP_BLOGS',          'Blo.gs (no longer works?)');
-	define('_PINGJP_WEBLOGUES',      'Weblogues (�t�����X����̂ݎ�t)(no longer works?)');
+	define('_PINGJP_WEBLOGUES',      'Weblogues (no longer works?)');
 	define('_PINGJP_BLOGGDE',        'Blogg.de (not working??)');
+	define('_PINGJP_OTHER',          'Other ping servers.');
 	define('_PINGJP_BG',             'Ping from background when a future post first appears');
 	define('_PINGJP_UPDURL',         'Blog URI send to ping servers');
 	define('_PINGJP_UPDFEED',        'Feed URI send to ping servers(Ex:http://example.com/xml-rss2.php?blogid=2)');

@@ -15,7 +15,7 @@
   * @author    shizuki
   * @copyright 2007 shizuki
   * @license   http://www.gnu.org/licenses/gpl.txt  GNU GENERAL PUBLIC LICENSE Version 2, June 1991
-  * @version   1.61
+  * @version   1.63
   * @link      http://shizuki.kinezumi.net/
   *
   * History of NP_Ping
@@ -32,8 +32,8 @@
   *   v1.61 - Merge Asynchronous request code(by hsur)
   *   v1.62 - Add background mode
   *
-  * NP_PingJP.php ($Revision: 1.10 $)
-  * $Id: NP_PingJP.php,v 1.10 2008-07-11 07:00:55 shizuki Exp $
+  * NP_PingJP.php ($Revision: 1.11 $)
+  * $Id: NP_PingJP.php,v 1.11 2008-07-11 09:06:41 shizuki Exp $
   */
 
 
@@ -41,93 +41,14 @@
    * Require files for Asynchronous request
    */
 require_once(dirname(__FILE__).'/sharedlibs/sharedlibs.php');
-require("cles/AsyncHTTP/RawPost.php");
+require_once("cles/AsyncHTTP/RawPost.php");
 
 class NP_PingJP extends NucleusPlugin
 {
 
 var $ahttp;
 var $debug   = false;
-var $servers = array(
-	array(
-		'server' => 'pingomatic',
-		'name'   => _PINGJP_PINGOM,
-		'addr'   => 'http://rpc.pingomatic.com/',
-		'method' => 'weblogUpdates.ping',
-	),
-	array(
-		'server' => 'weblogs',
-		'name'   => _PINGJP_WEBLOGS,
-		'addr'   => 'http://rpc.weblogs.com/rpc2',
-		'method' => 'weblogUpdates.extendedPing',
-	),
-	array(
-		'server' => 'technorati',
-		'name'   => _PINGJP_TECHNOR,
-		'addr'   => 'http://rpc.technorati.com/rpc/ping',
-		'method' => 'weblogUpdates.ping',
-	),
-	array(
-		'server' => 'blogrolling',
-		'name'   => _PINGJP_BLOGR,
-		'addr'   => 'http://rpc.blogrolling.com/pinger/',
-		'method' => 'weblogUpdates.ping',
-	),
-	array(
-		'server' => 'google',
-		'name'   => _PINGJP_GOOGLE,
-		'addr'   => 'http://blogsearch.google.co.jp/ping/RPC2',
-		'method' => 'weblogUpdates.extendedPing',
-	),
-	array(
-		'server' => 'yahoo',
-		'name'   => _PINGJP_YAHOO,
-		'addr'   => 'http://api.my.yahoo.co.jp/RPC2',
-		'method' => 'weblogUpdates.ping',
-	),
-	array(
-		'server' => 'goo',
-		'name'   => _PINGJP_GOO,
-		'addr'   => 'http://blog.goo.ne.jp/XMLRPC',
-		'method' => 'weblogUpdates.ping',
-	),
-	array(
-		'server' => 'ask',
-		'name'   => _PINGJP_ASK,
-		'addr'   => 'http://ping.ask.jp/xmlrpc.m',
-		'method' => 'weblogUpdates.ping',
-	),
-	array(
-		'server' => 'blog360',
-		'name'   => _PINGJP_BLOG360,
-		'addr'   => 'http://ping.blog360.jp/rpc',
-		'method' => 'weblogUpdates.ping',
-	),
-	array(
-		'server' => 'pingoo',
-		'name'   => _PINGJP_PINGOO,
-		'addr'   => 'http://pingoo.jp/ping',
-		'method' => 'weblogUpdates.ping',
-	),
-	array(
-		'server' => 'blogs',
-		'name'   => _PINGJP_BLOGS,
-		'addr'   => 'http://ping.blo.gs/',
-		'method' => 'weblogUpdates.extendedPing',
-	),
-	array(
-		'server' => 'weblogues',
-		'name'   => _PINGJP_WEBLOGUES,
-		'addr'   => 'http://www.weblogues.com/RPC/',
-		'method' => 'weblogUpdates.extendedPing',
-	),
-	array(
-		'server' => 'bloggde',
-		'name'   => _PINGJP_BLOGGDE,
-		'addr'   => 'http://xmlrpc.blogg.de/ping',
-		'method' => 'bloggUpdates.ping',
-	),
-);
+var $servers;
 
 	// {{{ function getName()
 
@@ -139,7 +60,7 @@ var $servers = array(
 	 */
 	function getName()
 	{
-		return 'Ping';
+		return 'Ping for Japanese';
 	}
 
 	// }}}
@@ -181,7 +102,7 @@ var $servers = array(
 	 */
 	function getVersion()
 	{
-		return '1.62';
+		return '1.63';
 	}
 
 	// }}}
@@ -294,6 +215,86 @@ var $servers = array(
 		} else {
 			include_once($this->getDirectory() . 'language/english.php');
 		}
+		$this->servers = array(
+			array(
+				'server' => 'pingomatic',
+				'name'   => _PINGJP_PINGOM,
+				'addr'   => 'http://rpc.pingomatic.com/',
+				'method' => 'weblogUpdates.ping',
+			),
+			array(
+				'server' => 'weblogs',
+				'name'   => _PINGJP_WEBLOGS,
+				'addr'   => 'http://rpc.weblogs.com/rpc2',
+				'method' => 'weblogUpdates.extendedPing',
+			),
+			array(
+				'server' => 'technorati',
+				'name'   => _PINGJP_TECHNOR,
+				'addr'   => 'http://rpc.technorati.com/rpc/ping',
+				'method' => 'weblogUpdates.ping',
+			),
+			array(
+				'server' => 'blogrolling',
+				'name'   => _PINGJP_BLOGR,
+				'addr'   => 'http://rpc.blogrolling.com/pinger/',
+				'method' => 'weblogUpdates.ping',
+			),
+			array(
+				'server' => 'google',
+				'name'   => _PINGJP_GOOGLE,
+				'addr'   => 'http://blogsearch.google.co.jp/ping/RPC2',
+				'method' => 'weblogUpdates.extendedPing',
+			),
+			array(
+				'server' => 'yahoo',
+				'name'   => _PINGJP_YAHOO,
+				'addr'   => 'http://api.my.yahoo.co.jp/RPC2',
+				'method' => 'weblogUpdates.ping',
+			),
+			array(
+				'server' => 'goo',
+				'name'   => _PINGJP_GOO,
+				'addr'   => 'http://blog.goo.ne.jp/XMLRPC',
+				'method' => 'weblogUpdates.ping',
+			),
+			array(
+				'server' => 'ask',
+				'name'   => _PINGJP_ASK,
+				'addr'   => 'http://ping.ask.jp/xmlrpc.m',
+				'method' => 'weblogUpdates.ping',
+			),
+			array(
+				'server' => 'blog360',
+				'name'   => _PINGJP_BLOG360,
+				'addr'   => 'http://ping.blog360.jp/rpc',
+				'method' => 'weblogUpdates.ping',
+			),
+			array(
+				'server' => 'pingoo',
+				'name'   => _PINGJP_PINGOO,
+				'addr'   => 'http://pingoo.jp/ping',
+				'method' => 'weblogUpdates.ping',
+			),
+			array(
+				'server' => 'blogs',
+				'name'   => _PINGJP_BLOGS,
+				'addr'   => 'http://ping.blo.gs/',
+				'method' => 'weblogUpdates.extendedPing',
+			),
+			array(
+				'server' => 'weblogues',
+				'name'   => _PINGJP_WEBLOGUES,
+				'addr'   => 'http://www.weblogues.com/RPC/',
+				'method' => 'weblogUpdates.extendedPing',
+			),
+			array(
+				'server' => 'bloggde',
+				'name'   => _PINGJP_BLOGGDE,
+				'addr'   => 'http://xmlrpc.blogg.de/ping',
+				'method' => 'bloggUpdates.ping',
+			),
+		);
 	}
 
 	// }}}
@@ -310,91 +311,8 @@ var $servers = array(
 		return array(
 			'SendPing',
 			'JustPosted',
-//			'EditItemFormExtras',
-//			'AdminPrePageHead',
 		);
 	}
-
-	// }}}
-	// {{{ function event_AdminPrePageHead($data)
-
-	/**
-	 * Event ITEM updated
-	 *
-	 * @param  array
-	 *     extrahead : reference string
-	 *         Extra information
-	 *     action    : value string
-	 *         executed action or pagetype
-	 * @return void
-	 */
-	function event_AdminPrePageHead($data) {
-/*		global $manager;
-		if (requestVar('np_pingjp_check') != 1 && $data['action'] == 'sendping') {
-			$blogid   = intRequestVar('blogid');
-			$redirect = $CONF['AdminURL'] . 'index.php?action=itemlist&blogid=' . $blogid;
-			$pattern  = '<meta http-equiv="refresh" content="1; url=.+?/>';
-			$data['extrahead'] = preg_replace('|'.$pattern.'|', '', $data['extrahead']);
-			redirect($redirect);
-		}
-*/	}
-
-	// }}}
-	// {{{ function event_EditItemFormExtras($data)
-
-	/**
-	 * Event display ITEM edit form
-	 *     adding plugin specify for ITEM edit form
-	 *
-	 * @param  array
-	 *     blog      : reference object
-	 *         BLOG object
-	 *     variables : value array
-	 *         containing all sorts of information on the item that's being edited
-	 *             itemid    : intger
-	 *                 item ID
-	 *             draft     : intger(boolean)
-	 *                 ITEM draft status
-	 *                     public : 0
-	 *                     draft  : 1
-	 *             closed    : intger(boolean)
-	 *                 ITEM comments status
-	 *                     accept     : 0
-	 *                     not accept : 1
-	 *             title     : string
-	 *                 item title
-	 *             body      : string
-	 *                 item main text
-	 *             more      : string
-	 *                 item extended text
-	 *             author    : string
-	 *                 item author
-	 *             authorid  : intger
-	 *                 item author ID
-	 *             timestamp : intger
-	 *                 item timestamp
-	 *             karmapos  : intger
-	 *                 item karmapos
-	 *             karmaneg  : intger
-	 *                 item karmaneg
-	 *             catid     : intger
-	 *                 item category ID
-	 *     itemid    : value intger
-	 *         editing item ID
-	 * @return void
-	 */
-	function event_EditItemFormExtras($data)
-	{
-/*		?>
-		<div id="np_pingjp_form" style="display:block">
-			<h3>NP_PingJP</h3>
-			<p>
-				<label for="np_pingjp_check"><?php echo _PINGJP_FORMEXTRA ?>:</label>
-				<input type="checkbox" value="1" id="np_pingjp_check" name="np_pingjp_check" />
-			</p>
-		</div>
-		<?php
-*/	}
 
 	// }}}
 	// {{{ function event_JustPosted($data)
@@ -546,7 +464,7 @@ var $servers = array(
 		global $manager;
 		if (!class_exists('xmlrpcmsg')) {
 			global $DIR_LIBS;
-			include($DIR_LIBS . 'xmlrpc.inc.php');
+			include_once($DIR_LIBS . 'xmlrpc.inc.php');
 			$GLOBALS['xmlrpc_internalencoding'] = mb_internal_encoding();
 		}
 		$b    =& $manager->getBlog($bid);
@@ -642,13 +560,14 @@ var $servers = array(
 	 *               method : string
 	 *                        update ping method
 	 */
-	function gerPingServers($bid)
+	function getPingingServers($bid)
 	{
 		$servers = $this->servers;
 		$targets = array();
 		foreach ($servers as $key => $server) {
-			$info = $this->getBlogOption(intval($bid), 'pingjp_' . $server['server']);
-			if ($info != 'no') {
+		$serverName = 'pingjp_' . $server['server'];
+			$info = $this->getBlogOption(intval($bid), $serverName);
+			if ($info == 'yes') {
 				$targets[] = $server;
 			}
 		}

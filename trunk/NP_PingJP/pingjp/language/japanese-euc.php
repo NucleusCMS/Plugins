@@ -14,6 +14,7 @@
 	define('_PINGJP_BLOGS',          'Blo.gs (サービス終了？)');
 	define('_PINGJP_WEBLOGUES',      'Weblogues (フランスからのみ受付)(サービス終了？)');
 	define('_PINGJP_BLOGGDE',        'Blogg.de (サービス停止中??)');
+	define('_PINGJP_OTHER',          'その他の更新Ping受付サーバ');
 	define('_PINGJP_BG',             '未来の日付の記事が有効になったときバックグランドで ping を送信する');
 	define('_PINGJP_UPDURL',         'Pingサーバに送信するブログのURL');
 	define('_PINGJP_UPDFEED',        'Pingサーバに送信するRSS等のURL(例:http://example.com/xml-rss2.php?blogid=2)');
