@@ -12,7 +12,7 @@
  * @author    shizuki
  * @copyright 2008 shizuki
  * @license   http://www.gnu.org/licenses/gpl.txt  GNU GENERAL PUBLIC LICENSE Version 2, June 1991
- * @version   $Date: 2008-07-09 03:54:07 $ $Revision: 1.12 $
+ * @version   $Date: 2008-07-11 06:36:17 $ $Revision: 1.13 $
  * @link      http://japan.nucleuscms.org/wiki/plugins:ezcomment2
  * @since     File available since Release 1.0
  */
@@ -21,7 +21,13 @@
  * version history
  *
  * $Log: not supported by cvs2svn $
- * Revision 1.10  2008/07/08 16:14:57  shizuki
+ * Revision 1.12  2008/07/09 03:54:07  shizuki
+ * *** empty log message ***
+ *
+ * Revision 1.11  2008/07/09 03:54:04  shizuki
+ * *Fix header info URL:showblogs -> ezcomment2
+ *
+ *  * Revision 1.10  2008/07/08 16:14:57  shizuki
  * *Bug fix event_PreComment
  * *Correspondence preparations of NP_LatestWritebacks
  *
@@ -46,8 +52,7 @@
  * * Subdivision of the showComment() function.
  * * It's changed so as not to fly to an indication part for indication in case of and OpenID of anything but the first item of an index page.
  * * A profile change part besides the first item of an index page is being adjusted.
- *
- **/
+ */
 
 class NP_EzComment2 extends NucleusPlugin
 {
@@ -139,7 +144,7 @@ class NP_EzComment2 extends NucleusPlugin
 	 */
 	function getVersion()
 	{
-		return '$Date: 2008-07-09 03:54:07 $ $Revision: 1.12 $';
+		return '$Date: 2008-07-11 06:36:17 $ $Revision: 1.13 $';
 	}
 
 	// }}}
