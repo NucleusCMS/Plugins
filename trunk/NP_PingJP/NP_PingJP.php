@@ -15,7 +15,7 @@
   * @author    shizuki
   * @copyright 2007 shizuki
   * @license   http://www.gnu.org/licenses/gpl.txt  GNU GENERAL PUBLIC LICENSE Version 2, June 1991
-  * @version   1.63
+  * @version   1.65
   * @link      http://shizuki.kinezumi.net/
   *
   * History of NP_Ping
@@ -31,15 +31,18 @@
   *          merge NP_SendPing(by Tokitake) code
   *   v1.61 - Merge Asynchronous request code(by hsur)
   *   v1.62 - Add background mode
+  *   v1.63 - The server which has finished giving the service is eliminated.
+  *   v1.64 - Bug fix
+  *   v1.65 - Add Live BG mode setting
   *
-  * NP_PingJP.php ($Revision: 1.12 $)
-  * $Id: NP_PingJP.php,v 1.12 2008-07-11 09:22:58 shizuki Exp $
+  * NP_PingJP.php ($Revision: 1.13 $)
+  * $Id: NP_PingJP.php,v 1.13 2008-07-12 13:29:11 shizuki Exp $
   */
 
 
-  /**
-   * Require files for Asynchronous request
-   */
+/**
+ * Require files for Asynchronous request
+ */
 require_once(dirname(__FILE__).'/sharedlibs/sharedlibs.php');
 require_once("cles/AsyncHTTP/RawPost.php");
 
@@ -48,6 +51,7 @@ class NP_PingJP extends NucleusPlugin
 
 var $ahttp;
 var $debug   = false;
+var $bgping  = false;
 var $servers;
 
 	// {{{ function getName()
@@ -74,7 +78,7 @@ var $servers;
 	 */
 	function getAuthor()
 	{
-		return 'admun (Edmond Hui)+ Tokitake + shizuki';
+		return 'admun (Edmond Hui)+ Tokitake + hsur + shizuki';
 	}
 
 	// }}}
@@ -102,7 +106,7 @@ var $servers;
 	 */
 	function getVersion()
 	{
-		return '1.63';
+		return '1.65';
 	}
 
 	// }}}
@@ -294,8 +298,7 @@ var $servers;
 	// {{{ function event_JustPosted($data)
 
 	/**
-	 * Event ITEM timstamp as now
-	 *     send update ping or etc.
+	 * Event ITEM timstamp as now send update ping or etc.
 	 *
 	 * @param  array
 	 *     blogid : value intger
@@ -317,7 +320,7 @@ var $servers;
 //			} else {
 //				exec("php " . $directory . "ping.php " . $data['blogid'] . " > /dev/null &");
 //			}
-			register_shutdown_function(array($this, 'sendPing'), $data['blogid'], 2);
+			register_shutdown_function(array($this, 'SendPingBackground'), $data['blogid'], 2);
 		} else {
 			$this->sendPings($data['blogid'], 1);
 		}
@@ -328,8 +331,7 @@ var $servers;
 	// {{{ function event_SendPing($data)
 
 	/**
-	 * Event send weblog updates ping
-	 *     when add ITEM
+	 * Event send weblog updates ping when add ITEM
 	 *
 	 * @param  array
 	 *     blogid : value intger
@@ -338,7 +340,27 @@ var $servers;
 	 */
 	function event_SendPing($data)
 	{
-		$this->sendPing($data['blogid']);
+		if ($this->bgping)
+			register_shutdown_function(array($this, 'SendPingBackground'), $data['blogid']);
+		else
+			$this->sendPing($data['blogid']);
+	}
+
+	// }}}
+	// {{{ function SendPingBackground($bid)
+
+	/**
+	 * Send weblog update ping on background
+	 *
+	 * @param  intger
+	 *         blog ID
+	 * @return void
+	 */
+	function SendPingBackground($bid)
+	{
+		while( @ob_end_flush() ) ;
+		sql_connect();
+		$this->sendPing($bid ,2);
 	}
 
 	// }}}
@@ -366,13 +388,13 @@ var $servers;
 
 		$header   = "Accept-Charset: UTF-8\r\nContent-Type: text/xml\r\n";
 		$messages = array();
+		$logMsg   = 'NP_PingJP: Send Ping';
 		if ($background == 1) {
 			$logMsg = 'NP_PingJP: ' . _PINGJP_NON_DISPLAY;
-			ACTIONLOG::add(INFO, $logMsg);
 		} elseif ($background == 2) {
 			$logMsg = 'NP_PingJP: ' . _PINGJP_BACKGROUND;
-			ACTIONLOG::add(INFO, $logMsg);
 		}
+		ACTIONLOG::add(INFO, $logMsg);
 		foreach ($targets as $target) {
 			$res = $this->sendUpdatePing($bid, $target, $header);
 			if ($background == 0) {
@@ -409,7 +431,7 @@ var $servers;
 			$logMsg = $target . ' : ' . $results['message'];
 			if ($results['error']) {
 				ACTIONLOG::add(WARNING, 'NP_PingJP Error: ' . $logMsg);
-			} elseif ($this->debug) {
+			} elseif ($this->debug || $background) {
 				ACTIONLOG::add(INFO, 'NP_PingJP Pinged: ' . $logMsg);
 			}
 			if ($background == 0) {
