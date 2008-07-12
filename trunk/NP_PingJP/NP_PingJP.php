@@ -15,7 +15,7 @@
   * @author    shizuki
   * @copyright 2007 shizuki
   * @license   http://www.gnu.org/licenses/gpl.txt  GNU GENERAL PUBLIC LICENSE Version 2, June 1991
-  * @version   1.65
+  * @version   1.66
   * @link      http://shizuki.kinezumi.net/
   *
   * History of NP_Ping
@@ -34,9 +34,10 @@
   *   v1.63 - The server which has finished giving the service is eliminated.
   *   v1.64 - Bug fix
   *   v1.65 - Add Live BG mode setting
+  *   v1.66 - Typo fix
   *
-  * NP_PingJP.php ($Revision: 1.13 $)
-  * $Id: NP_PingJP.php,v 1.13 2008-07-12 13:29:11 shizuki Exp $
+  * NP_PingJP.php ($Revision: 1.14 $)
+  * $Id: NP_PingJP.php,v 1.14 2008-07-12 17:20:03 shizuki Exp $
   */
 
 
@@ -265,7 +266,7 @@ var $servers;
 			array(
 				'server' => 'pingoo',
 				'name'   => _PINGJP_PINGOO,
-				'addr'   => 'http://pingoo.jp/ping',
+				'addr'   => 'http://pingoo.jp/ping/',
 				'method' => 'weblogUpdates.ping',
 			),
 			array(
@@ -569,7 +570,7 @@ var $servers;
 				$targets[] = $server;
 			}
 		}
-		$others  = $this->getBlogOption($myBlogId, 'pingjp_otherurl');
+		$others  = $this->getBlogOption($bid, 'pingjp_otherurl');
 		if ($others != '') {
 			$servers = preg_split("/[\s,]+/", $others);
 			foreach ($servers as $server) {
@@ -583,10 +584,11 @@ var $servers;
 					$parsed = parse_url($server);
 					$method = 'weblogUpdates.ping';
 				}
-				$targets[]['server'] = $parsed['host'];
-				$targets[]['name']   = $parsed['host'];
-				$targets[]['addr']   = $server;
-				$targets[]['method'] = $method;
+				$target['server'] = $parsed['host'];
+				$target['name']   = $parsed['host'];
+				$target['addr']   = $server;
+				$target['method'] = $method;
+				$targets[]        = $target;
 			}
 		}
 		return $targets;
