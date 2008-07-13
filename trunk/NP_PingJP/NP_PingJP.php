@@ -35,9 +35,10 @@
   *   v1.64 - Bug fix
   *   v1.65 - Add Live BG mode setting
   *   v1.66 - Typo fix
+  *   v1.67 - Bug fix
   *
-  * NP_PingJP.php ($Revision: 1.14 $)
-  * $Id: NP_PingJP.php,v 1.14 2008-07-12 17:20:03 shizuki Exp $
+  * NP_PingJP.php ($Revision: 1.15 $)
+  * $Id: NP_PingJP.php,v 1.15 2008-07-13 14:57:07 shizuki Exp $
   */
 
 
@@ -107,7 +108,7 @@ var $servers;
 	 */
 	function getVersion()
 	{
-		return '1.65';
+		return '1.67';
 	}
 
 	// }}}
@@ -438,6 +439,14 @@ var $servers;
 			if ($background == 0) {
 				echo $logMsg . "<br />\n";
 			}
+/*
+echo $target."\n<pre>";
+print_r($response);
+echo '</pre>';
+*/
+		}
+		if ($GLOBALS['xmlrpc_internalencoding'] != $this->xmlrpc_internalencoding_org) {
+			$GLOBALS['xmlrpc_internalencoding'] = $this->xmlrpc_internalencoding_org;
 		}
 	}
 
@@ -464,7 +473,10 @@ var $servers;
 		if (!class_exists('xmlrpcmsg')) {
 			global $DIR_LIBS;
 			include_once($DIR_LIBS . 'xmlrpc.inc.php');
-			$GLOBALS['xmlrpc_internalencoding'] = mb_internal_encoding();
+		}
+		if ($GLOBALS['xmlrpc_internalencoding'] != 'UTF-8') {
+			$this->xmlrpc_internalencoding_org  = $GLOBALS['xmlrpc_internalencoding'];
+			$GLOBALS['xmlrpc_internalencoding'] = 'UTF-8';
 		}
 		$b    =& $manager->getBlog($bid);
 		$name =  $b->getName();
@@ -472,22 +484,23 @@ var $servers;
 		if (!$burl) {
 			$burl = $b->getURL();
 		}
+		$data = array();
 		if (_CHARSET != 'UTF-8') {
 			mb_convert_encoding($name, 'UTF-8', _CHARSET);
 		}
-		$data[1] = new xmlrpcval($name);
-		$data[2] = new xmlrpcval($burl);
+		$data[] = new xmlrpcval($name, 'string');
+		$data[] = new xmlrpcval($burl, 'string');
 		if ($server['method'] == 'weblogUpdates.extendedPing') {
 			$feedURL = $this->getBlogOption($myBlogid, 'pingjp_feedurl');
 			if (!$feedURL) {
 				global $CONF;
 				$feedURL = $CONF['IndexURL'] . 'xml-rss2.php?blogid=' . $bid;
 			}
-			$data[3] = new xmlrpcval($burl);
-			$data[4] = new xmlrpcval($feedURL);
+			$data[] = new xmlrpcval($burl, 'string');
+			$data[] = new xmlrpcval($feedURL, 'string');
 		}
 		$message  = new xmlrpcmsg($server['method'], $data);
-		$reqestId = $this->ahttp->setRequest($server['addr'], 'POST', $header, $message->serialize());
+		$reqestId = $this->ahttp->setRequest($server['addr'], 'POST', $header, $message->serialize('UTF-8'));
 		return array($reqestId, &$message);
 	}
 
