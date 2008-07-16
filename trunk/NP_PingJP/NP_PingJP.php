@@ -36,9 +36,10 @@
   *   v1.65 - Add Live BG mode setting
   *   v1.66 - Typo fix
   *   v1.67 - Bug fix
+  *   v1.68 - Debug development
   *
-  * NP_PingJP.php ($Revision: 1.15 $)
-  * $Id: NP_PingJP.php,v 1.15 2008-07-13 14:57:07 shizuki Exp $
+  * NP_PingJP.php ($Revision: 1.16 $)
+  * $Id: NP_PingJP.php,v 1.16 2008-07-16 13:24:37 shizuki Exp $
   */
 
 
@@ -55,6 +56,7 @@ var $ahttp;
 var $debug   = false;
 var $bgping  = false;
 var $servers;
+var $faltMessageSet;
 
 	// {{{ function getName()
 
@@ -108,7 +110,7 @@ var $servers;
 	 */
 	function getVersion()
 	{
-		return '1.67';
+		return '1.68';
 	}
 
 	// }}}
@@ -438,16 +440,18 @@ var $servers;
 			}
 			if ($background == 0) {
 				echo $logMsg . "<br />\n";
+				if ($results['error'] && $response->errno == 2 && $this->debug) {
+					$resultXML = $response->raw_data;
+					echo '-------------------- ' . $target . ' receive data --------------------<br />';
+					echo '<pre>' . htmlspecialchars($resultXML, ENT_NOQUOTES, _CHARSET, false) . '</pre>';
+					echo '-------------------- ' . $target . ' receive data --------------------<br />';
+				}
 			}
-/*
-echo $target."\n<pre>";
-print_r($response);
-echo '</pre>';
-*/
 		}
 		if ($GLOBALS['xmlrpc_internalencoding'] != $this->xmlrpc_internalencoding_org) {
 			$GLOBALS['xmlrpc_internalencoding'] = $this->xmlrpc_internalencoding_org;
 		}
+		$this->faltMessageSet = false;
 	}
 
 	// }}}
@@ -478,6 +482,37 @@ echo '</pre>';
 			$this->xmlrpc_internalencoding_org  = $GLOBALS['xmlrpc_internalencoding'];
 			$GLOBALS['xmlrpc_internalencoding'] = 'UTF-8';
 		}
+
+		if (!$this->faltMessageSet) {
+			$GLOBALS['xmlrpcstr']['unknown_method']           = _PINGJP_XMLRPCFAULT_UNKNOWN_METHOD;
+			$GLOBALS['xmlrpcstr']['invalid_return']           = _PINGJP_XMLRPCFAULT_INVALID_RETURN;
+			$GLOBALS['xmlrpcstr']['incorrect_params']         = _PINGJP_XMLRPCFAULT_INCORRECT_PARAMS;
+			$GLOBALS['xmlrpcstr']['introspect_unknown']       = _PINGJP_XMLRPCFAULT_INTROSPECT_UNKNOWN;
+			$GLOBALS['xmlrpcstr']['http_error']               = _PINGJP_XMLRPCFAULT_HTTP_ERROR;
+			$GLOBALS['xmlrpcstr']['no_data']                  = _PINGJP_XMLRPCFAULT_NO_DATA;
+			$GLOBALS['xmlrpcstr']['no_ssl']                   = _PINGJP_XMLRPCFAULT_NO_SSL;
+			$GLOBALS['xmlrpcstr']['curl_fail']                = _PINGJP_XMLRPCFAULT_CURL_FAIL;
+			$GLOBALS['xmlrpcstr']['invalid_request']          = _PINGJP_XMLRPCFAULT_INVALID_REQUEST;
+			$GLOBALS['xmlrpcstr']['no_curl']                  = _PINGJP_XMLRPCFAULT_NO_CURL;
+			$GLOBALS['xmlrpcstr']['server_error']             = _PINGJP_XMLRPCFAULT_SERVER_ERROR;
+			$GLOBALS['xmlrpcstr']['multicall_error']          = _PINGJP_XMLRPCFAULT_MULTICALL_ERROR;
+
+			$GLOBALS['xmlrpcstr']['multicall_notstruct']      = _PINGJP_XMLRPCFAULT_MULTICALL_NOTSTRUCT;
+			$GLOBALS['xmlrpcstr']['multicall_nomethod']       = _PINGJP_XMLRPCFAULT_MULTICALL_NOMETHOD;
+			$GLOBALS['xmlrpcstr']['multicall_notstring']      = _PINGJP_XMLRPCFAULT_MULTICALL_NOTSTRING;
+			$GLOBALS['xmlrpcstr']['multicall_recursion']      = _PINGJP_XMLRPCFAULT_MULTICALL_RECURSION;
+			$GLOBALS['xmlrpcstr']['multicall_noparams']       = _PINGJP_XMLRPCFAULT_MULTICALL_NOPARAMS;
+			$GLOBALS['xmlrpcstr']['multicall_notarray']       = _PINGJP_XMLRPCFAULT_MULTICALL_NOTARRAY;
+
+			$GLOBALS['xmlrpcstr']['cannot_decompress']        = _PINGJP_XMLRPCFAULT_CANNOT_DECOMPRESS;
+			$GLOBALS['xmlrpcstr']['decompress_fail']          = _PINGJP_XMLRPCFAULT_DECOMPRESS_FAIL;
+			$GLOBALS['xmlrpcstr']['dechunk_fail']             = _PINGJP_XMLRPCFAULT_DECHUNK_FAIL;
+			$GLOBALS['xmlrpcstr']['server_cannot_decompress'] = _PINGJP_XMLRPCFAULT_SERVER_CANNOT_DECOMPRESS;
+			$GLOBALS['xmlrpcstr']['server_decompress_fail']   = _PINGJP_XMLRPCFAULT_SERVER_DECOMPRESS_FAIL;
+
+			$this->faltMessageSet = true;
+		}
+
 		$b    =& $manager->getBlog($bid);
 		$name =  $b->getName();
 		$burl =  $this->getBlogOption($bid, 'pingjp_updateurl');
@@ -500,6 +535,12 @@ echo '</pre>';
 			$data[] = new xmlrpcval($feedURL, 'string');
 		}
 		$message  = new xmlrpcmsg($server['method'], $data);
+		if ($this->debug) {
+			$requestXML = htmlspecialchars(mb_convert_encoding($message->serialize('UTF-8'), _CHARSET, 'UTF-8'), ENT_NOQUOTES, _CHARSET, false);
+			echo '-------------------- ' . $server['name'] . ' send data --------------------<br />';
+			echo '<pre>' . $requestXML . '</pre>';
+			echo '-------------------- ' . $server['name'] . ' send data --------------------<br />';
+		}
 		$reqestId = $this->ahttp->setRequest($server['addr'], 'POST', $header, $message->serialize('UTF-8'));
 		return array($reqestId, &$message);
 	}
@@ -604,6 +645,7 @@ echo '</pre>';
 				$targets[]        = $target;
 			}
 		}
+//		print_r($targets);
 		return $targets;
 	}
 }
