@@ -370,6 +370,9 @@ class NP_EzComment2 extends NucleusPlugin
 				echo '<br /><input type="checkbox" value="1" name="EzComment2_Secret" id="EzComment2_Secret_' . $this->numcalled . '" />';
 				echo '<label for="EzComment2_Secret_' . $this->numcalled . '">'.$this->getBlogOption($bid, 'secLabel').'</label><br />';
 		}
+		if ($this->authOpenID) {
+			$this->plugOpenIDdoSkinVar($this->commentSkinType, $this->commentItemId);
+		}
 	}
 
 	// }}}
@@ -581,9 +584,11 @@ class NP_EzComment2 extends NucleusPlugin
 			$aVars['visible']   = $aVars['nick'] ? 'false' : 'true' ;
 			$actionUrl          = parse_url($CONF['ActionURL']);
 			$aVars['updateUrl'] = $actionUrl['path'];
-			echo $templateEngine->fetchAndFill('yui',         $aVars, 'np_openid');
+			if ($skinType == 'item' || ($skinType == 'template' && $this->numcalled == 0)) {
+				echo $templateEngine->fetchAndFill('yui',         $aVars, 'np_openid');
+				echo $templateEngine->fetchAndFill('form',        $aVars, 'np_openid');
+			}
 			echo $templateEngine->fetchAndFill('loggedin',    $aVars, 'np_openid');
-			echo $templateEngine->fetchAndFill('form',        $aVars, 'np_openid');
 		} elseif (!$authOpenID->isLoggedin()) {
 			// Not loggedin
 			$aVars['url']       = $authOpenID->getAdminURL() . 'rd.php?action=doauth'
@@ -706,6 +711,8 @@ class NP_EzComment2 extends NucleusPlugin
 		if ($this->authOpenID && ($skinType == 'item' || $this->numcalled == 0)) {
 			$this->plugOpenIDdoSkinVar($skinType, intval($commentItem->itemid));
 		}
+		$this->commentItemId   = intval($commentItem->itemid);
+		$this->commentSkinType = $skinType;
 		$contents   = $template[$formType];
 		include_once($this->getDirectory() . 'EzCommentActions.php');
 		$formAction =& new EzCommentFormActions($commentItem, $formdata, $loginMember);
@@ -764,7 +771,7 @@ class NP_EzComment2 extends NucleusPlugin
 		}
 
 		$templateType = '';
-		if ($skinType == 'index') $templateType = '_IDX';
+		if ($skinType == 'template') $templateType = '_IDX';
 		$blogURL       = $b->getURL();
 		$substitution  = $this->getBlogOption($bid, 'secComment');
 		$this->callFlg = true;
