@@ -12,7 +12,7 @@ class NP_MitasNom extends NucleusPlugin {
 	}
 	function getMinNucleusVersion() { return 220; }
 	function getAuthor()  { return 'Katsumi, Cacher, yamamoto'; }
-	function getVersion() { return '0.5.9.9.3'; }
+	function getVersion() { return '0.6.0'; }
 	function getURL() {return 'http://japan.nucleuscms.org/wiki/plugins:mitasnom';}
 	function getDescription() { return $this->translated('WYSIWYG HTML editor plagin using FCKeditor'); } 
 	function supportsFeature($what) { return (int)($what=='SqlTablePrefix'); }
