@@ -1,7 +1,6 @@
 <html><body><?php
 /*
  * NP_MitasNom
- * Written by Katsumi
  * This library is GPL
  */
 $strRel = '../../../../'; 

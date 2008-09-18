@@ -1,7 +1,6 @@
 <?php 
 /*
- * NP_MitasNom ver 0.5.9.2
- * Written by Katsumi
+ * NP_MitasNom
  * This library is GPL
  */
 class NP_MitasNom extends NucleusPlugin { 
@@ -12,8 +11,8 @@ class NP_MitasNom extends NucleusPlugin {
 		return 'NP_MitasNom'; 
 	}
 	function getMinNucleusVersion() { return 220; }
-	function getAuthor()  { return 'Katsumi'; }
-	function getVersion() { return '0.5.9.2'; }
+	function getAuthor()  { return 'Katsumi, Cacher, yamamoto'; }
+	function getVersion() { return '0.5.9.9.3'; }
 	function getURL() {return 'http://japan.nucleuscms.org/wiki/plugins:mitasnom';}
 	function getDescription() { return $this->translated('WYSIWYG HTML editor plagin using FCKeditor'); } 
 	function supportsFeature($what) { return (int)($what=='SqlTablePrefix'); }
@@ -28,15 +27,17 @@ class NP_MitasNom extends NucleusPlugin {
 			"['Source','DocProps','-','Save','NewPage','Preview','-','Templates'],\n".
 			"['Cut','Copy','Paste','PasteText','PasteWord','-','Print','SpellCheck'],\n".
 			"['Undo','Redo','-','Find','Replace','-','SelectAll','RemoveFormat'],\n".
+			"['Form','Checkbox','Radio','TextField','Textarea','Select','Button','ImageButton','HiddenField'],\n".
+			"'/',\n".
 			"['Bold','Italic','Underline','StrikeThrough','-','Subscript','Superscript'],\n".
-			"['OrderedList','UnorderedList','-','Outdent','Indent'],\n".
+			"['OrderedList','UnorderedList','-','Outdent','Indent','Blockquote'],\n".
 			"['JustifyLeft','JustifyCenter','JustifyRight','JustifyFull'],\n".
 			"['Link','Unlink','Anchor'],\n".
-			"['Image','Flash','Table','Rule','Smiley','SpecialChar','PageBreak','UniversalKey'],\n".
-			"['Form','Checkbox','Radio','TextField','Textarea','Select','Button','ImageButton','HiddenField'],'/',\n".
+			"['Image','Flash','Table','Rule','Smiley','SpecialChar','PageBreak'],\n".
+			"'/',\n".
 			"['Style','FontFormat','FontName','FontSize'],\n".
 			"['TextColor','BGColor'],\n".
-			"['About']");
+			"['FitWindow','ShowBlocks','-','About']");
 		$this->createOption('addremovetoolbar',$this->translated('Add new toolbar to the menu / Delete toolbar from the menu'),'text',''); 
 		$this->createOption('returnafterbr',$this->translated('"<br />" => "<br />\n" conversion?'),'yesno','yes'); 
 		$this->createOption('returnafterbrbr',$this->translated('"<br /><br />" => "<br />\n<br />\n" conversion?'),'yesno','no'); 
@@ -49,11 +50,13 @@ class NP_MitasNom extends NucleusPlugin {
 		$this->createOption('usemembersettings',$this->translated('Use member-specific settings?'),'yesno','no'); 
 		$this->createOption('useimagemanager',$this->translated('Use Image-Manager plugin instead of media.php?'),'yesno','no'); 
 		$this->createOption('usehttps',$this->translated('Use secure server (https) for edititing item?'),'yesno','no'); 
-		$this->createOption('usep',$this->translated('Use P tag instead of BR for enter key (IE only)?'),'yesno','no'); 
+		$this->createOption('usep',$this->translated('Use P tag instead of BR for enter key?'),'yesno','no'); 
+		$this->createOption('alwayswysiwyg',$this->translated('Always use WYSIWYG editor?'),'yesno','no'); 
 	}
 	function getEventList() { return array('EditItemFormExtras','AddItemFormExtras','PrepareItemForEdit',
 					'PreAddItem','PreUpdateItem',
-					'PreItem','PostPluginOptionsUpdate','PrePluginOptionsEdit'); }
+					'PreItem','PostPluginOptionsUpdate','PrePluginOptionsEdit',
+					'AdminPrePageHead'); }
 
 	// SkinVar is currently used for showing link to create item
 	function doSkinVar($skinType,$type,$text='') {
@@ -64,8 +67,8 @@ class NP_MitasNom extends NucleusPlugin {
 			if (!$member->isLoggedIn()) return;
 			if (!$text) $text=$this->translated('New Item with WYSIWYG');
 			$url=$CONF['ActionURL'].'?action=plugin&name=MitasNom&type=createitem&blogid='.$blogid;
-			$url=htmlspecialchars($url);
 			if ($this->getOption('usehttps')=='yes') $url=preg_replace('/^http:/','https:',$url);
+			$url=htmlspecialchars($url);
 			echo "<a href=\"$url\">$text</a>\n";
 			break;
 		}
@@ -79,9 +82,9 @@ class NP_MitasNom extends NucleusPlugin {
 		default:
 			if (!$text) $text=$text=$this->translated('Edit Item with WYSIWYG');
 			$itemid=$item->itemid;
-			$url=htmlspecialchars($url);
-			if ($this->getOption('usehttps')=='yes') $url=preg_replace('/^http:/','https:',$url);
 			$url=$CONF['ActionURL'].'?action=plugin&name=MitasNom&type=itemedit&itemid='.$itemid;
+			if ($this->getOption('usehttps')=='yes') $url=preg_replace('/^http:/','https:',$url);
+			$url=htmlspecialchars($url);
 			echo "<a href=\"$url\">$text</a>\n";
 			break;
 		}
@@ -105,6 +108,7 @@ class NP_MitasNom extends NucleusPlugin {
 		$this->actionplugin=true;
 		include($DIR_LIBS . 'ADMIN.php');
 		$a=new ADMIN();
+		$CONF['DisableJsTools']=1;
 		switch ($type) {
 		case 'createitem':
 			ob_start();
@@ -125,7 +129,6 @@ class NP_MitasNom extends NucleusPlugin {
 		// Return if not valid editing HTML
 		// These codes must be changed when non-compatible Nucleus version comes out.
 		if (!preg_match('/<head>/',$buff)) return _ERRORMSG;
-		if (!preg_match('/<div class="jsbuttonbar">/',$buff)) return _ERRORMSG;
 		if (!preg_match('/<textarea([^>]*)inputbody([^>]*)>([^>]*)<\/textarea>/',$buff)) return _ERRORMSG;
 		if (!preg_match('/<textarea([^>]*)inputmore([^>]*)>([^>]*)<\/textarea>/',$buff)) return _ERRORMSG;
 
@@ -152,11 +155,29 @@ class NP_MitasNom extends NucleusPlugin {
 
 		// Replace texts of editing page
 		// These codes must be changed when non-compatible Nucleus version comes out.
-		$buff=preg_replace ('/<head>/','<head><base href="'.$CONF['AdminURL'].'">', $buff,1);
-		$buff=preg_replace ('/<div class="jsbuttonbar">/','<div class="jsbuttonbar" style="DISPLAY: none;">', $buff,2);
+		$buff=preg_replace ('/<head>/','<head><base href="'.htmlspecialchars($CONF['AdminURL']).'">', $buff,1);
 		$buff=preg_replace ('/<textarea([^>]*)inputbody([^>]*)>([^>]*)<\/textarea>/',$buff1, $buff,1);
 		$buff=preg_replace ('/<textarea([^>]*)inputmore([^>]*)>([^>]*)<\/textarea>/',$buff2, $buff,1);
 		echo $buff;
+	}
+	
+	// Redirect to WYSIWYG page when the plugin option is set to do so.
+	function event_AdminPrePageHead(&$data){
+		global $CONF,$blogid,$itemid;
+		if ($this->this_getOption('alwayswysiwyg')!='yes') return;
+		switch($data['action']){
+		case 'itemedit':
+			$type='type=itemedit&itemid='.(int)$itemid;
+			break;
+		case 'createitem':
+			$type='type=createitem&blogid='.(int)$blogid;
+			break;
+		default:
+			return;
+		}
+		$url=$CONF['ActionURL'].'?action=plugin&name=MitasNom&'.$type;
+		if ($this->getOption('usehttps')=='yes') $url=preg_replace('/^http:/','https:',$url);
+		redirect($url);
 	}
 	
 	// Solve <%image%> tag for showing items
@@ -192,7 +213,7 @@ class NP_MitasNom extends NucleusPlugin {
 		if ($this->actionplugin) {
 			echo '<input type="hidden" name="mitasnom_wysiwyged" id="mitasnom_wysiwyged" value="full"/>';
 			return;
-		} else 	echo '<input type="hidden" name="mitasnom_wysiwyged" id="mitasnom_wysiwyged" value=""/>';
+		} else echo '<input type="hidden" name="mitasnom_wysiwyged" id="mitasnom_wysiwyged" value=""/>';
 		$dwidth=$this->this_getOption('dialogwidth');
 		$dheight=$this->this_getOption('dialogheight');
 		$mURL=$CONF['MediaURL'].$member->getID().'/';
@@ -293,16 +314,15 @@ function WYSIWYGsettext(id,T){
 	}
 	function _addEnterAfterBr(&$data){
 		// <br/> => <br/>\n conversion
-		$ret='';
-		$data=str_replace(array("\r","\n"),'',$data);
-		while ($data) {
-			if (($i=strpos($data,'<br />'))===false) break;
-			$ret.=substr($data,0,$i+6);
-			$data=substr($data,$i+6);
-			if (substr($data,0,1)=="\x0D" || substr($data,0,1)=="\x0A") continue;
-			if (substr($data,0,6)!='<br />' || $this->this_getOption('returnafterbrbr')=='yes') $ret.="\n";
+		$array=preg_split('/<br[^>]*>/',str_replace(array("\r","\n"),'',$data));
+		$c=count($array);
+		$data=$array[0];
+		for ($i=1;$i<$c;$i++) {
+			$data.='<br />';
+			if (strlen($array[$i]) || $this->this_getOption('returnafterbrbr')=='yes') $data.="\n";
+			$data.=$array[$i];
 		}
-		return $ret.$data;
+		return $data;
 	}
 	function _restoreImgPopup(&$data){
 		global $CONF,$member,$DIR_MEDIA;
@@ -399,13 +419,15 @@ function WYSIWYGsettext(id,T){
 				'<a href="'.$CONF['MediaURL'].'$1/$2" title="width=$3|height=$4">$5</a>',
 				'<a href="'.$mURL.'$1" title="width=$2|height=$3">$4</a>',
 				'<a href="'.$CONF['MediaURL'].'$1" title="width=$2|height=$3">$4</a>',
-				'<mitasnom title="nucleustag"></mitasnom><%$1%>');
+				'<table border class="mitasnom"><tr><td>'.
+					'<img src="'.$this->getAdminURL().'editor/plugins/nucleus/nucleus.gif" width="42" height="15" alt="nucleustag" />'.
+					'<%$1%></td></tr></table>');
 	}
 	function _patternAfterEdit(){
-		return array( 	'/<mitasnom title="nucleustag"><\/mitasnom>/');
+		return array('/<table[^>]*class="mitasnom"[^>]*>[\s\S]*?<%([^%]*?)%>[\s\S]*?<\/table>/');
 	}
 	function _replaceAfterEdit() {
-		return array(	'');
+		return array('<%$1%>');
 	}
 	
 	// Show information when editing plugin option

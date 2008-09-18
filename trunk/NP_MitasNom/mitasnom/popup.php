@@ -1,17 +1,14 @@
 <?php
 /*
  * NP_MitasNom
- * Written by Katsumi
  * This library is GPL
  */
 	$strRel = '../../../'; 
 	require($strRel . 'config.php');
 
-	// create the admin area page
+	// create the plugin object
 	if (!$member->isLoggedIn()) exit;
-	include($DIR_LIBS . 'PLUGINADMIN.php');
-	$oPluginAdmin = new PluginAdmin('MitasNom');
-	$p=&$oPluginAdmin->plugin;
+	$p=&$manager->getPlugin('NP_MitasNom');
 	
 	if (!class_exists('NucleusFCKeditor')) include (dirname(__FILE__).'/fckclass.php');
 	
@@ -36,7 +33,7 @@ function event_onsubmit(){
   window.close();
 }
 </script>
-<body onload="event_onload();">
+<body>
 <form method="get" action="javascript:event_onsubmit();">
 <?php
 	$FCKedit=new NucleusFCKEditor('inputbody',$p);
@@ -44,5 +41,8 @@ function event_onsubmit(){
 	$FCKedit->Height='100%';
 	$FCKedit->Create();
 ?>
+<script type="text/javascript">
+event_onload();
+</script>
 </form>
 </body></html>

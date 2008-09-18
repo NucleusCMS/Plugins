@@ -23,4 +23,6 @@ $this->langArray[' toolbar is added.']=' ツールバーを追加しました';
 $this->langArray[' toolbar is deleted.']=' ツールバーを削除しました';
 $this->langArray['Use Image-Manager plugin instead of media.php?']='media.php の代わりに Image-Manager プラグインを用いますか？';
 $this->langArray['Use secure server (https) for edititing item?']='編集に、セキュアサーバ(https)を用いますか?';
+$this->langArray['Use P tag instead of BR for enter key?']='Enterキーに、BRタグの代わりにPタグを用いますか?';
+$this->langArray['Always use WYSIWYG editor?']='常にWYSIWYGエディターを使いますか？';
 ?>

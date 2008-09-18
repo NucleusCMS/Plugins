@@ -1,11 +1,10 @@
 <?php 
 /*
  * NP_MitasNom
- * Written by Katsumi
  * This library is GPL
  */
 
-if (!class_exists('FCKeditor')) include (dirname(__FILE__).'/fckeditor.php');
+include_once (dirname(__FILE__).'/fckeditor.php');
 
 class NucleusFCKeditor extends FCKeditor
 {
@@ -13,7 +12,9 @@ class NucleusFCKeditor extends FCKeditor
 	{
 		global $itemid,$blogid,$manager,$DIR_SKINS,$CONF;
 
-		$this->__construct( $instanceName ) ;
+//		$this->__construct( $instanceName ) ; 20080218 yama/katsumi
+		if (method_exists($this,'__construct')) $this->__construct( $instanceName ) ;
+		else $this->FCKeditor( $instanceName ) ;
 		if ($plugin->getOption('usehttps')=='yes') $this->BasePath=preg_replace('/^http:/','https:',$plugin->getAdminURL());
 		else $this->BasePath=$plugin->getAdminURL();
 		$this->Value=$data;

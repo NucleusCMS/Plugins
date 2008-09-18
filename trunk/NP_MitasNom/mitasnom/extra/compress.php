@@ -40,7 +40,7 @@ function listup_files($dir){
 	if (!is_dir($dir)) return $files;
 	$d = dir($dir);
 	while (false !== ($entry = $d->read())) {
-		if ($entry=='.'||$entry=='..') continue;// Ignore this and parent directory.
+		if ($entry=='.'||$entry=='..'||$entry=='Thumbs.db') continue;// Ignore this and parent directory as well as Thumbs.db.
 		if (is_dir($dir.$entry)) {// The case of directory
 			foreach(listup_files($dir.$entry) as $value) $files[]=$value;
 			continue;
