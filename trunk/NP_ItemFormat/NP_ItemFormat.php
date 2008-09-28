@@ -5,6 +5,11 @@
 	as published by the Free Software Foundation; either version 2
 	of the License, or (at your option) any later version.
 	(see nucleus/documentation/index.html#license for more info)
+
+	History
+	-------
+	v0.3   [2008/08/23] Improve javascript code.
+	v0.21  [2007/06/07] 
 */
 
 
@@ -13,7 +18,7 @@ class NP_ItemFormat extends NucleusPlugin {
 	function getName() { return 'Item Format'; }
 	function getAuthor()  { return 'yu'; }
 	function getURL() { return 'http://nucleus.datoka.jp/'; }
-	function getVersion() { return '0.2'; }
+	function getVersion() { return '0.3'; }
 	function getMinNucleusVersion() { return 250; }
 	function getEventList() { return array('AdminPrePageHead','AdminPrePageFoot'); }
 
@@ -73,7 +78,7 @@ class NP_ItemFormat extends NucleusPlugin {
 		
 		switch ($data['action']) {
 		case 'createitem':
-			$data['extrahead'] = <<< EOS
+			$data['extrahead'] .= <<< EOS
 <script type="text/javascript" src="{$path}itemformat/itemformat_js.php"></script>
 
 EOS;

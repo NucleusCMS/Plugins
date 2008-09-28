@@ -32,9 +32,14 @@ function plug_itemf_change(o) {
 
 function plug_itemf_set(data){
 	var v = data.split("[[[ itemformat_splitter ]]]");
-	document.getElementById('inputtitle').value = v[0];
-	document.getElementById('inputbody').value  = v[1];
-	document.getElementById('inputmore').value  = v[2];
+	
+	var otitle = document.getElementById('inputtitle');
+	var obody = document.getElementById('inputbody');
+	var omore = document.getElementById('inputmore');
+	
+	if (otitle.value == '') otitle.value = v[0];
+	if (obody.value == '') obody.value = v[1];
+	if (omore.value == '') omore.value = v[2];
 }
 
 function plug_itemf_receive()
