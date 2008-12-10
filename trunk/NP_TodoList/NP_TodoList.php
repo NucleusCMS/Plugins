@@ -17,9 +17,12 @@
 	
 	HISTORY
 	-------
-	Ver0.42: [Fix] Security fix.
-	Ver0.41: [Fix] Check edit authority.
-	Ver0.4 : [New] Blog members can own each todo list.
+	2008-12-02 Ver0.44: [Fix] "Add TODO" bug fix. (hilbert)
+	                    [Chg] Improve quote_smart() function. (yu)
+	2008-05-19 Ver0.43: [Fix] "Delete TODO" bug fix. (yu)
+	2006-09-30 Ver0.42: [Fix] Security fix. (yu)
+	2004-09-29 Ver0.41: [Fix] Check edit authority. (yu)
+	2004-05-30 Ver0.4 : [New] Blog members can own each todo list. (yu)
 */
 
 // plugin needs to work on Nucleus versions <=2.0 as well
@@ -29,23 +32,11 @@ if (!function_exists('sql_table')) {
 	}
 }
 
-// quote variable to make safe
-if(!function_exists('quote_smart')) {
-	function quote_smart($value) {
-		if (get_magic_quotes_gpc()) $value = stripslashes($value);
-		if (!is_numeric($value)) {
-			//$value = "'". mysql_real_escape_string($value) ."'";
-			$value = "'". mysql_escape_string($value) ."'";
-		}
-		return $value;
-	}
-}
-
 class NP_TodoList extends NucleusPlugin { 
 	function getName()      { return 'Todo List'; } 
 	function getAuthor()    { return 'yu'; } 
 	function getURL()       { return 'http://works.datoka.jp/index.php?itemid=231'; } 
-	function getVersion()   { return '0.42'; } 
+	function getVersion()   { return '0.44'; } 
 	function getMinNucleusVersion() { return 200; }
 	function getTableList() { return array( sql_table('plug_todolist') ); }
 	function getEventList() { return array(); }
@@ -93,7 +84,7 @@ class NP_TodoList extends NucleusPlugin {
 	} 
 	
 	
-	// .../action.php?action=plugin&name=TodoList&type=ver	up&vernum=X.X
+	// .../action.php?action=plugin&name=TodoList&type=verup&vernum=X.X
 	// it need login to update
 	function versionUpdate($oldver) { 
 		switch ($oldver) {
@@ -232,7 +223,7 @@ class NP_TodoList extends NucleusPlugin {
 			
 			foreach($sortlist as $l) {
 				$tid = $l->tid;
-				$title = htmlspecialchars(stripslashes($l->title), ENT_QUOTES);
+				$title = htmlspecialchars($l->title, ENT_QUOTES);
 				$enddate = $l->enddate;
 				$rank = $this->rankname[$l->rank];
 				$cond = $this->condname[$l->cond];
@@ -350,19 +341,9 @@ class NP_TodoList extends NucleusPlugin {
 		//plugin link
 		if ($this->getOption('flg_pluglink') == 'yes') {
 			$pluglink_url = $this->getURL();
-			$str_pversion = '';
 			
-			//version check
-			/*
-			if ($this->canEdit($memid)) {
-				$chkver = $this->getLatestVersion($pluglink_url);
-				if ($chkver > $this->getVersion()) {
-					$str_pversion = " [Ver $chkver available]";
-				}
-			}
-			*/
 			echo "<a href='$pluglink_url' title='Jump to the site of this plugin'>";
-			echo "<span style='font-size:9px'>&raquo; Get \"".$this->getName()."\"$str_pversion</span></a>";
+			echo "<span style='font-size:9px'>&raquo; Get \"".$this->getName()."\"</span></a>";
 		}
 		
 	} //end of function
@@ -389,28 +370,28 @@ class NP_TodoList extends NucleusPlugin {
 			case 'add':
 				$query = sprintf("INSERT INTO %s SET title=%s, rank=%d, cond=%d, regdate=%s, enddate=%s, memberid=%s",
 					sql_table('plug_todolist'),
-					quote_smart(postVar('title')),
-					quote_smart(intPostVar('rank')),
-					quote_smart(intPostVar('cond')),
-					date('Y-m-d', $b->getCorrectTime()),
-					quote_smart(postVar('enddate')),
-					quote_smart(intPostVar('memid')) );
+					$this->quote_smart(postVar('title')),
+					$this->quote_smart(intPostVar('rank')),
+					$this->quote_smart(intPostVar('cond')),
+					date("'Y-m-d'", $b->getCorrectTime()),
+					$this->quote_smart(postVar('enddate')),
+					$this->quote_smart(intPostVar('memid')) );
 				sql_query($query);
 				break;
 			case 'update':
-				if ($cond >= count($this->condname)) { //cond = del
+				if (intPostVar('cond') >= count($this->condname)) { //cond = del
 					$query = sprintf("DELETE FROM %s WHERE tid=%d",
 						sql_table('plug_todolist'),
-						quote_smart(intPostVar('tid')) );
+						$this->quote_smart(intPostVar('tid')) );
 				}
 				else {
 					$query = sprintf("UPDATE %s SET title=%s, rank=%d, cond=%d, enddate=%s WHERE tid=%d",
 						sql_table('plug_todolist'),
-						quote_smart(postVar('title')),
-						quote_smart(intPostVar('rank')),
-						quote_smart(intPostVar('cond')),
-						quote_smart(postVar('enddate')),
-						quote_smart(intPostVar('tid')) );
+						$this->quote_smart(postVar('title')),
+						$this->quote_smart(intPostVar('rank')),
+						$this->quote_smart(intPostVar('cond')),
+						$this->quote_smart(postVar('enddate')),
+						$this->quote_smart(intPostVar('tid')) );
 				}
 				sql_query($query);
 				break;
@@ -424,19 +405,16 @@ class NP_TodoList extends NucleusPlugin {
 		Header('Location: ' . serverVar('HTTP_REFERER') );
 	}
 	
-	function getLatestVersion($url) {
-		$name = $this->getShortName();
-		if (cookieVar($name)) return false;
-		
-		$fp = @fopen ($url, "r");
-		if ($fp){
-			$ref_str = fread($fp, 16384);
-			if (preg_match("/<!--NP_Version([^\-]+)-->/", $ref_str, $out)) {
-				setcookie($name,1,null,'/'); // set session cookie
-				return trim($out[1]);
-			}
+	// quote variable to make safe
+	function quote_smart($value) {
+		if (get_magic_quotes_gpc()) $value = stripslashes($value);
+		if (!is_numeric($value)) {
+			$value = "'". mysql_real_escape_string($value) ."'";
 		}
-		return false;
+		else {
+			$value = (int)$value;
+		}
+		return $value;
 	}
 
 } 
