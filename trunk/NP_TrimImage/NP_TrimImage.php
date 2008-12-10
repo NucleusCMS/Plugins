@@ -72,11 +72,8 @@
 //			refactor listup(), exarray()
 //			add $maxPerPage
 
-
-//cles::blog
-//define('NP_TRIMIMAGE_FORCE_PASSTHRU', true); //passthru(standard)
-define('NP_TRIMIMAGE_FORCE_PASSTHRU', false); //redirect(advanced)
-//cles::blog
+define('NP_TRIMIMAGE_FORCE_PASSTHRU', true); //passthru(standard)
+//define('NP_TRIMIMAGE_FORCE_PASSTHRU', false); //redirect(advanced)
 
 define('NP_TRIMIMAGE_CACHE_MAXAGE', 86400 * 30); // 30days
 define('NP_TRIMIMAGE_PREFER_IMAGEMAGICK', false);
