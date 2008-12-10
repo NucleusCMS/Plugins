@@ -250,7 +250,7 @@ class NP_TodoList extends NucleusPlugin {
 					echo "<li>";
 					$img_file = 'rank'.$l->rank.'.gif';
 					$img_title = $this->rankname[$l->rank];
-				echo "<img class='icon-mid' src='$img_path$img_file' width='14' height='14' title='$img_title' />";
+				echo "<img class='icon-mid' src='$img_path$img_file' width='14' height='14' alt='$img_title' title='$img_title' />";
 				}
 				
 				if ($editmode) {
@@ -273,7 +273,7 @@ class NP_TodoList extends NucleusPlugin {
 				else {
 					$img_file = 'cond'.$l->cond.'.gif';
 					$img_title = $this->condname[$l->cond];
-				echo " <img class='icon-mid' src='$img_path$img_file' width='52' height='14' title='$img_title' />";
+				echo " <img class='icon-mid' src='$img_path$img_file' width='52' height='14' alt='$img_title' title='$img_title' />";
 				}
 				
 				if ($editmode and $showmode != 'nodate') {
