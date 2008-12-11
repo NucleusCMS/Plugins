@@ -2,10 +2,10 @@
 // vim: tabstop=2:shiftwidth=2
 
 /**
-  * NP_TrimImage ($Revision: 1.64 $)
+  * NP_TrimImage ($Revision: 1.67 $)
   * by nakahara21 ( http://nakahara21.com/ )
   * by hsur ( http://blog.cles.jp/np_cles/ )
-  * $Id: NP_TrimImage.php,v 1.64 2008/12/10 15:05:51 hsur Exp $
+  * $Id: NP_TrimImage.php,v 1.67 2008/12/11 07:06:43 hsur Exp $
   *
   * Based on NP_TrimImage 1.0 by nakahara21
   * http://nakahara21.com/?itemid=512
@@ -72,6 +72,7 @@
 //			refactor listup(), exarray()
 //			add $maxPerPage
 
+
 define('NP_TRIMIMAGE_FORCE_PASSTHRU', true); //passthru(standard)
 //define('NP_TRIMIMAGE_FORCE_PASSTHRU', false); //redirect(advanced)
 
@@ -96,7 +97,7 @@ class NP_TrimImage extends NucleusPlugin {
 	}
 
 	function getVersion() {
-		return '2.4.0';
+		return '2.4.1';
 	}
 
 	function supportsFeature($what) {
@@ -268,8 +269,8 @@ class NP_TrimImage extends NucleusPlugin {
 				$title = ($filelist[$i][2]) ? $filelist[$i][2] : $filelist[$i][4];
 
 			echo '<img src="'.$src.'"'			
-				. ( $wsize ? ' width="'.$wsize.'"'  : '' )
-				. ( $hsize ? ' height="'.$hsize.'"' : '' )
+				. ( $wsize ? ' width="'.$wsize.'" '  : '' )
+				. ( $hsize ? ' height="'.$hsize.'" ' : '' )
 				. ' alt="'.htmlspecialchars($title, ENT_QUOTES)
 				. '" title="'.htmlspecialchars($title, ENT_QUOTES).'"/>';
 			echo "</a>\n";
@@ -377,7 +378,9 @@ class NP_TrimImage extends NucleusPlugin {
 		$this->imglists = array ();
 		$this->imgfilename = array ();
 
-		$q = 'SELECT ibody as body, imore as more, ititle as title FROM '.sql_table('item').' WHERE inumber='.intval($item->itemid);
+		$q  = 'SELECT inumber as itemid, ititle as title, ibody as body, iauthor, itime, imore as more, ';
+		$q .= 'icat as catid, iclosed as closed ';
+		$q .= 'FROM '.sql_table('item').' WHERE inumber='.intval($item->itemid);
 		$r = sql_query($q);
 		$it = mysql_fetch_object($r);
 		$this->_parseItem($it, $maxAmount, $includeImg);
@@ -402,11 +405,11 @@ class NP_TrimImage extends NucleusPlugin {
 					$title = ($img[4]) ? $img[4] : $img[2];
 				
 				echo '<img src="'.$src.'" '			
-					. ( $wsize ? 'width="'.$wsize.'"'  : '' )
-					. ( $hsize ? 'height="'.$hsize.'"' : '' )
-					. 'alt="'.htmlspecialchars($title, ENT_QUOTES)
-					. '" title="'.htmlspecialchars($title, ENT_QUOTES).'"/>';
-				}
+					. ( $wsize ? 'width="'.$wsize.'" '  : '' )
+					. ( $hsize ? 'height="'.$hsize.'" ' : '' )
+					. ' alt="'.htmlspecialchars($title, ENT_QUOTES)
+					. '" title="'.htmlspecialchars($title, ENT_QUOTES).'" />';
+			}
 		}
 	}
 
