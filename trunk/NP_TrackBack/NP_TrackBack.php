@@ -22,7 +22,8 @@
 	*/
 
 define('NP_TRACKBACK_LINKCHECK_STRICT', 1);
-define('NP_TRACKBACK_USE_XML_PARSER', 2);
+define('NP_TRACKBACK_USE_XML_PARSER', 1);
+define('NP_TRACKBACK_ENCODING_DETECT_ORDER', 'ASCII,ISO-2022-JP,UTF-8,EUC-JP,SJIS');
 
 	class NP_TrackBack_XMLParser {
 		function NP_TrackBack_XMLParser(){
@@ -35,8 +36,7 @@ define('NP_TRACKBACK_USE_XML_PARSER', 2);
 			if (preg_match($rx, $data, $m)) {
 				$encoding = strtoupper($m[2]);
 			} else {
-				$input_encoding = "UTF-8,EUC-JP,SJIS,ISO-2022-JP,ISO-8859-1";
-				$encoding = mb_detect_encoding($data, $input_encoding);
+				$encoding = mb_detect_encoding($data, NP_TRACKBACK_ENCODING_DETECT_ORDER);
 			}
 			
 			if($encoding == "UTF-8" || $encoding == "ISO-8859-1") {
@@ -485,11 +485,11 @@ define('NP_TRACKBACK_USE_XML_PARSER', 2);
 			$enableHideurl = true;
 			// for TB LinkLookup
 			if( 
-				   strstr(serverVar('HTTP_USER_AGENT'),'Hatena Diary Track Forward Agent')
-				|| strstr(serverVar('HTTP_USER_AGENT'),'NP_TrackBack')
-				|| strstr(serverVar('HTTP_USER_AGENT'),'TBPingLinkLookup')
-				|| strstr(serverVar('HTTP_USER_AGENT'),'MT::Plugin::BanNoReferTb')
-				|| strstr(serverVar('HTTP_USER_AGENT'),'livedoorBlog')
+				   strpos(serverVar('HTTP_USER_AGENT'),'Hatena Diary Track') === false
+				|| strpos(serverVar('HTTP_USER_AGENT'),'NP_TrackBack') === false
+				|| strpos(serverVar('HTTP_USER_AGENT'),'TBPingLinkLookup') === false
+				|| strpos(serverVar('HTTP_USER_AGENT'),'MT::Plugin::BanNoReferTb') === false
+				|| strpos(serverVar('HTTP_USER_AGENT'),'livedoorBlog') === false
 			){
 				$enableHideurl = false;
 				$amount = '-1';
@@ -745,7 +745,7 @@ define('NP_TRACKBACK_USE_XML_PARSER', 2);
 		  */
 		function getTrackBackUrl($itemid) {
 			global $CONF, $manager;
-			return $CONF['ActionURL'] . '?action=plugin&amp;name=TrackBack&amp;tb_id='.$itemid;
+			return 'http://blog.cles.jp/item/' . intval($itemid) . '.trackback';
 		}		
 
 		/*
@@ -970,6 +970,11 @@ define('NP_TRACKBACK_USE_XML_PARSER', 2);
 			
 			if( defined('NP_TRACKBACK_USE_XML_PARSER') && function_exists('xml_parser_create') ){
 				$p = new NP_TrackBack_XMLParser();
+
+				# remove invalid string
+				$body = strstr($body, '<');
+				$body = substr($body, 0, strrpos($body,'>') === false ? 0 : strrpos($body,'>') + 1 );
+
 				$p->parse($body);
 				$p->free();
 				if( $p->isError ){
@@ -977,7 +982,7 @@ define('NP_TRACKBACK_USE_XML_PARSER', 2);
 					return 'An error occurred: ' . htmlspecialchars($errorMessage, ENT_QUOTES);
 				}
 			} else {
-				if ( strstr($DATA[1],'<error>0</error>') === false ){
+				if ( strpos($DATA[1],'<error>0</error>') === false ){
 					preg_match("/<message>(.*?)<\/message>/",$DATA[1],$error_message);
 					if( $error_message[1] ){
 						$errorMessage = mb_convert_encoding($error_message[1], _CHARSET);
@@ -1999,9 +2004,9 @@ define('NP_TRACKBACK_USE_XML_PARSER', 2);
 				if ( ($encoding !="") && ((mb_http_input("P") == "") || ( strtolower( ini_get("mbstring.http_input") ) == "pass")) ) {
 					return $encoding;
 				} else { 
-					$encoding = mb_detect_encoding($string, 'UTF-8,EUC-JP,SJIS,ISO-8859-1,ASCII,JIS');
+					$encoding = mb_detect_encoding($string, NP_TRACKBACK_ENCODING_DETECT_ORDER);
 				}
-				return ( $encoding ) ? $encoding : 'ISO-8859-1';
+				return ( $encoding ) ? $encoding : _CHARSET;
 			}
 //modify end+++++++++
 			if (!ereg("[\x80-\xFF]", $string) && !ereg("\x1B", $string))
@@ -2439,8 +2444,8 @@ function _strip_controlchar($string){
 		function getName()   	  { 		return 'TrackBack';   }
 		function getAuthor() 	  { 		return 'rakaz + nakahara21 + hsur'; }
 		function getURL()    	  { 		return 'http://blog.cles.jp/np_cles/category/31/subcatid/3'; }
-		function getVersion()	  { 		return '2.0.3 jp12'; }
-		function getDescription() { 		return '[$Revision: 1.22 $]<br />' . _TB_DESCRIPTION; }
+		function getVersion()	  { 		return '2.0.3 jp13'; }
+		function getDescription() { 		return '[$Revision: 1.311 $]<br />' . _TB_DESCRIPTION; }
 	
 //modify start+++++++++
 /*

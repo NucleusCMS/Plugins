@@ -2,111 +2,11 @@
 
 
 <h3>スキンへの記述例</h3>
-
 <p>
-	<h4>&lt;%TrackBack(list)%&gt;</h4>
+Nucleus CMS Japan Wikiの<a href="http://japan.nucleuscms.org/wiki/plugins:trackback">NP_TrackBackのページ</a>を参照してください。
 </p>
-<p>
-	受け取ったトラックバックの一覧を表示します。<br />
-	また、 <strong>&lt;%TrackBack(list,12)%&gt;</strong>のようにパラメータの2つめに記事idをつけると、その記事idにpingされたトラックバックの一覧を埋め込むことも可能です。<br />一覧表示のデザイン(テンプレート)は、プラグインのオプション(編集)画面にてカスタマイズできます。</p>
-
-<p>
-	<h4>&lt;%TrackBack(list)%&gt;</h4>
-</p>
-<p>
-	受け取ったトラックバックの一覧を表示します。<br />
-	また、 <strong>&lt;%TrackBack(list,12)%&gt;</strong>のようにパラメータの2つめに記事idをつけると、その記事idにpingされたトラックバックの一覧を埋め込むことも可能です。<br />一覧表示のデザイン(テンプレート)は、プラグインのオプション(編集)画面にてカスタマイズできます。
-</p>
-<p>
-	デフォルトではすべてのトラックバックが表示されるようになっていますが、多数のトラックバックがあるような場合には最新のものだけを表示して、残りの部分を折りたたむことができます。<br />
-<br />
-・最新の5件だけを表示して、あとは折りたたむ場合<br />
-<strong>&lt;%TrackBack(list, limit5)%&gt;</strong><br />
-<br />
-・1.x系と同じようにすべてのトラックバックを展開する場合（デフォルト）<br />
-<strong>&lt;%TrackBack(list, limit-1)%&gt;</strong><br />
-<br />
-・すべてのトラックバックを折りたたんだ状態にする場合<br />
-<strong>&lt;%TrackBack(list, limit0)%&gt;</strong><br />
-</p>
-<p>
-	記事idの指定とと折りたたみを同時に使う場合には<strong>&lt;%TrackBack(list,<em>記事id</em>,<em>limit0</em>)%&gt;</strong>のように指定します。
-</p>
-
-<p>
-	<h4>&lt;%TrackBack(form)%&gt;</h4>
-</p>
-<p>
-	手動でトラックバックを受け付ける入力フォームページへのリンクurlを表示します。<br />
-	リンク先ページで相手側にトラックバック送信機能がない場合でも記事要約とurlを受け付けることができるようになります。<br /><br />
-	<blockquote>便利な使い方としては、このプラグインのオプション(編集)画面にてトラックバック表示専用テンプレートの「フッタ」の所に、
-	<pre>この記事への手動トラックバックは
-&lt;a href='&lt;%form%&gt;' onclick='window.open(this.href, 
-"trackback", "scrollbars=yes,width=600,height=340,left=10,top=10,status=yes,resizable=yes");
- return false;'&gt;こちらのフォーム&lt;/a&gt;からどうぞ。
-</pre>
- と書き足しておくと、上記<strong>&lt;%TrackBack(list)%&gt;</strong>を書いた箇所に自動的にこの手動pingフォームへのリンクが表示され、手動pingフォームがポップアップするようにできます。<br />
- もちろん、テンプレートに<strong>&lt;%form%&gt;</strong>を埋め込まずに、スキンの別の場所に個別に&lt;a href='&lt;%TrackBack(form)%&gt;&lt;/a&gt;と書いても(書かなくても)結構です。</blockquote>
- 
-</p>
-
-<p>
-	<h4>&lt;%TrackBack(url)%&gt;</h4>
-</p>
-<p>
-	いわゆるトラックバックURL(相手側から見たping先)を表示します。<br />
-	また、このプラグインのオプション(編集)画面にて設定できるトラックバック表示専用テンプレート内には<strong>&lt;%action%&gt;</strong>と書き込むと、トラックバックurlに変換されます。<br />
-	<blockquote>例えば、トラックバック表示専用テンプレートの「フッタ」の所に、
-		<pre>この記事へのトラックバックurl:&lt;a href='&lt;%action%&gt;'&gt;&lt;%action%&gt;&lt;/a&gt;
-(右クリックでショートカットのコピーをご利用ください)
-</pre>
-	と書いておけば、個別に<strong>&lt;%TrackBack(url)%&gt;</strong>をスキンに書き込まなくても<strong>&lt;%TrackBack(list)%&gt;</strong>を書いた場所に表示されます。</blockquote>
-</p>
-
-
-<p>
-	<h4>&lt;%if(TrackBack,<em>key</em>,<em>value</em>)%&gt; (v3.3より)</h4>
-</p>
-<p>
-	if拡張(&lt;%if()%&gt;)に対応しています。<br />
-	トラックバックを受け付けている場合や、バックリンクチェックが有効になっている場合のみに特定の表示をさせることができるようになります。<br />
-	<br />
-	
-	<ul>
-		<li><em>key</em>(チェックの種類を指定します)</li>
-		<li>　<b>accept</b>　トラックバックを受け付けているかどうか（デフォルト）</li>
-		<li>　<b>required</b>　バックリンクチェックが有効かどうか</li>
-	</ul>
-	<ul>
-		<li><em>value</em>(判定結果を指定します)</li>
-		<li>　<b>yes</b>　チェックの内容が真の場合、真であると判断します（デフォルト）</li>
-		<li>　<b>no</b>　チェックの内容が真の場合、偽であると判断します</li>
-	</ul>
-	
-	<br />
-	例1）&lt;%if(TrackBack)%&gt;この部分はトラックバックを受け付けている時のみ表示されます&lt;%endif%&gt;<br />
-	例2）&lt;%if(TrackBack,accept,no)%&gt;この部分はトラックバックを受け付けていない時のみ表示されます&lt;%endif%&gt;<br />
-</p>
-	
-<h3>テンプレート内の記述例</h3>
-
-<p>
-	※上記のスキン記述例はすべてテンプレート内でも使用できます。
-</p>
-
-<p>
-	<h4>&lt;%TrackBack(count)%&gt;</h4>
-</p>
-<p>
-	記事ごとの何件トラックバック件数を表示します。<br />
-	デフォルトでは"No Trackbacks", 
-	"1 Trackback", "2 Trackbacks",のように表示されます。<br />
-	プラグインのオプション(編集)画面にて設定してください。
-</p>
-
 
 <h3>表示のカスタマイズ</h3>
-
 <p>
 	トラックバック関連の表示方法はテンプレートを編集することによってカスタマイズできますが、色や余白などのデザインはCSS側で指定する必要があります。テンプレート内に入力したクラス名のプロパティはcssで指定してください。デフォルトのテンプレートを飾るCSSプロパティの例をあげておきます。
 </p>
@@ -150,13 +50,18 @@ div.tb div.info {
 <h3>日本語版更新履歴</h3>
 
 <ul>
+	<li>Version 2.0.3jp13 : (2008/12/14)</li>
+	<li>　[Fixed] Pingフォームへのリンクを開こうとするとInvalid or expired ticket.になる問題を修正</li>
+	<li>　[Fixed] TrackBack送信時のエラーハンドリングを改良した</li>
+	<li>　[Fixed] TrackBackの文字コードの検出が正しく行われない場合がある問題を修正</li>
+	
 	<li>Version 2.0.3jp12 : (2008/01/12)</li>
 	<li>　[Fixed] エラーメッセージの文字コードが適切でなかった問題を修正</li>
 	<li>　[Fixed] トラックバックの送信文字コードをUTF-8固定にした</li>
 	<li>　[Fixed] トラックバック可/不可の判定がおかしかった問題を修正</li>
 	
 	<li>Version 2.0.3jp11 : (2007/09/30)</li>
-	<li>　[Added] SuperAdmin以外でもTrackbackが管理できるようにした</li>
+	<li>　[Added] SuperAdmin以外でもTrackBackが管理できるようにした</li>
 	
 	<li>Version 2.0.3jp10 : (2007/06/30)</li>
 	<li>　[Fixed] mysql_query()をsql_query()に変更</li>

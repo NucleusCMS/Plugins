@@ -20,6 +20,7 @@
 	$action = requestVar('action');
 	$aActionsNotToCheck = array(
 		'',
+		'ping',
 	);
 	if (!in_array($action, $aActionsNotToCheck)) {
 		if (!$manager->checkTicket()) doError(_ERROR_BADTICKET);
