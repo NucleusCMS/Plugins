@@ -745,7 +745,7 @@ define('NP_TRACKBACK_ENCODING_DETECT_ORDER', 'ASCII,ISO-2022-JP,UTF-8,EUC-JP,SJI
 		  */
 		function getTrackBackUrl($itemid) {
 			global $CONF, $manager;
-			return 'http://blog.cles.jp/item/' . intval($itemid) . '.trackback';
+			return $CONF['ActionURL'] . '?action=plugin&amp;name=TrackBack&amp;tb_id='.$itemid;
 		}		
 
 		/*
