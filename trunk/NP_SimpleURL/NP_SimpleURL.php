@@ -36,6 +36,8 @@
 	
 	History
 	-------
+	2008-12-15 v0.3 : Add old url redirection. Add item var.
+	                : Change item page's url format. (yu)
 	2008-07-12 v0.21: Improve function for category alias. (yu)
 	2008-06-08 v0.2 : Add some new features. Support alias names. (yu)
 	2008-05-02 v0.1 : First release. (yu http://nucleus.datoka.jp/)
@@ -122,10 +124,19 @@ if(!function_exists('getItemAliasFromID')) {
 	{
 		global $manager;
 		
-		if ($manager->pluginInstalled('NP_SimpleURL')) {
+		//return (int)$id; //use itemid only
+		
+		if ($manager->pluginInstalled('NP_SimpleURL')) { //use title
 			$obj =& $manager->getPlugin('NP_SimpleURL');
 			$t = strip_tags($obj->_getDataFromItemID($id, $type='ititle'));
-			$t = mb_substr(str_replace(array(' ','/','?','&','%'), '_', $t), 0, 20) .'-'. $id;
+			if (preg_match('/[^\x00-\x7F]/', $t)) { 
+				//半角文字以外が入っている場合はアイテムIDのみ
+				$t = (int)$id;
+			}
+			else {
+				//半角文字の場合はURLで安全に使用可能な文字以外を'_'で置換
+				$t = mb_substr(preg_replace('/[^a-zA-Z0-9_.!~*()-]/', '_', $t), 0, 40) .'-'. (int)$id;
+			}
 			return $t;
 		}
 	}
@@ -137,7 +148,7 @@ class NP_SimpleURL extends NucleusPlugin
 	function getName() { return 'Simple URL'; }
 	function getAuthor() { return 'yu'; }
 	function getURL() { return 'http://nucleus.datoka.jp/'; }
-	function getVersion() { return '0.21'; }
+	function getVersion() { return '0.3'; }
 	function getMinNucleusVersion() { return 322; }
 	function supportsFeature($what) { return (int)($what == 'SqlTablePrefix'); }
 	function hasAdminArea() { return 1; }
@@ -256,10 +267,15 @@ class NP_SimpleURL extends NucleusPlugin
 	//URLパース
 	function event_ParseURL(&$pdata)
 	{
+		
+		
 		// nothing to do if another plugin already parsed the URL
 		if ($pdata['complete']) return;
 		
 		global $CONF, $blogid, $catid, $itemid, $memberid, $archive, $archivelist;
+		
+		// in admin area
+		if ($CONF['UsingAdminArea']) return;
 		
 		$complete =& $pdata['complete'];
 		$virtualpath =& $pdata['info'];
@@ -270,6 +286,42 @@ class NP_SimpleURL extends NucleusPlugin
 			selectBlog( $CONF['SimpleURL']['selectBlog'] );
 		}
 		
+		//リダイレクト処理（NormalURLからFancyURLへ）
+		if ($virtualpath == '') {
+			$extra = '';
+			$newurl = '';
+			if ($itemid) {
+				if ($blogid) $extra['blogid'] = $blogid;
+				if ($catid)  $extra['catid'] = $catid;
+				$newurl = createItemLink($itemid, $extra);
+			}
+			else if ($memberid) {
+				if ($blogid) $extra['blogid'] = $blogid;
+				$newurl = createMemberLink($memberid, $extra);
+			}
+			else if ($archivelist) {
+				if ($catid)  $extra['catid'] = $catid;
+				$newurl = createArchiveListLink($archivelist, $extra);
+			}
+			else if ($archive) {
+				if ($catid)  $extra['catid'] = $catid;
+				$newurl = createArchiveLink($blogid, $archive, $extra);
+			}
+			else if ($catid) {
+				if ($blogid) $extra['blogid'] = $blogid;
+				$newurl = createCategoryLink($catid, $extra);
+			}
+			/*else if ($blogid) {
+				$newurl = createBlogidLink($blogid, $extra);
+				$this->_redirect301($newurl);
+			}*/
+			if ($newurl != '') {
+				if ($this->_isValidURL($newurl)) $this->_http301($newurl);
+				else $this->_http404();
+			}
+		}
+		
+		//パース処理開始
 		$data = explode("/", $virtualpath );
 		for ($i = 0; $i < sizeof($data); $i++) {
 			switch ($data[$i]) {
@@ -393,6 +445,8 @@ class NP_SimpleURL extends NucleusPlugin
 					//debuglog('through: item '.$i);
 				}
 				//debuglog('through: last '.$i);
+				//意味のないURLとみなし、404にする
+				$this->_http404();
 			}
 		}
 		//debuglog(array('blogid'=>$blogid, 'catid'=>$catid, 'vpath'=>$virtualpath));
@@ -622,8 +676,42 @@ class NP_SimpleURL extends NucleusPlugin
 	}
 	
 	
+	function doItemVar(&$item, $id, $text='') {
+		$id = (int)$id;
+		if ($id) {
+			$link = createItemLink($id);
+			if ($text == '') $text = strip_tags($this->_getDataFromItemID($id, $type='ititle'));
+			echo "<a href=\"{$link}\">{$text}</a>";
+		}
+	}
+	
+	
 	
 	/* ----------------- helper methods ----------------- */
+	
+	function _http301($url)
+	{
+		header('HTTP/1.1 301 Moved Permanently');
+		header('Location: ' . $url);
+		exit;
+	}
+	
+	function _http404()
+	{
+		$language = ereg_replace( '[\\|/]', '', getLanguageName());
+		if (file_exists($this->getDirectory().$language.'.php'))
+			include_once($this->getDirectory().$language.'.php');
+		else
+			include_once($this->getDirectory().'english.php');
+		
+		header('HTTP/1.1 404 Not Found');
+		doError(_PLUG_SIMPLEURL_MSG404);
+	}
+	
+	function _isValidURL($url)
+	{
+		return preg_match('/^https?\:\/\//', $url);
+	}
 	
 	function _quoteSmart($val)
 	{
