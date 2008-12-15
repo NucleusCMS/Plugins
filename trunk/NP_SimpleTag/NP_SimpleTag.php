@@ -12,10 +12,26 @@
 	
 	Usage
 	-----
-	(TODO: write it)
+	1.  Install this plugin.
+	2.  First, access ".../nucleus/simpletag/?action=setshadow" directly and update tag data.
+	3.  Set template var:
+		<%SimpleTag()%> in item body part.
+	4.  Set skinvar:
+		<%SimpleTag(tpl:template_name, type:showitem, range:blog, amount:10)%> //<%blog%> like
+		<a href="<%SimpleTag(type:prevlink, range:blog, amount:10)%>">Prev</a> //prev/nextlink
+		<%SimpleTag(type:tagcloud, range:all, amount:100)%> //tagcloud
+		<%SimpleTag(type:related, range:all, amount:10)%> //related item list in item page
+		<%if(SimpleTag,isset)%>
+			<!-- execute if tag is set -->
+		<%endif%>
+	5.  Input tags in item option.
+	6.  If you rename a category, click "update button" in blog settings to update tag data.
 	
 	History
 	-------
+	2008-12-11 v0.42: Improve related scoring and listing.
+	                  Fix bug in 'error' skintype. (yu)
+	2008-07-21 v0.41: Add 'range:searchable' and fix some sql queries. (yu)
 	2008-06-22 v0.4 : Show tag hints near the input field. (yu)
 	2008-06-20 v0.3 : Add table column 'catid' (which represents 'shadow tag' - a connection from tag to category). 
 	                  Add 'prev/nextlink' and 'related' type. (yu)
@@ -30,7 +46,7 @@ class NP_SimpleTag extends NucleusPlugin
 	function getName() { return 'Simple Tag'; }
 	function getAuthor() { return 'yu'; }
 	function getURL() { return 'http://nucleus.datoka.jp/'; }
-	function getVersion() { return '0.4'; }
+	function getVersion() { return '0.42'; }
 	function getMinNucleusVersion() { return 322; }
 	function supportsFeature($what) { return (int)($what == 'SqlTablePrefix'); }
 	function hasAdminArea() { return 1; }
@@ -56,11 +72,12 @@ class NP_SimpleTag extends NucleusPlugin
 	
 	var $params;
 	var $tpl;
-	var $container;
+	var $container;   //container obj
+	var $searchables; //searchable blogs
 	
 	function init() 
 	{
-		global $manager;
+		global $manager, $blogid;
 		
 		//if NP_Container is installed, hold reference of container instance.
 		if ($manager->pluginInstalled('NP_Container')) {
@@ -79,6 +96,7 @@ class NP_SimpleTag extends NucleusPlugin
 		if ($this->tpl['RELBODY'] == '')   $this->tpl['RELBODY']   = '<dt><span class="date">[<%date%>]</span> <a href="<%link%>"><%title%></a> <span class="score">スコア <%score%></span></dt><dd><%body%></dd>';
 		if ($this->tpl['RELFOOTER'] == '') $this->tpl['RELFOOTER'] = '</dl>';
 		if ($this->tpl['RELNONE'] == '')   $this->tpl['RELNONE']   = '<p>見つかりませんでした。</p>';
+		
 	}
 	
 	function install() 
@@ -426,6 +444,18 @@ EOH;
 			list($this->params['amount'], $this->params['offset']) = sscanf($this->params['amount'], '%d(%d)');
 		}
 		
+		//get searchable blogs
+		if (!count($this->searchables)) {
+			$res = sql_query('SELECT bnumber FROM '.sql_table('blog').' WHERE bincludesearch=1');
+			if (mysql_num_rows($res)) {
+				while ($row = mysql_fetch_assoc($res)) {
+					$this->searchables[] = intval($row['bnumber']);
+				}
+			}
+			$this->searchables[] = $blogid;
+			$this->searchables = array_unique($this->searchables);
+		}
+		
 		switch ($this->params['type']) {
 		case 'tagcloud':
 			if ($this->params['range'] == 'category' and $catid) { //category
@@ -434,7 +464,7 @@ EOH;
 			else if ($this->params['range'] == 'tag' and $_REQUEST['tag']) { //tag
 				$this->_makeTagCloud($this->params['range'], array('tag'=>$_REQUEST['tag']));
 			}
-			else if ( in_array($this->params['range'], array('recent','blog','all')) ) { //others
+			else if ( in_array($this->params['range'], array('recent','blog','searchable','all')) ) { //others
 				$this->_makeTagCloud($this->params['range']);
 			}
 			break;
@@ -481,7 +511,13 @@ EOH;
 	
 	function _makeRelated($itemid, $range='blog') 
 	{
-		global $blogid;
+		global $blog, $blogid, $catid, $CONF, $manager;
+		
+		if($blog){
+			$b =& $blog; 
+		}else{
+			$b =& $manager->getBlog($CONF['DefaultBlog']);
+		}
 		
 		//アイテムに属するタグを取得する
 		$query = sprintf('SELECT tag, catid FROM %s WHERE itemid=%d',
@@ -503,26 +539,40 @@ EOH;
 		
 		//タグとマッチするアイテムを取得、スコアを重み付けする
 		$scores = array();
-		$cnt_torder = $maxscore; //タグ並びでの重み付け用（前のほうが有利）
-		foreach ($tags as $tag => $catid) {
-			$query = sprintf('SELECT itemid FROM %s WHERE tag=%s %s ORDER BY id DESC',
+		$times = array();
+		$items = array();
+		$cnt_torder = $maxscore; //タグ並びでの重み付け用
+		if ($range == 'blog') $cond = 'iblog='. $blogid;
+		else if ($range == 'searchable') $cond = 'iblog IN ('. join(',', $this->searchables) .')';
+		else if ($range == 'category' and $catid) $cond = 'icat='. $catid;
+		else $cond = '1'; //dummy
+		foreach ($tags as $tag => $tagcat) {
+/*			$query = sprintf('SELECT itemid FROM %s WHERE tag=%s AND '.
+				'itemid IN (SELECT inumber FROM %s WHERE %s AND idraft=0 AND itime<%s) ',
 				sql_table('plug_simpletag'),
 				$this->_quoteSmart($tag),
-				($range == 'blog') ? ' AND iblog='. $blogid : '' //TODO:これ間違い。サブクエリ必要
+				sql_table('item'),
+				$cond,
+				mysqldate($b->getCorrectTime())
+				);*/
+			$query = sprintf('SELECT itemid, itime FROM %s AS t, %s AS i WHERE t.itemid=i.inumber '.
+				'AND tag=%s AND idraft=0 AND itime<%s AND %s ',
+				sql_table('plug_simpletag'),
+				sql_table('item'),
+				$this->_quoteSmart($tag),
+				mysqldate($b->getCorrectTime()),
+				$cond
 				);
 			$res = sql_query($query);
 			if (! mysql_num_rows($res)) continue;
 			
-			//$cnt_iorder = 0; //タグ登録・更新日時での重み付け用（新しいほうが有利）
 			while ($data = mysql_fetch_assoc($res)) {
 				if ($data['itemid'] == $itemid) continue; //現アイテム自体は却下
 				
-				$add = 0;
-				$add += 0.2 * ($cnt_torder / $maxscore);
-				//$add -= 0.01 * $cnt_iorder;
-				//if ($cnt_iorder < 20) $cnt_iorder ++; //影響を0.2以内に収めるために、20を上限にする
-				if ($catid) $add -= 0.5; //シャドウタグでの重み付け
-				$scores[ $data['itemid'] ] += 1 + $add;
+				$add = ($tagcat) ? 25 : 100; //シャドウタグでの重み付けは1/4
+				$add += ($tagcat) ? 0 : round(10 * ($cnt_torder / $maxscore)); //タグは前の方が少し重い
+				$scores[ $data['itemid'] ] += $add;
+				$times[ $data['itemid'] ] = $data['itime'];
 			}
 			$cnt_torder --;
 		}
@@ -531,19 +581,26 @@ EOH;
 			return;
 		}
 		
-		//スコア順にソート、%に変換する（重み付けで偏向するので正確ではない）
-		arsort($scores);
-		$items = array();
-		$cnt = 0;
-		foreach ($scores as $iid => $iscore) {
-			if (++$cnt > $limit) break;
-			$items[$iid]['score'] = round(($iscore / $maxscore) * 100);
+		foreach (array_keys($scores) as $iid) {
+			$items[$iid] = array(
+				'itemid' => $iid,
+				'score' => $scores[$iid],
+				'time' => $times[$iid]
+				);
 		}
+		//マルチソートを掛ける（スコア、日付の順）
+		array_multisort($scores, SORT_NUMERIC, SORT_DESC, $times, SORT_STRING, SORT_DESC, $items);
+		$items = array_slice($items, 0, $limit);
+		//multisortの時点で数値キーがリセットされたことに注意
 		
 		//アイテム情報を取得する
-		$query = sprintf('SELECT * FROM %s WHERE inumber IN (%s)', // ORDER BY itime DESC
+		$iids = array();
+		foreach ($items as $i) {
+			$iids[] = $i['itemid'];
+		}
+		$query = sprintf('SELECT * FROM %s WHERE inumber IN (%s)',
 			sql_table('item'),
-			join(',', array_keys($items))
+			join(',', $iids)
 			);
 		$res = sql_query($query);
 		
@@ -553,21 +610,28 @@ EOH;
 		}
 		
 		while ($data = mysql_fetch_assoc($res)) {
-			$items[$data['inumber']]['title'] = $data['ititle'];
-			$items[$data['inumber']]['body']  = $data['ibody'];
-			$items[$data['inumber']]['date']  = $data['itime'];
-			$items[$data['inumber']]['catid'] = $data['icat'];
+			for ($i=0; $i<count($items); $i++) {
+				if ($items[$i]['itemid'] == $data['inumber']) {
+					$items[$i]['title']  = $data['ititle'];
+					$items[$i]['body']   = $data['ibody'];
+					$items[$i]['catid']  = $data['icat'];
+					break;
+				}
+			}
 		}
 		
 		//関連アイテムのリストを表示する
+		$cnt = 0;
 		$len = ($this->params['len']) ? $this->params['len'] : 150;
+		$adjscore = ($maxscore > 2) ? $maxscore : 2; //スコア調整用、タグが多い時は2で切る。
 		echo $this->tpl['RELHEADER'];
-		foreach ($items as $iid => $data) {
-			$extra = array('catid'=>$data['catid']);
-			$data['link']  = createItemLink($iid, $extra);
+		foreach ($items as $key => $data) {
+			if (++$cnt > $limit) break;
+			$data['score'] = round($data['score'] / $adjscore);
 			$data['title'] = strip_tags($data['title']);
 			$data['body']  = shorten(strip_tags($data['body']), $len, '...');
-			$data['date']  = substr($data['date'], 0, 10);
+			$data['date']  = substr($data['time'], 0, 10);
+			$data['link']  = createItemLink($data['itemid'], array('catid'=>$data['catid']));
 			echo TEMPLATE::fill($this->tpl['RELBODY'], $data);
 		}
 		echo $this->tpl['RELFOOTER'];
@@ -597,9 +661,12 @@ EOH;
 		
 		switch ($direction) {
 			case 'prevlink':
-				if ( intval($startpos) - intval($maxresults) >= 0) {
-					$startpos 	= intval($startpos) - intval($maxresults);
-					$url		= $baseurl.'?'.alterQueryStr($parsed,'startpos',$startpos);
+				if ( intval($startpos) - intval($maxresults) > 0) {
+					$startpos = intval($startpos) - intval($maxresults);
+					$url = $baseurl.'?'.alterQueryStr($parsed,'startpos',$startpos);
+				}
+				else {
+					$url = $baseurl;
 				}
 				break;
 			case 'nextlink':
@@ -614,8 +681,11 @@ EOH;
 					$iAmountOnPage = $this->_blogQuery($tag, $skinType, $range, $amount, $offset, 'count') - intval($startpos);
 				}
 				if (intval($iAmountOnPage) >= intval($maxresults)) {
-					$startpos 	= intval($startpos) + intval($maxresults);
-					$url		= $baseurl.'?'.alterQueryStr($parsed,'startpos',$startpos);
+					$startpos = intval($startpos) + intval($maxresults);
+					$url = $baseurl.'?'.alterQueryStr($parsed,'startpos',$startpos);
+				}
+				else {
+					$url = $baseurl;
 				}
 				break;
 			default:
@@ -640,7 +710,7 @@ EOH;
 	
 	function _blogQuery($tag, $skinType, $range='blog', $amount='10', $offset='0', $mode='') 
 	{
-		global $blog, $CONF, $catid, $archive;
+		global $blog, $CONF, $catid, $archive, $manager;
 		
 		$tag = mysql_real_escape_string($tag);
 		
@@ -674,6 +744,9 @@ EOH;
 		
 		if ($range == 'blog') {
 			$query .= ' AND i.iblog='. $b->blogid;
+		}
+		else if ($range == 'searchable') {
+			$query .= ' AND i.iblog IN ('. join(',', $this->searchables) .')';
 		}
 		if ($catid) {
 			$query .= ' AND i.icat='. $catid;
@@ -715,38 +788,63 @@ EOH;
 	
 	function _makeTagCloud($type, $extra=null) 
 	{
-		global $blogid, $catid;
+		global $blog, $blogid, $catid, $CONF, $manager;
 		
 		$minfreq = ($this->params['freq']) ? $this->params['freq'] : 1;
 		$amount  = ($this->params['amount']) ? $this->params['amount'] : 50;
 		
+		if($blog){
+			$b =& $blog; 
+		}else{
+			$b =& $manager->getBlog($CONF['DefaultBlog']);
+		}
+		$itime = mysqldate($b->getCorrectTime());
+		
 		//get data
 		switch ($type) {
 		case 'category':
-			$query = sprintf('SELECT tag, COUNT(tag) AS amount FROM %s WHERE catid=0 AND itemid IN (SELECT inumber FROM %s WHERE icat=%d)'.
+			$query = sprintf('SELECT tag, COUNT(tag) AS amount FROM %s WHERE'.
+				' catid=0 AND itemid IN (SELECT inumber FROM %s WHERE icat=%d AND idraft=0 AND itime<%s)'.
 				' GROUP BY tag HAVING amount>=%d ORDER BY %s LIMIT %d',
 				sql_table('plug_simpletag'),
 				sql_table('item'),
 				$this->_quoteSmart($catid),
+				$itime,
 				$this->_quoteSmart($minfreq),
 				($this->params['order']) ? $this->params['order'] : 'amount DESC',
 				$this->_quoteSmart($amount)
 				);
 			break;
 		case 'blog':
-			$query = sprintf('SELECT tag, COUNT(tag) AS amount FROM %s WHERE catid=0 AND itemid IN (SELECT inumber FROM %s WHERE iblog=%d)'.
+			$query = sprintf('SELECT tag, COUNT(tag) AS amount FROM %s WHERE'.
+				' catid=0 AND itemid IN (SELECT inumber FROM %s WHERE iblog=%d AND idraft=0 AND itime<%s)'.
 				' GROUP BY tag HAVING amount>=%d ORDER BY %s LIMIT %d',
 				sql_table('plug_simpletag'),
 				sql_table('item'),
 				$this->_quoteSmart($blogid),
+				$itime,
+				$this->_quoteSmart($minfreq),
+				($this->params['order']) ? $this->params['order'] : 'amount DESC',
+				$this->_quoteSmart($amount)
+				);
+			break;
+		case 'searchable':
+			$query = sprintf('SELECT tag, COUNT(tag) AS amount FROM %s WHERE'.
+				' catid=0 AND itemid IN (SELECT inumber FROM %s WHERE iblog IN (%s) AND idraft=0 AND itime<%s)'.
+				' GROUP BY tag HAVING amount>=%d ORDER BY %s LIMIT %d',
+				sql_table('plug_simpletag'),
+				sql_table('item'),
+				join(',', $this->searchables),
+				$itime,
 				$this->_quoteSmart($minfreq),
 				($this->params['order']) ? $this->params['order'] : 'amount DESC',
 				$this->_quoteSmart($amount)
 				);
 			break;
 		case 'tag':
-			$query = sprintf('SELECT tag, COUNT(tag) AS amount FROM %s WHERE catid=0 AND itemid IN (SELECT itemid FROM %s WHERE tag=%s)'.
-				' AND tag!=%s GROUP BY tag HAVING amount>=%d ORDER BY %s LIMIT %d',
+			$query = sprintf('SELECT tag, COUNT(tag) AS amount FROM %s WHERE'.
+				' catid=0 AND itemid IN (SELECT itemid FROM %s WHERE tag=%s) AND tag!=%s'.
+				' GROUP BY tag HAVING amount>=%d ORDER BY %s LIMIT %d',
 				sql_table('plug_simpletag'),
 				sql_table('plug_simpletag'),
 				$this->_quoteSmart($extra['tag']),
@@ -757,17 +855,23 @@ EOH;
 				);
 			break;
 		case 'recent':
-			$query = sprintf('SELECT tag, COUNT(tag) AS amount FROM %s WHERE catid=0 GROUP BY tag ORDER BY %s LIMIT %d',
+			$query = sprintf('SELECT tag, COUNT(tag) AS amount FROM %s WHERE'.
+				' catid=0 AND itemid IN (SELECT inumber FROM %s WHERE idraft=0 AND itime<%s)'.
+				' GROUP BY tag ORDER BY %s LIMIT %d',
 				sql_table('plug_simpletag'),
+				sql_table('item'),
+				$itime,
 				($this->params['order']) ? $this->params['order'] : 'id DESC',
 				$this->_quoteSmart($amount)
 				);
 			break;
 		default: //all
-			$query = sprintf('SELECT tag, COUNT(tag) AS amount FROM %s WHERE catid=0 AND itemid IN (SELECT inumber FROM %s)'.
+			$query = sprintf('SELECT tag, COUNT(tag) AS amount FROM %s WHERE'.
+				' catid=0 AND itemid IN (SELECT inumber FROM %s WHERE idraft=0 AND itime<%s)'.
 				' GROUP BY tag HAVING amount>=%d ORDER BY %s LIMIT %d',
 				sql_table('plug_simpletag'),
 				sql_table('item'),
+				$itime,
 				$this->_quoteSmart($minfreq),
 				($this->params['order']) ? $this->params['order'] : 'amount DESC',
 				$this->_quoteSmart($amount)
