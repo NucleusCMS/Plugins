@@ -228,24 +228,26 @@ if (!in_array($action, $aActionsNotToCheck)) {
 // <080213 fix $_POST to postVar by shizuki>
 //if ($_POST[targetthumb]) {//}
 if (postVar('targetthumb')) {
+	// Check if the collection is valid.
+	if (!MEDIA::isValidCollection(postVar('currentCollection'))) media_doError(_ERROR_DISALLOWED);
 //	$mediapath = $DIR_MEDIA . $_POST[currentCollection] . "/";
 	$mediapath = $DIR_MEDIA . postVar('currentCollection') . "/";
 //	switch ($_POST[myaction]) {//}
 	switch (postVar('myaction')) {
 		case _MEDIA_PHP_1:
 //			$msg1 = unlink($mediapath . $_POST[targetfile]);
-			$msg1 = unlink($mediapath . postVar('targetfile'));
+			$msg1 = media_unlink($mediapath, postVar('targetfile'));
 			if (!$msg1) {
-				print $selectfile . htmlspecialchars(_MEDIA_PHP_2);
+				print htmlspecialchars(postVar('targetfile') . _MEDIA_PHP_2);
 			}
 //			$exist = file_exists($mediapath . $_POST[targetthumb]);
 			$exist = file_exists($mediapath . postVar('targetthumb'));
 			if ($exist) {
 //				$msg2 = unlink($mediapath.$_POST[targetthumb]);
-				$msg2 = unlink($mediapath . postVar('targetthumb'));
+				$msg2 = media_unlink($mediapath, postVar('targetthumb'));
 				if (!$msg2) {
 //					print $_POST[targetthumb] . _MEDIA_PHP_2;
-					print postVar('targetthumb') . htmlspecialchars(_MEDIA_PHP_2);
+					print htmlspecialchars(postVar('targetthumb') . _MEDIA_PHP_2);
 				}
 			}
 			break;
@@ -269,6 +271,7 @@ if (postVar('targetthumb')) {
 					$ok = 1;
 				}
 			}
+//TODO:allow only the allowed media files
 			if (eregi("\.php$", $newfilename)) {
 				$ok = 0;
 			}
@@ -279,9 +282,9 @@ if (postVar('targetthumb')) {
 			T.Kosugi edit End
 			*/
 //			$msg1 = rename($mediapath . $_POST[targetfile], $mediapath . htmlspecialchars($_POST[newname]) );
-			$msg1 = rename($mediapath . postVar('targetfile'), $mediapath . htmlspecialchars(postVar('newname')) );
+			$msg1 = media_rename($mediapath, postVar('targetfile'), htmlspecialchars(postVar('newname')) );
 			if (!$msg1) {
-				print $selectfile . htmlspecialchars(_MEDIA_PHP_10);
+				print htmlspecialchars(postVar('targetfile') . _MEDIA_PHP_10);
 			}
 //			$exist = file_exists($mediapath . $_POST[targetthumb]);
 			$exist = file_exists($mediapath . postVar('targetthumb'));
@@ -291,9 +294,9 @@ if (postVar('targetthumb')) {
 //				$thumbnewname = $Prefix_thumb . $_POST[newname];
 				$thumbnewname = $Prefix_thumb . postVar('newname');
 //				$msg2         = rename($mediapath . $_POST[targetthumb], $mediapath . $thumbnewname);
-				$msg2         = rename($mediapath . postVar('targetthumb'), $mediapath . $thumbnewname);
+				$msg2         = media_rename($mediapath, postVar('targetthumb'), $thumbnewname);
 				if (!$msg2) {
-					print $targetthumb . htmlspecialchars(_MEDIA_PHP_10);
+					print htmlspecialchars(postVar('targetthumb') . _MEDIA_PHP_10);
 				}
 			}
 			break;
@@ -343,8 +346,6 @@ function media_select()
 	}
 //end yama
 
-	media_head();
-
 	// show 10 files + navigation buttons
 	// show msg when no files
 	// show upload form
@@ -363,6 +364,11 @@ function media_select()
 	if (!$currentCollection || !@is_dir($DIR_MEDIA . $currentCollection)) {
 		$currentCollection = $member->getID();
 	}
+
+	// avoid directory travarsal and accessing invalid directory
+	if (!MEDIA::isValidCollection($currentCollection)) media_doError(_ERROR_DISALLOWED);
+
+	media_head();
 
 	// get collection list
 	// start modify by T.Kosugi 2006/08/26
@@ -511,8 +517,8 @@ function media_select()
 			$old_level  = error_reporting(0);
 			$size       = @GetImageSize($filename);
 			error_reporting($old_level);
-			$width      = intval($size[0]);
-			$height     = intval($size[1]);
+			$intWidth      = intval($size[0]);
+			$intHeight     = intval($size[1]);
 			$filetype   = $size[2];
 
 			echo "<div class='box'>\n";
@@ -543,7 +549,7 @@ function media_select()
 			$hscMVEW = htmlspecialchars(_MEDIA_VIEW);
 			$hscMVTT = htmlspecialchars(_MEDIA_VIEW_TT);
 //	/2008-02-21 cacher
-			$media26 = htmlspecialchars(_MEDIA_PHP_26);
+			$hscMedia26 = htmlspecialchars(_MEDIA_PHP_26);
 // </080213 shizuki add>
 			if ($filetype != 0 || $thumb_exist) {
 				// image (gif/jpg/png/swf)
@@ -579,14 +585,14 @@ function media_select()
 // <080213 mod by shizuki>
 //			echo "<div class=\"tmb\">
 //				<a href=\"media.php\" onclick=\"chooseImage('", htmlspecialchars($jsCurrentCollection), "','", htmlspecialchars($targetfile), "',"
-//		     . "'", htmlspecialchars($width), "','" , htmlspecialchars($height), "'"
+//		     . "'", htmlspecialchars($intWidth), "','" , htmlspecialchars($intHeight), "'"
 //				   . ")\" onkeypress=\"chooseImage('", htmlspecialchars($jsCurrentCollection), "','", htmlspecialchars($targetfile), "',"
-//		     . "'", htmlspecialchars($width), "','" , htmlspecialchars($height), "'"
+//		     . "'", htmlspecialchars($intWidth), "','" , htmlspecialchars($intHeight), "'"
 //				   . ")\" title=\"" . htmlspecialchars($targetfile). "\">
 //				<img src=\"../../../media/$currentCollection/$thumb_file\" alt=\"$targetfile\" /></a></div>\n";
 				echo <<<_DIVTHUMB_
 	<div class="tmb">
-		<a href="media.php" onclick="chooseImage('{$hscJsCC}', '{$hscTGTF}', '{$width}', '{$height}')" onkeypress="chooseImage('{$hscJsCC}', '{$hscTGTF}', '{$width}', '{$height}')" title="{$hscTGTF}">
+		<a href="media.php" onclick="chooseImage('{$hscJsCC}', '{$hscTGTF}', '{$intWidth}', '{$intHeight}')" onkeypress="chooseImage('{$hscJsCC}', '{$hscTGTF}', '{$intWidth}', '{$intHeight}')" title="{$hscTGTF}">
 			<img src="{$hscMEDA}{$hscCCol}/{$hscThFN}" alt="{$hscTGTF}" /></a></div>
 
 _DIVTHUMB_;
@@ -599,14 +605,14 @@ _DIVTHUMB_;
 				$file_ext=strtoupper(strrev(substr($revname,0,strpos($revname,"."))));
 // 2008-11-08 yama
 //				echo "\t<div class=\"tmb\">$file_ext</div>\n";
-				echo "\t<div class=\"media\">$file_ext</div>\n";
+				echo "\t<div class=\"media\">".htmlspecialchars($file_ext)."</div>\n";
 // /2008-11-08 yama
 //	/2008-11-01 cacher
 			}
 //	2008-11-01 cacher
 			echo "\t";
-			if ($width||$height){
-				echo $width . ' x ' . $height;
+			if ($intWidth||$intHeight){
+				echo $intWidth . ' x ' . $intHeight;
 			}
 //			echo "<br />\n\t(" . intval(filesize($filename)) . ")<br />\n\t"	//2008-11-06 cacher
 			echo "<br />\n\t" . number_format(filesize($filename)/1024, 1)." KB<br />\n\t"
@@ -618,17 +624,17 @@ _DIVTHUMB_;
 				// image (gif/jpg/png/swf)
 // <080213 mod by shizuki>
 //				echo "<a href=\"media.php\" onclick=\"chooseImage('", htmlspecialchars($jsCurrentCollection), "','", htmlspecialchars($targetfile), "',"
-//					. "'", htmlspecialchars($width), "','" , htmlspecialchars($height), "'"
+//					. "'", htmlspecialchars($intWidth), "','" , htmlspecialchars($intHeight), "'"
 //					. ")\" onkeypress=\"chooseImage('", htmlspecialchars($jsCurrentCollection), "','", htmlspecialchars($targetfile), "',"
-//					. "'", htmlspecialchars($width), "','" , htmlspecialchars($height), "'"
+//					. "'", htmlspecialchars($intWidth), "','" , htmlspecialchars($intHeight), "'"
 //					. ")\" title=\"" . htmlspecialchars($targetfile). "\">"
 // rem yama 20070928					   . htmlspecialchars(shorten($targetfile,25,'...'))
 //					   . _MEDIA_PHP_26 //added yama 20070928
 //					   ."</a>";
 //			   echo ' (<a href="', htmlspecialchars($CONF['MediaURL'] . $currentCollection . '/' . $targetfile), '" onclick="window.open(this.href); return false;" onkeypress="window.open(this.href); return false;" title="',htmlspecialchars(_MEDIA_VIEW_TT),'">',_MEDIA_VIEW,'</a>)';
 			echo <<<_MEDIAPREVIEW_
-	<a href="media.php" onclick="chooseImage('{$hscJsCC}', '{$hscTGTF}', '{$width}', '{$height}')" onkeypress="chooseImage('{$hscJsCC}', '{$hscTGTF}', '{$width}', '{$height}')" title="{$hscTGTF}">
-		{$media26}
+	<a href="media.php" onclick="chooseImage('{$hscJsCC}', '{$hscTGTF}', '{$intWidth}', '{$intHeight}')" onkeypress="chooseImage('{$hscJsCC}', '{$hscTGTF}', '{$intWidth}', '{$intHeight}')" title="{$hscTGTF}">
+		{$hscMedia26}
 	</a>
 	(<a href="{$hscMEDA}{$hscCCol}/{$hscTGTF}" onclick="window.open(this.href); return false;" onkeypress="window.open(this.href); return false;" title="{$hscMVTT}">{$hscMVEW}</a>)
 
@@ -645,7 +651,7 @@ _MEDIAPREVIEW_;
 //				$shortFN = htmlspecialchars(shorten($targetfile, 30, '...'));
 				echo <<<_MEDIAFILE_
 	<a href="media.php" onclick="chooseOther('{$hscJsCC}', '{$hscTGTF}')" onkeypress="chooseOther('{$hscJsCC}', '{$hscTGTF}')" title="{$hscTGTF}">
-		{$media26}
+		{$hscMedia26}
 	</a>
 	(<a href="{$hscMEDA}{$hscCCol}/{$hscTGTF}" onclick="window.open(this.href); return false;" onkeypress="window.open(this.href); return false;" title="{$hscMVTT}">{$hscMVEW}</a>)
 
@@ -664,9 +670,9 @@ _MEDIAFILE_;
 //			<input type='submit' name='myaction' value='"._MEDIA_PHP_1."' onclick='return kakunin(this.value)' onkeypress='return kakunin(this.value)' />\n
 //			</div>
 //			</form></div>\n";
-			$media01 = htmlspecialchars(_MEDIA_PHP_1);
-			$media03 = htmlspecialchars(_MEDIA_PHP_3);
-			$media04 = htmlspecialchars(_MEDIA_PHP_4);
+			$hscMedia01 = htmlspecialchars(_MEDIA_PHP_1);
+			$hscMedia03 = htmlspecialchars(_MEDIA_PHP_3);
+			$hscMedia04 = htmlspecialchars(_MEDIA_PHP_4);
 			echo <<<_FORMBLOCK_
 	<form method="post" action="media.php" style="margin:5px 0 2px; padding:0;">
 		<div>
@@ -675,8 +681,8 @@ _MEDIAFILE_;
 			<input type="hidden" name="targetfile" value="{$hscTGTF}" />
 			<input type="hidden" name="targetthumb" value="{$hscTTGT}" />
 			<input type="text"   name="newname" value="{$hscTGTF}" size="24" /><br />
-			<input type="submit" name="myaction" value="{$media03}" title="{$media04}" onclick="return kakunin(this.value)" onkeypress="return kakunin(this.value)" style="margin-left:5px;" />
-			<input type="submit" name="myaction" value="{$media01}" onclick="return kakunin(this.value)" onkeypress="return kakunin(this.value)" />
+			<input type="submit" name="myaction" value="{$hscMedia03}" title="{$hscMedia04}" onclick="return kakunin(this.value)" onkeypress="return kakunin(this.value)" style="margin-left:5px;" />
+			<input type="submit" name="myaction" value="{$hscMedia01}" onclick="return kakunin(this.value)" onkeypress="return kakunin(this.value)" />
 		</div>
 	</form>
 </div>
@@ -869,14 +875,17 @@ function media_mkdir($action)
 			media_select();
 			return;
 		}
-		if (is_numeric($current) && !is_dir($DIR_MEDIA . '/' . $current)) {
+		// Create member's directory if not exists.
+		if (is_numeric($current) && $current==$member->getID() && !is_dir($DIR_MEDIA . '/' . $current)) {
 			$oldumask = umask(0000);
 			if (!@mkdir($DIR_MEDIA. '/' . $current, 0777)) {
 				return _ERROR_BADPERMISSIONS;
 			}
 			umask($oldumask);
 		}
+		// Check if valid directory.
 		$path      = $current . '/' . $mkdirname ;
+		$path      = str_replace('\\','/',$path); // Avoid using "\" in Windows.
 		$pathArray = explode('/', $path);
 		if ($pathArray[0] !== $member->getID()) {
 			media_doError(_MEDIA_PHP_39 . $pathArray[0] . ':' . $member->getID());
@@ -884,7 +893,7 @@ function media_mkdir($action)
 		if (in_array('..', $pathArray)) {
 			media_doError(_MEDIA_PHP_40);
 		}
-
+		// OK. Let's go.
 		if (is_dir($DIR_MEDIA . '/' . $current)) {
 			$res = @mkdir($DIR_MEDIA . '/' . $current . '/' . $mkdirname);
 			$res .= @chmod($DIR_MEDIA . '/' . $current . '/' . $mkdirname , 0777);
@@ -897,6 +906,7 @@ function media_mkdir($action)
 	} elseif($action == _MEDIA_PHP_ACTION_RMDIR ||
 			 $action == 'rmdir') {
 		$rmdir_collection = postVar('rmdir_collection');
+		$rmdir_collection = str_replace('\\','/',$rmdir_collection); // Avoid using "\" in Windows.
 		$pathArray        = explode('/', $rmdir_collection);
 		if ($pathArray[0] !== $member->getID()) {
 			media_doError(_MEDIA_PHP_39 . $pathArray[0] . ':' . $member->getID());
@@ -904,8 +914,7 @@ function media_mkdir($action)
 		if (in_array('..', $pathArray)) {
 			media_doError(_MEDIA_PHP_40);
 		}
-		$rmdir = $DIR_MEDIA . $rmdir_collection;
-		$res   = @rmdir($rmdir);
+		$res   = @media_rmdir($DIR_MEDIA,$rmdir_collection);
 		if ($res) {
 			media_select();
 		} else {
@@ -998,6 +1007,11 @@ function make_thumbnail($DIR_MEDIA, $collection, $upfile, $filename)
 {
 
     global $Prefix_thumb;
+
+    // Avoid directory traversal
+    media_checkFile($DIR_MEDIA,$collection);
+    // Thumbnail filename should not contain '/' or '\'.
+    if (preg_match('#(/|\\\\)#',$Prefix_thumb.$filename)) media_doError(_ERROR_DISALLOWED);
 
     /*
     print "DIR_MEDIA=$DIR_MEDIA<BR />";
@@ -1104,7 +1118,7 @@ function media_loginAndPassThrough()
 
 function media_doError($msg)
 {
-	media_head();
+	if (headers_sent()) media_head();
 	?>
 	<h1><?php echo htmlspecialchars(_ERROR); ?></h1>
 	<p><?php echo htmlspecialchars($msg); ?></p>
@@ -1261,6 +1275,37 @@ function media_foot()
 </body>
 </html>
 <?php
+}
+
+
+function media_checkFile($dir,$file,$return=false){
+	// Anti direcory-traversal rountine.
+	global $DIR_MEDIA,$member;
+	// member's directory is OK even if not exists.
+	if ($dir==$DIR_MEDIA && is_numeric($file)) return $file==$member->getID();
+	// The check fails if file does not exists
+	$file=realpath($dir.file);
+	$dir=realpath($dir);
+	if (strpos($file,$dir)===0) return true;
+	if ($return) return false;
+	media_doError(_ERROR_DISALLOWED);
+	exit;
+}
+
+function media_unlink($dir,$file){
+	media_checkFile($dir,$file);
+	return unlink($dir.$file);
+}
+
+function media_rmdir($dir,$file){
+	media_checkFile($dir,$file);
+	return rmdir($dir.$file);
+}
+
+function media_rename($dir,$file,$newfile){
+	media_checkFile($dir,$file);
+	media_checkFile($dir,$newfile);
+	return rename($dir.$file, $dir.$newfile);
 }
 
 ?>
