@@ -228,6 +228,10 @@ if (!in_array($action, $aActionsNotToCheck)) {
 // <080213 fix $_POST to postVar by shizuki>
 //if ($_POST[targetthumb]) {//}
 if (postVar('targetthumb')) {
+	// Needs a valid ticket
+	if (!$manager->checkTicket()) {
+		media_doError(_ERROR_BADTICKET);
+	}
 	// Check if the collection is valid.
 	if (!MEDIA::isValidCollection(postVar('currentCollection'))) media_doError(_ERROR_DISALLOWED);
 //	$mediapath = $DIR_MEDIA . $_POST[currentCollection] . "/";
@@ -271,7 +275,6 @@ if (postVar('targetthumb')) {
 					$ok = 1;
 				}
 			}
-//TODO:allow only the allowed media files
 			if (eregi("\.php$", $newfilename)) {
 				$ok = 0;
 			}
@@ -510,6 +513,10 @@ function media_select()
 //		print"idxNext=$idxNext<BR />";
 //		print"idxEnd=$idxEnd<BR />";
 //		print"<BR />";
+
+		// Get ticket
+		$ticket=$manager->addTicketToUrl('');
+		$hscTicket=htmlspecialchars(preg_replace('/^.*=/','',$ticket));
 		for ($i=$idxNext;$i<$idxEnd;$i++) {
 			$filename = $DIR_MEDIA . $currentCollection . '/' . $contents[$i]->filename;
 //			if(!$msg1)$targetfile = $contents[$i]->filename;
@@ -676,6 +683,7 @@ _MEDIAFILE_;
 			echo <<<_FORMBLOCK_
 	<form method="post" action="media.php" style="margin:5px 0 2px; padding:0;">
 		<div>
+			<input type="hidden" name="ticket" value="{$hscTicket}" />
 			<input type="hidden" name="currentCollection" value="{$hscCCol}" />
 			<input type="hidden" name="offset" value="{$offset}" />
 			<input type="hidden" name="targetfile" value="{$hscTGTF}" />
