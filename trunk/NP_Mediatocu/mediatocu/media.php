@@ -1118,7 +1118,7 @@ function media_loginAndPassThrough()
 
 function media_doError($msg)
 {
-	if (headers_sent()) media_head();
+	if (!headers_sent()) media_head();
 	?>
 	<h1><?php echo htmlspecialchars(_ERROR); ?></h1>
 	<p><?php echo htmlspecialchars($msg); ?></p>
@@ -1284,7 +1284,7 @@ function media_checkFile($dir,$file,$return=false){
 	// member's directory is OK even if not exists.
 	if ($dir==$DIR_MEDIA && is_numeric($file)) return $file==$member->getID();
 	// The check fails if file does not exists
-	$file=realpath($dir.file);
+	$file=realpath($dir.$file);
 	$dir=realpath($dir);
 	if (strpos($file,$dir)===0) return true;
 	if ($return) return false;
@@ -1304,7 +1304,7 @@ function media_rmdir($dir,$file){
 
 function media_rename($dir,$file,$newfile){
 	media_checkFile($dir,$file);
-	media_checkFile($dir,$newfile);
+	if (preg_match('#(/|\\\\)#',$newfile)) media_doError(_ERROR_DISALLOWED);
 	return rename($dir.$file, $dir.$newfile);
 }
 
