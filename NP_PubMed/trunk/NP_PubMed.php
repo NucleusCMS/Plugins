@@ -3,7 +3,7 @@ class NP_PubMed extends NucleusPlugin {
 	function getName() { return 'NP_PubMed'; }
 	function getMinNucleusVersion() { return 330; }
 	function getAuthor()  { return 'Katsumi'; }
-	function getVersion() { return '0.1.6'; }
+	function getVersion() { return '0.1.7'; }
 	function getURL() {return 'http://hp.vector.co.jp/authors/VA016157/';}
 	function getDescription() {
 		return $this->getName().' plugin<br />'.
@@ -185,7 +185,8 @@ class NP_PubMed extends NucleusPlugin {
 		}
 	}
 	function doSkinVar($skintype,$mode,$p1='',$p2=''){
-		global $CONF,$manager,$blog;
+		global $CONF,$manager,$blog,$member;
+		$mid=$member->getID();
 		switch($mode=strtolower($mode)){
 		case 'searchlink':
 			if (!$this->isAdmin()) return;
@@ -248,6 +249,24 @@ class NP_PubMed extends NucleusPlugin {
 				$blog->showUsingQuery($template, $query.' LIMIT '.$startpos.','.$limit, '', 1, 1);
 				break;
 			}
+		case 'manuscriptlist':
+			if (!$mid) return;
+			if (!$blog) return;
+			$blogid=$blog->getID();
+			$template =& $manager->getTemplate($p1);
+			//print_r($template['CATLIST_LISTITEM']);exit;
+			$res=sql_query('SELECT manuscriptname as name, manuscriptid as id'.
+				' FROM '.sql_table('plugin_pubmed_manuscripts').
+				' WHERE userid='.(int)$mid);
+			while($row=mysql_fetch_assoc($res)){
+				$values=array(
+					'catlink'=>$CONF['IndexURL'].'?special=references&amp;blogid='.(int)$blogid.'&amp;manuscriptid='.(int)$row['id'],
+					'catid'=>(int)$row['id'],
+					'catname'=>htmlspecialchars($row['name'],ENT_QUOTES)
+					);
+				echo TEMPLATE::fill($template['CATLIST_LISTITEM'],$values);
+			}
+			break;
 		default:
 			break;
 		}

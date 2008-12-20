@@ -1,21 +1,28 @@
 <?php
 
 $strRel = '../../../';
+$DIR_LIBS='';
 require($strRel . 'config.php');
 $pbadmin=new PubMedAdmin;
 exit;
 
 class PubMedAdmin {
-	var $oPluginAdmin;
+	var $oPluginAdmin,$plugin;
 	var $blogid;
 	function PubMedAdmin(){
-		global $DIR_LIBS,$manager,$member,$CONF;
+		return $this->__construct();
+	}
+	function __construct(){
+		global $DIR_LIBS,$manager,$member,$CONF, $HTTP_POST_VARS;
 		include($DIR_LIBS . 'PLUGINADMIN.php');
 		
+		// Initialize
 		$this->oPluginAdmin  = new PluginAdmin('PubMed');
+		$this->plugin=&$this->oPluginAdmin->plugin;
 		if (!($this->blogid=intPostVar('blogid'))) $this->blogid=intGetVar('blogid');
 		$CONF['ItemURL']=quickQuery('SELECT burl as result FROM '.sql_table('blog'). ' WHERE bnumber='.(int)$this->blogid);
 		
+		// Check if there is right to maintain the blog by member.
 		if (!$member->isLoggedIn() || !$member->teamRights($this->blogid) || !$manager->existsBlogID($this->blogid))
 		{
 			$this->oPluginAdmin->start();
@@ -24,6 +31,7 @@ class PubMedAdmin {
 			exit;
 		}
 		
+		// If some data is/are posted, check the ticket.
 		if (!isset($_POST)) $_POST=&$HTTP_POST_VARS;
 		if (count($_POST) && !$manager->checkTicket()) {
 			$this->oPluginAdmin->start();
@@ -31,20 +39,27 @@ class PubMedAdmin {
 			$this->oPluginAdmin->end();
 			exit;
 		}
-
+		
+		// Resolve action
 		if (!($action=postVar('action'))) {
 			if (!($action=getVar('action'))) $action='searchform';
 		}
 		
+		// The functions whose name start from '_' are not actions, but private ones.
 		if (substr($action,0,1)=='_' || !method_exists($this,$action)) exit('Error: '.__LINE__);
-
+		
+		// There are two modes, so far.
 		$this->oPluginAdmin->start();
 		switch(getVar('action')) {
-		case 'manuscriptlist':
-			echo "<h2>" . 'Manuscript management' . "</h2>\n";
-			break;
-		default:
-			echo "<h2>" . 'PubMed search' . "</h2>\n";
+			case 'manuscriptlist':
+				echo '<h2><a href="'.$this->plugin->getAdminURL().'?blogid='.
+					(int)$this->blogid.'&amp;action=manuscriptlist">' . 
+					'Manuscript management' . "</a></h2>\n";
+				break;
+			default:
+				echo '<h2><a href="'.$this->plugin->getAdminURL().'?blogid='.
+					(int)$this->blogid.'">' . 
+					'PubMed search' . "</a></h2>\n";
 		}
 		call_user_func(array(&$this,$action));
 		$this->oPluginAdmin->end();
@@ -57,7 +72,7 @@ class PubMedAdmin {
 <?php $manager->addTicketHidden(); ?>
 <input type="hidden" name="action" value="searchquery" />
 <input type="hidden" name="blogid" value="<?php echo (int)$this->blogid; ?>" />
-<input type="text" name="query" value="<?php htmlspecialchars(postVar('query')); ?>" size="60" />
+<input type="text" name="query" value="<?php echo htmlspecialchars(postVar('query')); ?>" size="60" />
 <input type="submit" value="Search" /><br />
 <a href="http://www.ncbi.nlm.nih.gov/sites/entrez?db=PubMed" onclick="window.open(this.href);return false;">Goto the NIH PubMed site</a>
 </form>

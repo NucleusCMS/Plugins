@@ -116,41 +116,11 @@ body { margin: 0px; }
 <%PubMed(SearchLink)%><br /><br />
 <%PubMed(CreateNew)%>
 
-<%if(PubMed,getVar,manuscriptid=)%>
+<%parsedinclude(paging.inc)%>
 
-<%if(PageSwitch,limit,10)%>
-<div style="text-align:right;">Pages:
-<%PageSwitch(prev,prev)%>
-<%PageSwitch(index,2)%>
-<%PageSwitch(next,next)%>
-Page <%PageSwitch(num)%> of <%PageSwitch(total)%>
-</div>
-<%endif%>
+<%blog(spring/index,10)%>
 
-<%MultipleCategories(spring/index,10)%>
-
-<%if(PageSwitch,limit,10)%>
-<div style="text-align:right;">Pages:
-<%PageSwitch(prev,prev)%>
-<%PageSwitch(index,2)%>
-<%PageSwitch(next,next)%>
-Page <%PageSwitch(num)%> of <%PageSwitch(total)%>
-</div>
-<%endif%>
-
-<%else%>
-<%PubMed(PageSwitch,,50)%>
-<%if(PageSwitch,limit,50)%>
-<div style="text-align:right;">Pages:
-<%PageSwitch(prev,prev)%>
-<%PageSwitch(index,2)%>
-<%PageSwitch(next,next)%>
-Page <%PageSwitch(num)%> of <%PageSwitch(total)%>
-</div>
-<%endif%>
-
-<%PubMed(parse,spring/index,50)%>
-<%endif%>
+<%parsedinclude(paging.inc)%>
 
 </div>
 </div>
@@ -230,6 +200,39 @@ Website: <a href="<%member(url)%>"><%member(url)%></a>
 <!-- page footer -->
 <%parsedinclude(footer.inc)%>]]></part>
 
+		<part name="references"><![CDATA[<%parsedinclude(head.inc)%>
+
+<!-- page header -->
+<%parsedinclude(header.inc)%>
+
+<!-- page content -->
+<div id="container">
+<div class="content">
+
+<%PubMed(PageSwitch,,50)%>
+<%if(PageSwitch,limit,50)%>
+<div style="text-align:right;">Pages:
+<%PageSwitch(prev,prev)%>
+<%PageSwitch(index,2)%>
+<%PageSwitch(next,next)%>
+Page <%PageSwitch(num)%> of <%PageSwitch(total)%>
+</div>
+<%endif%>
+
+<%PubMed(parse,spring/index,50)%>
+
+</div>
+</div>
+
+<!-- page menu -->
+<h2 class="hidden">Sidebar</h2>
+<div id="sidebarcontainer">
+<%parsedinclude(sidebar.inc)%>
+</div>
+
+<!-- page footer -->
+<%parsedinclude(footer.inc)%>]]></part>
+
 		<part name="search"><![CDATA[<%parsedinclude(head.inc)%>
 
 <!-- page header -->
@@ -249,25 +252,11 @@ onclick="window.open(this.href);return false;"
 </div>
 <div class="content">
 
-<%if(PageSwitch,limit,10)%>
-<div style="text-align:right;">Pages:
-<%PageSwitch(prev,prev)%>
-<%PageSwitch(index,2)%>
-<%PageSwitch(next,next)%>
-Page <%PageSwitch(num)%> of <%PageSwitch(total)%>
-</div>
-<%endif%>
+<%parsedinclude(paging.inc)%>
 
 <%searchresults(spring/index,10)%>
 
-<%if(PageSwitch,limit,10)%>
-<div style="text-align:right;">Pages:
-<%PageSwitch(prev,prev)%>
-<%PageSwitch(index,2)%>
-<%PageSwitch(next,next)%>
-Page <%PageSwitch(num)%> of <%PageSwitch(total)%>
-</div>
-<%endif%>
+<%parsedinclude(paging.inc)%>
 
 </div>
 </div>
@@ -370,8 +359,6 @@ return false;
 
 		<part name="POPUP_CODE"><![CDATA[<%popuplink%>]]></part>
 
-		<part name="SEARCH_HIGHLIGHT"><![CDATA[<span class=highlight>\0</span>]]></part>
-
 		<part name="SEARCH_NOTHINGFOUND"><![CDATA[No search results found for <b><%query%></b>]]></part>
 
 	</template>
@@ -379,6 +366,10 @@ return false;
 
 	<template name="spring/item">
 		<description>Nucleus CMS spring item template</description>
+		<part name="CATLIST_LISTITEM"><![CDATA[<dd>
+<a href="<%catlink%>" title="Manuscript: <%catname%>"><%catname%></a>
+</dd>]]></part>
+
 		<part name="COMMENTS_BODY"><![CDATA[<div class="itemcomment id<%memberid%>">
 <h3><a href="<%userlinkraw%>"
 title="<%ip%> | Click to visit <%user%>'s website or send an email">

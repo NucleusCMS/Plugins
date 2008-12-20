@@ -29,6 +29,11 @@
 <link rel="top" title="Today" href="<%todaylink%>" />
 <%endif%>
 
+<!-- References: page title (TODO: insert manuscript name here)-->
+<%if(skintype,references)%>
+<title><%blogsetting(name)%></title>
+<%endif%>
+
 <!-- item: page title and extra navigational links -->
 <%if(skintype,item)%>
 <title><%blogsetting(name)%> &raquo; <%itemtitle(attribute)%></title>

@@ -19,6 +19,17 @@
 </dl>
 </div>
 
+<!-- manuscript list -->
+<%if(loggedin)%>
+<div class="sidebar">
+<dl class="sidebardl">
+<dt>Manuscripts</dt>
+<dd><a href="<%adminurl%>plugins/pubmed/?blogid=<%blogsetting(id)%>&amp;action=manuscriptlist">(manegement)</a></dd>
+<%PubMed(manuscriptlist,spring/item)%>
+</dl>
+</div>
+<%endif%>
+
 <!-- category list, not on error or member page -->
 <%if(skintype,error)%><%else%>
 <%if(skintype,member)%><%else%>
