@@ -26,7 +26,7 @@
  *
  */
 
-
+/* 1.0.8.1SP1RC3 2008-12-19-09:57(JP) cacher	*/
 
 if (!defined('_MEDIA_PHP_DEFINED')) {
 	define('_MEDIA_PHP_DEFINED', 1);
@@ -117,13 +117,13 @@ class MEDIADIRS extends MEDIA
 				$prefix                = $value;
 				$collections           = array_merge($collections, (array)MEDIADIRS::traceCorrectionDir($searchDir, $prefix, $value));
 		}
-		$collections[$member->getID()] = _MEDIA_PHP_32;
+
 		$searchDir   = '/';
 		$prefix      = $member->getID();
 		$collections = array_merge($collections, (array)MEDIADIRS::traceCorrectionDir($searchDir, $prefix, _MEDIA_PHP_32));
+		$collections[$member->getID()] = _MEDIA_PHP_32;
 		ksort($collections, SORT_STRING);
 		return $collections;
-
 	}
 
 	function getPrivateCollectionList()
