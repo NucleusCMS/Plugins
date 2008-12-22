@@ -27,6 +27,7 @@
  */
 
 /* 1.0.8.1SP1RC4 2008-12-22-18:30(JP) cacher	*/
+/* 1.0.8.1SP1RC5 katsumi */
 
 if (!defined('_MEDIA_PHP_DEFINED')) {
 	define('_MEDIA_PHP_DEFINED', 1);
@@ -265,10 +266,8 @@ if (postVar('targetthumb')) {
 	if (!$manager->checkTicket()) {
 		media_doError(_ERROR_BADTICKET);
 	}
-	$currentCollection = postVar('currentCollection');
-	$currentCollection = str_replace('\\','/',$currentCollection); // Avoid using "\" in Windows.
 	// Check if the collection is valid.
-	if (!MEDIADIRS::isValidCollection($currentCollection)) media_doError(_ERROR_DISALLOWED);
+	$currentCollection = media_postVar('currentCollection');
 //	$mediapath = $DIR_MEDIA . $_POST[currentCollection] . "/";
 	$mediapath = $DIR_MEDIA . $currentCollection . "/";
 //	switch ($_POST[myaction]) {//}
@@ -394,16 +393,15 @@ function media_select()
 	// files sorted according to last modification date
 
 	// currently selected collection
-	$currentCollection = requestVar('collection');
+	$currentCollection = media_requestVar('collection','acceptnull');
         /*2005.8.31  kei append*/
 // <080213 fix $_POST to postVar by shizuki>
 //	if ($_POST[currentCollection]) {//}
 	if (postVar('currentCollection')) {
 //		$currentCollection = $_POST[currentCollection];
-		$currentCollection = postVar('currentCollection');
+		$currentCollection = media_postVar('currentCollection');
 	}
 // </ 080213 fix $_POST to postVar by shizuki>
-	$currentCollection = str_replace('\\','/',$currentCollection); // Avoid using "\" in Windows.
 	if (!$currentCollection || !@is_dir($DIR_MEDIA . $currentCollection)) {
 		$currentCollection = $member->getID();
 	}
@@ -765,10 +763,7 @@ function media_choose()
 {
 	global $CONF, $member, $manager;
 
-	$currentCollection = requestVar('collection');
-	$currentCollection = str_replace('\\','/',$currentCollection); // Avoid using "\" in Windows.
-	// Check if the collection is valid.
-	if (!MEDIADIRS::isValidCollection($currentCollection)) media_doError(_ERROR_DISALLOWED);
+	$currentCollection = media_requestVar('collection');
 	// start modify by T.Kosugi 2006/08/26
 //	$collections = MEDIA::getCollectionList();
 	$collections = MEDIADIRS::getCollectionList();
@@ -859,13 +854,11 @@ function media_upload()
 			media_doError(_ERROR_BADREQUEST . ' (' . $fileerror . ')');
 			break;
 	}
-/*
 	// T.Kosugi add 2006.9.1
 	if (stristr($filename, '%00')) {
 		media_doError(_MEDIA_PHP_38);
 	}
 	// T.Kosugi add end
-*/
 	if (strpos($filename,"\0") !== false) {
 		media_doError(_MEDIA_PHP_38);
 	}
@@ -895,10 +888,7 @@ function media_upload()
 		$filename = strftime("%Y%m%d-", time()) . $filename;
 	}
 
-	$collection = requestVar('collection');
-	$collection = str_replace('\\','/',$collection); // Avoid using "\" in Windows.
-	// Check if the collection is valid.
-	if (!MEDIADIRS::isValidCollection($collection)) media_doError(_ERROR_DISALLOWED);
+	$collection = media_requestVar('collection');
 	$res        = MEDIA::addMediaObject($collection, $filetempname, $filename);
 
 	if ($res != '') {
@@ -926,10 +916,7 @@ function media_mkdir($action)
 {
 	global $DIR_MEDIA, $member, $CONF, $manager;
 	if ($action == _MEDIA_PHP_ACTION_MKDIR || $action =='mkdir' ) {
-		$current   = requestVar('mkdir_collection');
-		$current = str_replace('\\','/',$current); // Avoid using "\" in Windows.
-		// Check if the collection is valid.
-		if (!MEDIADIRS::isValidCollection($current)) media_doError(_ERROR_DISALLOWED);
+		$current   = media_requestVar('mkdir_collection');
 		$mkdirname = postVar('mkdirname');
 		if (!($mkdirname && $current)) {
 			media_select();
@@ -965,10 +952,7 @@ function media_mkdir($action)
 		media_select();
 	} elseif($action == _MEDIA_PHP_ACTION_RMDIR ||
 			 $action == 'rmdir') {
-		$rmdir_collection = postVar('rmdir_collection');
-		$rmdir_collection = str_replace('\\','/',$rmdir_collection); // Avoid using "\" in Windows.
-		// Check if the collection is valid.
-		if (!MEDIADIRS::isValidCollection($rmdir_collection)) media_doError(_ERROR_DISALLOWED);
+		$rmdir_collection = media_postVar('rmdir_collection');
 		$pathArray        = explode('/', $rmdir_collection);
 		if ($pathArray[0] !== $member->getID()) {
 			media_doError(_MEDIA_PHP_39 . $pathArray[0] . ':' . $member->getID());
@@ -983,10 +967,7 @@ function media_mkdir($action)
 			media_doError(_MEDIA_PHP_42);
 		}
 	} else {
-		$current     = requestVar('collection');
-		$current = str_replace('\\','/',$current); // Avoid using "\" in Windows.
-		// Check if the collection is valid.
-		if (!MEDIADIRS::isValidCollection($current)) media_doError(_ERROR_DISALLOWED);
+		$current     = media_requestVar('collection');
 		$collections = MEDIADIRS::getPrivateCollectionList();
 
 		media_head();
@@ -1164,18 +1145,13 @@ function thumb_gd($fname, $thumbfile, $out_w, $out_h, $size, $quality)
 function media_loginAndPassThrough()
 {
 	media_head();
-	$collection = requestVar('collection');
-	$collection = str_replace('\\','/',$collection); // Avoid using "\" in Windows.
-	// Check if the collection is valid.
-	if (!MEDIADIRS::isValidCollection($collection)) media_doError(_ERROR_DISALLOWED);
-
 	?>
 		<h1><?php echo _LOGIN_PLEASE?></h1>
 
 		<form method="post" action="media.php">
 		<div>
 			<input name="action" value="login" type="hidden" />
-			<input name="collection" value="<?php echo htmlspecialchars($collection); ?>" type="hidden" />
+			<input name="collection" value="<?php echo htmlspecialchars(requestVar('collection')); ?>" type="hidden" />
 			<?php echo htmlspecialchars(_LOGINFORM_NAME); ?>: <input name="login" />
 			<br /><?php echo htmlspecialchars(_LOGINFORM_PWD); ?>: <input name="password" type="password" />
 			<br /><input type="submit" value="<?php echo htmlspecialchars(_LOGIN); ?>" />
@@ -1378,4 +1354,30 @@ function media_rename($dir,$file,$newfile){
 	return rename($dir.$file, $dir.$newfile);
 }
 
-?>
+function media_collection($type,$name,$option){
+	static $data=array();
+	if (!isset($data[$type][$name])) {
+		switch($type){
+			case 'getVar': case 'postVar': case 'requestVar':
+				$temp=call_user_func($type,$name);
+				break;
+			default:
+				exit('Unknown error at line '.__LINE__);
+		}
+		if (strlen($temp)==0 && $option=='acceptnull') return '';
+		$temp = str_replace('\\','/',$temp); // Avoid using "\" in Windows.
+		if (!MEDIADIRS::isValidCollection($temp)) media_doError(_ERROR_DISALLOWED);
+		$data[$type][$name]=$temp;
+	}
+	return $data[$type][$name];
+}
+
+function media_getVar($name,$option=false){
+	return media_collection('getVar',$name,$option);
+}
+function media_postVar($name,$option=false){
+	return media_collection('postVar',$name,$option);
+}
+function media_requestVar($name,$option=false){
+	return media_collection('requestVar',$name,$option);
+}
