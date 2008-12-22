@@ -2,10 +2,10 @@
 // vim: tabstop=2:shiftwidth=2
 
 /**
-  * NP_TrimImage ($Revision: 1.67 $)
+  * NP_TrimImage ($Revision: 1.68 $)
   * by nakahara21 ( http://nakahara21.com/ )
   * by hsur ( http://blog.cles.jp/np_cles/ )
-  * $Id: NP_TrimImage.php,v 1.67 2008/12/11 07:06:43 hsur Exp $
+  * $Id: NP_TrimImage.php,v 1.68 2008/12/22 05:47:24 hsur Exp $
   *
   * Based on NP_TrimImage 1.0 by nakahara21
   * http://nakahara21.com/?itemid=512
@@ -97,7 +97,7 @@ class NP_TrimImage extends NucleusPlugin {
 	}
 
 	function getVersion() {
-		return '2.4.1';
+		return '2.4.2';
 	}
 
 	function supportsFeature($what) {
@@ -314,7 +314,7 @@ class NP_TrimImage extends NucleusPlugin {
 	}
 	
 	function _parseItem(&$item, $maxPerItem = 0, $includeImg = true){
-		$pattern = '/<%(image|popup|paint)\((.*?)\)%>/s';
+		$pattern = '/(<%(image|popup|paint)\((.*?)\)%>)/s';
 		if($includeImg){
 			$pattern = '/(<%(image|popup|paint)\((.*?)\)%>)|(<img (.*?)>)/s';
 		}
