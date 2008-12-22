@@ -297,12 +297,11 @@ if (postVar('targetthumb')) {
 			// check file type against allowed types
 //			$newfilename = $_POST[newname];
 			$newfilename = postVar('newname');
-/*			// T.Kosugi add 2006.9.1
+			// T.Kosugi add 2006.9.1
 			if (stristr($newfilename, '%00')) {
 				media_doError(_MEDIA_PHP_38);
 			}
 			// T.Kosugi add end
-*/
 			if (strpos($newfilename,"\0") !== false) {
 				media_doError(_MEDIA_PHP_38);
 			}
