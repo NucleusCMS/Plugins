@@ -3,8 +3,8 @@ class NP_PubMed extends NucleusPlugin {
 	function getName() { return 'NP_PubMed'; }
 	function getMinNucleusVersion() { return 330; }
 	function getAuthor()  { return 'Katsumi'; }
-	function getVersion() { return '0.1.7'; }
-	function getURL() {return 'http://hp.vector.co.jp/authors/VA016157/';}
+	function getVersion() { return '0.1.8'; }
+	function getURL() {return 'http://japan.nucleuscms.org/wiki/plugins:authors:katsumi';}
 	function getDescription() {
 		return $this->getName().' plugin<br />'.
 			'This plugin uses the query service of "Entrez Programming Utilities".<br />'.
@@ -31,8 +31,8 @@ class NP_PubMed extends NucleusPlugin {
 			' manuscriptid int(11) not null auto_increment,'.
 			' userid int(11) not null default 0,'.
 			' manuscriptname varchar(200) not null default "New Manuscript",'.
-			' templatename varchar(200) not null default "default.template",'.
-			' sortmethod varchar(40) not null default "author",'.
+			' templatename varchar(200) not null default "default",'.
+			' sortdata text not null default "",'.
 			' PRIMARY KEY manuscriptid(manuscriptid) '.
 			') TYPE=MyISAM;');
 	}
@@ -64,7 +64,7 @@ class NP_PubMed extends NucleusPlugin {
 		);
 	}
 	function event_PreUpdateItem(&$data){
-		$ret=$this->event_PreAddItem(&$data);
+		$ret=$this->event_PreAddItem($data);
 		$this->_updateManuscriptData($data['itemid']);
 		return $ret;
 	}
@@ -188,6 +188,12 @@ class NP_PubMed extends NucleusPlugin {
 		global $CONF,$manager,$blog,$member;
 		$mid=$member->getID();
 		switch($mode=strtolower($mode)){
+		case 'getvar':
+			echo htmlspecialchars(getVar($p1),ENT_QUOTES);
+			break;
+		case 'postvar':
+			echo htmlspecialchars(postVar($p1),ENT_QUOTES);
+			break;
 		case 'searchlink':
 			if (!$this->isAdmin()) return;
 			if (!$blog) return;
@@ -231,30 +237,50 @@ class NP_PubMed extends NucleusPlugin {
 			echo '<a href="http://www.ncbi.nlm.nih.gov/PubMed/" onclick="window.open(this.href,\'PubMed\');return false;">'.
 				htmlspecialchars(strlen($p1)?$p1:'PubMed',ENT_QUOTES).'</a>';
 			break;
-		case 'parse': case 'pageswitch':
+		case 'parse':
+			if (!$mid) return;
 			if (!$blog) return;
-			global $startpos;
-			$startpos=(int)$startpos;
-			$limit=(int)$p2;
-			$template=addslashes($p1);
-			$query=$blog->getSqlBlog('');
-			$query=preg_replace('/ORDER[\s]+BY[\s][\s\.a-z0-9_]*(ASC|DESC)$/i','ORDER BY i.ititle ASC',$query);
-			switch($mode){
-			case 'pageswitch':
-				$ps=&$manager->getPlugin('NP_PageSwitch');
-				$ps->setQuery($query);
-				break;
-			case 'parse':
-			default:
-				$blog->showUsingQuery($template, $query.' LIMIT '.$startpos.','.$limit, '', 1, 1);
+			$msid=intGetVar('manuscriptid');
+			if (!$msid) return;
+			$query='SELECT i.ibody as body, i.ititle as title, i.imore as more'.
+				' FROM '.sql_table('item').' as i, '.
+					sql_table('plugin_pubmed_references').' as r,'.
+					sql_table('plugin_pubmed_manuscripts').' as m'.
+				' WHERE i.inumber=r.itemid'.
+				' AND r.manuscriptid='.(int)$msid.
+				' AND m.manuscriptid='.(int)$msid.
+				' AND m.userid='.(int)$mid.
+				' ORDER BY i.ititle ASC';
+			
+			// Construct template object.
+			require_once($this->getDirectory().'template.php');
+			$res=sql_query('SELECT *'.
+				' FROM '.sql_table('plugin_pubmed_manuscripts').
+				' WHERE manuscriptid='.(int)$msid.
+				' AND userid='.(int)$mid);
+			$row=mysql_fetch_assoc($res);
+			if (!$row) return;
+			$tobj=PUBMED_TEMPLATE_BASE::getTemplate($row['templatename'],$row['sortdata']);
+			if (!$tobj) {
+				echo 'The template, "'.htmlspecialchars($row['templatename']).'" cannot be found';
 				break;
 			}
+			// Set all the data.
+			$res=sql_query($query);
+			while($row=mysql_fetch_assoc($res)){
+				$tobj->setData($row['more']);
+			}
+			// Sort the papers
+			$tobj->sortPapers();
+			// Let's parse, finally.
+			$tobj->parse_all();
+			break;
 		case 'manuscriptlist':
+			
 			if (!$mid) return;
 			if (!$blog) return;
 			$blogid=$blog->getID();
 			$template =& $manager->getTemplate($p1);
-			//print_r($template['CATLIST_LISTITEM']);exit;
 			$res=sql_query('SELECT manuscriptname as name, manuscriptid as id'.
 				' FROM '.sql_table('plugin_pubmed_manuscripts').
 				' WHERE userid='.(int)$mid);

@@ -209,18 +209,9 @@ Website: <a href="<%member(url)%>"><%member(url)%></a>
 <div id="container">
 <div class="content">
 
-<%PubMed(PageSwitch,,50)%>
-<%if(PageSwitch,limit,50)%>
-<div style="text-align:right;">Pages:
-<%PageSwitch(prev,prev)%>
-<%PageSwitch(index,2)%>
-<%PageSwitch(next,next)%>
-Page <%PageSwitch(num)%> of <%PageSwitch(total)%>
-</div>
+<%PubMed(parse)%>
+
 <%endif%>
-
-<%PubMed(parse,spring/index,50)%>
-
 </div>
 </div>
 

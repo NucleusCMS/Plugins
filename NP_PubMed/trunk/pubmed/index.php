@@ -269,14 +269,13 @@ class PubMedAdmin {
 		global $member,$manager;
 		$mid=$member->getID();
 		echo '<a href="'.$this->oPluginAdmin->plugin->getAdminURL().'?blogid='.(int)$this->blogid.'&amp;action=manuscriptlist">Refresh</a><br />';
-		echo '<table><tr><th>manuscript</th><th>template</th><th>sort method</th><th colspan="2">&nbsp;</th></tr>';
+		echo '<table><tr><th>manuscript</th><th>template</th><th colspan="2">&nbsp;</th></tr>';
 		$res=sql_query('SELECT * FROM '.sql_table('plugin_pubmed_manuscripts').
 			' WHERE userid='.(int)$mid);
 		while($row=mysql_fetch_assoc($res)){
 			echo '<tr>';
 			echo '<td>'.htmlspecialchars($row['manuscriptname']).'</td>';
 			echo '<td>'.htmlspecialchars($row['templatename']).'</td>';
-			echo '<td>'.htmlspecialchars($row['sortmethod']).'</td>';
 ?>
 <td><form method="post" action="">
 <input type="hidden" name="action" value="deletemanuscript" />
@@ -379,24 +378,26 @@ Are you sure?&nbsp;&nbsp;
 		if (!$mname) $mname=$row['manuscriptname'];
 		$mname=$this->_checkmanuscriptname($mname,$manuscriptid);
 		if (!$mname) return $this->manuscriptlist();
-		switch($sort=postVar('sortmethod')){
-		case 'author':
-		case 'manual':
-			break;
-		default:
-			$sort=$row['sortmethod'];
-		}
-		$template='default.template';
+		$template=$row['templatename'];
 		if (postVar('sure')=='yes') {
+			$template=postVar('templatename');
 			sql_query('UPDATE '.sql_table('plugin_pubmed_manuscripts').' SET'.
 				' manuscriptname="'.addslashes($mname).'",'.
-				' templatename="'.addslashes($template).'",'.
-				' sortmethod="'.addslashes($sort).'"'.
+				' templatename="'.addslashes($template).'"'.
 				' WHERE manuscriptid='.(int)$manuscriptid.
 				' AND userid='.(int)$mid);
 			return $this->manuscriptlist();
 		}
-		
+		// Get template files
+		$templates=array();
+		$d=dir(dirname(__FILE__).'/templates/');
+		while (false !== ($entry = $d->read())) {
+			if (!preg_match('/^(.+)\.php$/',$entry,$m)) continue;
+			if ($m[1]!='default') $templates[]=$m[1];
+		}
+		sort($templates);
+		array_unshift($templates,'default');
+$d->close(); 
 ?>
 <form method="post" action="">
 <input type="hidden" name="action" value="editmanuscript" />
@@ -408,13 +409,19 @@ Are you sure?&nbsp;&nbsp;
 <tr><td>Manuscript name:</td>
 <td><input type="text" name="manuscriptname" value="<?php echo htmlspecialchars($mname); ?>" /></td></tr>
 <tr><td>Template:</td>
-<td><input type="text" name="tamplatename" value="<?php echo htmlspecialchars($template); ?>" /></td></tr>
-<tr><td>Sort method:</td>
-<td><select name="sortmethod">
-<option value="author" <?php if ($sort=='author') echo 'selected="selected"'; ?> >author</option>
-<option value="manual" <?php if ($sort=='manual') echo 'selected="selected"'; ?> >manual</option>
+<!-- td><input type="text" name="templatename" value="<?php echo htmlspecialchars($template); ?>" /></td></tr -->
+<td><select name="templatename">
+<?php
+		foreach($templates as $temp){
+			$temp=htmlspecialchars($temp,ENT_QUOTES);
+			echo '<option value="'.$temp.'"'.
+				($template==$temp ? ' selected="selected"' : '').
+				'>'.$temp."</option>\n";
+		}
+?>
 </select></td>
-</tr></table>
+</tr>
+</table>
 <input type="submit" value="Edit" />
 </form>
 <?php
