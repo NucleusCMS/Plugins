@@ -26,8 +26,8 @@
  *
  */
 
-/* 1.0.8.1SP1RC4 2008-12-22-18:30(JP) cacher	*/
 /* 1.0.8.1SP1RC5 katsumi */
+/* 1.0.8.1SP1RC6 2008-12-25 cacher	*/
 
 if (!defined('_MEDIA_PHP_DEFINED')) {
 	define('_MEDIA_PHP_DEFINED', 1);
@@ -322,7 +322,7 @@ if (postVar('targetthumb')) {
 			T.Kosugi edit End
 			*/
 //			$msg1 = rename($mediapath . $_POST[targetfile], $mediapath . htmlspecialchars($_POST[newname]) );
-			$msg1 = media_rename($mediapath, postVar('targetfile'), htmlspecialchars(postVar('newname')) );
+			$msg1 = media_rename($mediapath, postVar('targetfile'), htmlspecialchars($newfilename) );
 			if (!$msg1) {
 				print htmlspecialchars(postVar('targetfile') . _MEDIA_PHP_10);
 			}
@@ -332,7 +332,7 @@ if (postVar('targetthumb')) {
 			//print "targetthumb=$mediapath$_POST[targetthumb]<BR />";
 			if ($exist) {
 //				$thumbnewname = $Prefix_thumb . $_POST[newname];
-				$thumbnewname = $Prefix_thumb . postVar('newname');
+				$thumbnewname = $Prefix_thumb . $newfilename;
 //				$msg2         = rename($mediapath . $_POST[targetthumb], $mediapath . $thumbnewname);
 				$msg2         = media_rename($mediapath, postVar('targetthumb'), $thumbnewname);
 				if (!$msg2) {
@@ -801,7 +801,7 @@ function media_choose()
 		</select>
 	<?php		} else {
 	?>
-	  	<input name="collection" type="hidden" value="<?php echo htmlspecialchars($currentCollection)?>" />
+	  	<input name="collection" type="hidden" value="<?php echo htmlspecialchars($currentCollection); ?>" />
 	<?php		} // if sizeof
 	?>
 	  <br /><br />
@@ -886,6 +886,9 @@ function media_upload()
 	if ($CONF['MediaPrefix']) {
 		$filename = strftime("%Y%m%d-", time()) . $filename;
 	}
+
+	// Filename should not contain '/' or '\'.
+	if (preg_match('#(/|\\\\)#',$filename)) media_doError(_ERROR_DISALLOWED);
 
 	$collection = media_requestVar('collection');
 	$res        = MEDIA::addMediaObject($collection, $filetempname, $filename);
