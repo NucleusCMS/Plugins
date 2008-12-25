@@ -16,7 +16,7 @@ class NP_Mediatocu extends NucleusPlugin
 
 	function getAuthor()
 	{
-		return 'yamamoto,shizuki,Cacher';
+		return 'yamamoto,shizuki, Nucleus JP team, and Cacher';
 	}
 
 	function getURL()
@@ -27,7 +27,7 @@ class NP_Mediatocu extends NucleusPlugin
 
 	function getVersion()
 	{
-		return '1.0.8.1';
+		return '1.0.8.1 SP1 RC6';
 	}
 
 	function getDescription()
