@@ -1,0 +1,244 @@
+<?xml version='1.0'?>
+<document>
+
+
+  <template>
+    <name>searchform</name>
+    <body><![CDATA[
+  
+<form method="post" action="">
+<%ticket%>
+<input type="hidden" name="action" value="searchquery" />
+<input type="hidden" name="blogid" value="<%blogid%>" />
+<input type="text" name="query" value="<%postvar(query)%>" size="60" />
+<input type="submit" value="Search" /><br />
+<a href="http://www.ncbi.nlm.nih.gov/sites/entrez?db=PubMed" onclick="window.open(this.href);return false;">Goto the NIH PubMed site</a>
+</form>
+
+    ]]></body>
+  </template>
+
+
+
+  <template>
+    <name>noresult</name>
+    <body><![CDATA[
+
+<table><tr><th>Summaries</th></tr>
+<tr><td>No result</td></tr>
+</table>
+
+    ]]></body>
+  </template>
+
+
+
+  <template>
+    <name>searchresultth</name>
+    <body><![CDATA[
+
+<tr><th style="width:70%">Summaries</th><th>
+<%if(start)%>
+  <form method="post" action="">
+  <%ticket%>
+  <input type="hidden" name="action" value="searchquery" />
+  <input type="hidden" name="blogid" value="<%blogid%>" />
+  <input type="hidden" name="query" value="<%postvar(query)%>" />
+  <input type="hidden" name="retstart" value="<%int(prev)%>" />
+  <input type="hidden" name="retmax" value="<%int(max)%>" />
+  <input type="submit" value="Previous Page" />
+  </form>
+<%endif%>
+</th><th style="white-space: nowrap;">page <%int(page)%> of <%int(pagemax)%></th><th>
+<%if(nextexists)%>
+  <form method="post" action="">
+  <%ticket%>
+  <input type="hidden" name="action" value="searchquery" />
+  <input type="hidden" name="blogid" value="<%blogid%>" />
+  <input type="hidden" name="query" value="<%postvar(query)%>" />
+  <input type="hidden" name="retstart" value="<%int(next)%>" />
+  <input type="hidden" name="retmax" value="<%int(max)%>" />
+  <input type="submit" value="Next Page" />
+  </form>
+<%endif%>
+</tr>
+
+    ]]></body>
+  </template>
+
+
+
+  <template>
+    <name>selectcategory</name>
+    <head><![CDATA[
+
+<select name="catid" class="np_pubmed_form"><option value="newcat-<%blogid%>">New category</option>
+
+    ]]></head>
+    <body><![CDATA[
+
+<%if(selected)%>
+  <option value="<%int(catid)%>" selected="selected"><%stg(cname)%></option>
+<%else%>
+  <option value="<%int(catid)%>"><%stg(cname)%></option>
+<%endif%>
+    ]]></body>
+    <foot><![CDATA[
+
+</select>
+
+    ]]></foot>
+  </template>
+
+
+
+  <template>
+    <name>searchresulttd</name>
+    <body><![CDATA[
+
+<tr onmouseover="focusRow(this);" onmouseout="blurRow(this);"><td colspan="4">
+<a href="http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?cmd=Retrieve&amp;db=PubMed&amp;dopt=Citation&amp;list_uids=<%int(pmid)%>"
+ onclick="window.open(this.href);return false;"><%hsc(authors)%></a><br />
+<%hsc(title)%><br />
+<i><%hsc(journal)%></i> (<%hsc(date)%>) <b><%hsc(volume)%></b> <%hsc(pages)%><br />
+PMID: <%int(pmid)%>
+<div style="text-align:right;">
+<%if(addbutton)%>
+  <form method="post" action="<%conf(AdminURL)%>" class="np_pubmed_form">
+  <input type="hidden" name="action" value="additem" />
+  <input name="blogid" value="<%blogid%>" type="hidden" />
+  <input type="hidden" name="draftid" value="0" />
+  <%ticket%>
+  <input type="hidden" name="title" value="" />
+  <input type="hidden" name="more" value="" />
+  <input type="hidden" name="closed" value="0" />
+  <input type="hidden" name="actiontype" value="addnow" />
+  <input type="hidden" name="body" value="PMID:<%int(pmid)%>" class="np_pubmed_form" />
+  <input type="submit" value="Add this:" class="np_pubmed_form" />
+  <%raw(categories)%>
+  </form>
+<%else%>
+  (<a href="<%hsc(itemurl)%>" onclick="window.open(this.href);return false;">Data exists for this article</a>)
+<%endif%>
+</div></td></tr>
+
+    ]]></body>
+  </template>
+
+
+
+  <template>
+    <name>manuscriptlist</name>
+    <head><![CDATA[
+
+<a href="<%self%>?blogid=<%blogid%>&amp;action=manuscriptlist">Refresh</a><br />
+<table><tr><th>manuscript</th><th>template</th><th colspan="2">&nbsp;</th></tr>
+
+
+    ]]></head>
+    <body><![CDATA[
+
+<tr>
+<td><%hsc(manuscriptname)%></td>
+<td><%hsc(templatename)%></td>
+<td><form method="post" action="">
+<input type="hidden" name="action" value="deletemanuscript" />
+<input type="hidden" name="manuscriptid" value="<%int(manuscriptid)%>" />
+<%ticket%>
+<input type="submit" value="Delete" />
+</form></td>
+<td><form method="post" action="">
+<input type="hidden" name="action" value="editmanuscript" />
+<input type="hidden" name="manuscriptid" value="<%int(manuscriptid)%>" />
+<%ticket%>
+<input type="submit" value="Edit" />
+</form></td>
+</tr>
+
+    ]]></body>
+    <foot><![CDATA[
+
+</table>
+<form method="post" action="">
+<input type="hidden" name="action" value="createmanuscript" />
+<%ticket%>
+<input type="hidden" name="blogid" value="<%blogid%>" />
+New manuscript:
+<input type="text" name="manuscriptname" value="" />
+<input type="submit" value="Create" />
+</form>
+
+
+    ]]></foot>
+  </template>
+
+
+
+  <template>
+    <name>deletemanuscript</name>
+    <notice><![CDATA[
+
+<b>The manuscript, '<%hsc(mname)%>' was deleted.</b><br />
+
+    ]]></notice>
+    <body><![CDATA[
+
+<b>The manuscript, '"<%hsc(mname)%>' will be deleted.</b><br /><br />
+<form method="post" action="">
+<input type="hidden" name="action" value="deletemanuscript" />
+<input type="hidden" name="sure" value="yes" />
+<input type="hidden" name="manuscriptid" value="<%int(mid)%>" />
+<%ticket%>
+Are you sure?&nbsp;&nbsp;
+<input type="submit" value="Yes. Delete it." />&nbsp;&nbsp;
+<a href="javascript:history.go(-1);">No I'm not.</a>
+</form>
+
+    ]]></body>
+  </template>
+
+
+
+  <template>
+    <name>editmanuscript</name>
+    <notice><![CDATA[
+
+<b>The manuscript, '<%hsc(mname)%>' was updated.</b><br />
+
+    ]]></notice>
+    <head><![CDATA[
+
+<form method="post" action="">
+<input type="hidden" name="action" value="editmanuscript" />
+<%ticket%>
+<input type="hidden" name="sure" value="yes" />
+<input type="hidden" name="manuscriptid" value="<%int(mid)%>" />
+<input type="hidden" name="blogid" value="<%blogid%>" />
+<table>
+<tr><td>Manuscript name:</td>
+<td><input type="text" name="manuscriptname" value="<%hsc(mname)%>" /></td></tr>
+<tr><td>Template:</td>
+<td><select name="templatename">
+
+    ]]></head>
+    <body><![CDATA[
+
+<%if(selected)%>
+  <option value="<%hsc(template)%>" selected="selected"><%hsc(template)%></option>
+<%else%>
+  <option value="<%hsc(template)%>"><%hsc(template)%></option>
+<%endif%>
+    ]]></body>
+    <foot><![CDATA[
+
+</select></td>
+</tr>
+</table>
+<input type="submit" value="Edit" />
+</form>
+
+
+    ]]></foot>
+  </template>
+
+</document>

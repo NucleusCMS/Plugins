@@ -1,18 +1,15 @@
 <?php
 
-$strRel = '../../../';
-$DIR_LIBS='';
-require($strRel . 'config.php');
-$pbadmin=new PubMedAdmin;
-exit;
+require('../../../config.php');
 
-class PubMedAdmin {
+// An instance will be created at the end of this file
+
+class PubMedAdmin extends BaseActions {
 	var $oPluginAdmin,$plugin;
 	var $blogid;
-	function PubMedAdmin(){
-		return $this->__construct();
-	}
 	function __construct(){
+		if (method_exists($this,'BaseActions')) $this->BaseActions();
+	
 		global $DIR_LIBS,$manager,$member,$CONF, $HTTP_POST_VARS;
 		include($DIR_LIBS . 'PLUGINADMIN.php');
 		
@@ -32,6 +29,7 @@ class PubMedAdmin {
 		}
 		
 		// If some data is/are posted, check the ticket.
+		// Therefore, POST method must be used to change important parameter(s).
 		if (!isset($_POST)) $_POST=&$HTTP_POST_VARS;
 		if (count($_POST) && !$manager->checkTicket()) {
 			$this->oPluginAdmin->start();
@@ -44,11 +42,10 @@ class PubMedAdmin {
 		if (!($action=postVar('action'))) {
 			if (!($action=getVar('action'))) $action='searchform';
 		}
-		
-		// The functions whose name start from '_' are not actions, but private ones.
-		if (substr($action,0,1)=='_' || !method_exists($this,$action)) exit('Error: '.__LINE__);
-		
-		// There are two modes, so far.
+				
+		// Take actions.
+		// All the method that starts from a-z can be action.
+		// Method that starts from _ is private method.
 		$this->oPluginAdmin->start();
 		switch(getVar('action')) {
 			case 'manuscriptlist':
@@ -61,26 +58,99 @@ class PubMedAdmin {
 					(int)$this->blogid.'">' . 
 					'PubMed search' . "</a></h2>\n";
 		}
-		call_user_func(array(&$this,$action));
+		call_user_func(array(&$this,"action_$action"));
 		$this->oPluginAdmin->end();
 	}
-/* Pubmed Search */
-	function searchform(){
-		global $manager;
-?>
-<form method="post" action="">
-<?php $manager->addTicketHidden(); ?>
-<input type="hidden" name="action" value="searchquery" />
-<input type="hidden" name="blogid" value="<?php echo (int)$this->blogid; ?>" />
-<input type="text" name="query" value="<?php echo htmlspecialchars(postVar('query')); ?>" size="60" />
-<input type="submit" value="Search" /><br />
-<a href="http://www.ncbi.nlm.nih.gov/sites/entrez?db=PubMed" onclick="window.open(this.href);return false;">Goto the NIH PubMed site</a>
-</form>
-<?php
+/*
+ * Getenal parse routines follow
+ */
+	private $contents=array();
+	private function _getTemplate($name,$type='body'){
+		static $templates;
+		if (!isset($templates)) {
+			// Prepare template data
+			$xml=simplexml_load_file(dirname(__FILE__).'/index.xml');
+			$templates=array();
+			foreach($xml->template as $obj) {
+				$templates[(string)$obj->name]==array();
+				foreach($obj as $key=>$value) $templates[(string)$obj->name][$key]=(string)$value;
+			}
+		}
+		if ($type=='array') return $templates[$name];
+		elseif (isset($templates[$name][$type])) return $templates[$name][$type];
+		else return '';
 	}
-	function searchquery(){
+	private function _parse($template){
+		static $parser;
+		if (!isset($parser)){
+			$actions=array('note','blogid','ticket','hsc','stg','int','raw','conf',
+				'postvar','getvar','self',
+				'if','ifnot','else','elseif','elseifnot','endif');
+			$parser =& new PARSER($actions, $this);
+		}
+		$parser->parse($template);
+	}
+	private function template_parse($tempname,$data=false,$type='body'){
+		$template=$this->_getTemplate($tempname,'array');
+		$contents=$this->contents;
+		if ($data) $this->contents=$data;
+		$this->_parse($template[$type]);
+		$this->contents=$contents;
+	}
+	private function _showUsingArray($tempname,$array){
+		$this->template_parse($tempname,false,'head');
+		foreach($array as $row) $this->template_parse($tempname,$row);
+		$this->template_parse($tempname,false,'foot');
+	}
+	public function parse_note(){
+		// Don't do anythig.
+	}
+	public function parse_blogid(){
+		echo (int)$this->blogid;
+	}
+	public function parse_ticket(){
+		global $manager;
+		$manager->addTicketHidden();
+	}
+	public function parse_hsc($key){
+		self::_hsc($this->contents[$key]);
+	}
+	public function parse_stg($key){
+		self::_hsc(strip_tags($this->contents[$key]));
+	}
+	public function parse_int($key){
+		echo (int)$this->contents[$key];
+	}
+	public function parse_raw($key){
+		echo $this->contents[$key];
+	}
+	public function parse_conf($key){
+		global $CONF;
+		self::_hsc($CONF[$key]);
+	}
+	public function parse_getvar($key){
+		self::_hsc(getVar($key));
+	}
+	public function parse_postvar($key){
+		self::_hsc(postVar($key));
+	}
+	public function parse_self(){
+		self::_hsc($this->plugin->getAdminURL());
+	}
+	static private function _hsc($text){
+		echo htmlspecialchars($text,ENT_QUOTES,_CHARSET);
+	}
+	protected function checkCondition($key,$value=false){
+		if ($value===false) return $this->contents[$key] ? 1 : 0;
+		else return $this->contents[$key]==$value ? 1 : 0;
+	}
+/* Pubmed Search */
+	private function action_searchform(){
+		$this->template_parse('searchform');
+	}
+	private function action_searchquery(){
 		global $manager,$CONF;
-		$this->searchform();
+		$this->action_searchform();
 		// Get PubMed ids as the result
 		$start=intPostVar('retstart');
 		if (!($max=intPostVar('retmax'))) $max=20;
@@ -104,10 +174,9 @@ class PubMedAdmin {
 		$result['querykey']=$this->_getXmlData($contents,'QueryKey');
 		$result['webenv']=$this->_getXmlData($contents,'WebEnv');
 		// Get id information
-		if (!($contents=$this->_getNestedXmlData($contents,'IdList',''))) {
-			echo '<table><tr><th>Summaries</th></tr>';
-			echo '<tr><td>No result</td></tr>';
-			echo '</table>';
+		$contents=$this->_getNestedXmlData($contents,'IdList','');
+		if (!strstr($contents,'<Id>')) {
+			$this->template_parse('noresult');
 			return;
 		}
 		$contents=explode('<Id>',$contents);
@@ -126,6 +195,7 @@ class PubMedAdmin {
 			if (!preg_match('/<!\-\-PMID:[\s]*([0-9]+)\-\->/i',$row['ibody'],$matches)) continue;
 			$dataexists[(int)$matches[1]]=(int)$row['inumber'];
 		}
+		
 		// Get summary
 		$fhandle=$this->_url_open('http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?'.
 			'db=pubmed'.$ids);
@@ -136,176 +206,112 @@ class PubMedAdmin {
 			if (!strlen($data)) break;
 			$contents .= $data;
 		}
-		fclose($fhandle);//exit($result['start']+$result['max'].'|'.$result['count']);
+		fclose($fhandle);
+		
 		// Get summaries
 		// Header
 		foreach($result as $key=>$value) $result[$key]=htmlspecialchars($value,ENT_QUOTES);
 		echo '<table>';
+		// Navigation bar
 		ob_start();
-?>
-<tr><th style="width:70%">Summaries</th><th>
-<?php if ($result['start']) { ?>
-	<form method="post" action="">
-	<?php $manager->addTicketHidden(); ?>
-	<input type="hidden" name="action" value="searchquery" />
-	<input type="hidden" name="blogid" value="<?php echo (int)$this->blogid; ?>" />
-	<input type="hidden" name="query" value="<?php echo htmlspecialchars(postVar('query')); ?>" />
-	<input type="hidden" name="retstart" value="<?php echo $result['start']-$max; ?>" />
-	<input type="hidden" name="retmax" value="<?php echo (int)$max; ?>" />
-	<input type="submit" value="Previous Page" />
-	</form>
-<?php } ?>
-</th><th style="white-space: nowrap;"><?php echo 'page '.(int)(1+($result['start']/$max)).' of '.(int)(1+($result['count']-1)/$max); ?></th><th>
-<?php if ($result['start']+$max<=$result['count']) { ?>
-	<form method="post" action="">
-	<?php $manager->addTicketHidden(); ?>
-	<input type="hidden" name="action" value="searchquery" />
-	<input type="hidden" name="blogid" value="<?php echo (int)$this->blogid; ?>" />
-	<input type="hidden" name="query" value="<?php echo htmlspecialchars(postVar('query')); ?>" />
-	<input type="hidden" name="retstart" value="<?php echo $result['start']+$max; ?>" />
-	<input type="hidden" name="retmax" value="<?php echo (int)$max; ?>" />
-	<input type="submit" value="Next Page" />
-	</form>
-<?php } ?>
-</tr>
-<?php
-		$tableth=ob_get_contents();
+		$this->template_parse('searchresultth',array(
+			'start'=>$result['start'],
+			'nextexists'=>$result['start']+$max<=$result['count'],
+			'prev'=>$result['start']-$max,
+			'next'=>$result['start']+$max,
+			'max'=>$max,
+			'page'=>(int)(1+($result['start']/$max)),
+			'pagemax'=>(int)(1+($result['count']-1)/$max) ));
+		$tableth=ob_get_contents(); // Will  be used later to show the same th navigation bar.
 		ob_end_flush();
-		// Prepare before showing results
-		$template='<tr onmouseover="focusRow(this);" onmouseout="blurRow(this);"><td colspan="4"><a href="http://www.ncbi.nlm.nih.gov/entrez/query.fcgi'.
-				'?cmd=Retrieve&amp;db=PubMed&amp;dopt=Citation&amp;list_uids=<%pmid%>"'.
-				' onclick="window.open(this.href);return false;"><%authors%></a><br />'.
-			'<%title%><br />'.
-			'<i><%journal%></i> (<%date%>) <b><%volume%></b> <%pages%><br />'.
-			'PMID: <%pmid%>'.
-			'<div style="text-align:right;"><%addbutton%></div></td></tr>';
+		
+		// Prepare select tag for category selection.
 		$defcatid=(int)cookieVar($CONF['CookiePrefix'] . 'NP_PubMed_defcatid');
 		if (!$defcatid) $defcatid=quickQuery('SELECT bdefcat as result FROM '.sql_table('blog').' WHERE bnumber='.(int)$CONF['DefaultBlog']);
-		$categories='<select name="catid" class="np_pubmed_form"><option value="newcat-'.(int)$this->blogid.'">New category</option>';
 		$res=sql_query('SELECT * FROM '.sql_table('category').
 			' WHERE cblog='.(int)$this->blogid.' ORDER BY cname ASC');
+		$array=array();
 		while($row=mysql_fetch_assoc($res)){
-			if ($row['catid']==$defcatid) $categories.='<option value="'.(int)$row['catid'].'" selected="selected">';
-			else $categories.='<option value="'.(int)$row['catid'].'">';
-			$categories.=htmlspecialchars(strip_tags($row['cname'])).'</option>';
+			$row['selected']=($row['catid']==$defcatid);
+			$array[]=$row;
 		}
-		$categories.='</select>';
-		if (!($contents=$this->_getNestedXmlData($contents,'eSummaryResult',''))) exit('Error: '.__LINE__);
+		ob_start();
+		$this->_showUsingArray('selectcategory',$array);
+		$categories=ob_get_contents();
+		ob_end_clean();
+		
 		// Show the results
+		if (!($contents=$this->_getNestedXmlData($contents,'eSummaryResult',''))) exit('Error: '.__LINE__);
 		$contents=explode('<DocSum>',$contents);
+		$array=array();
 		foreach($contents as $summary){
 			if (strpos($summary,'</DocSum>')===false) continue;
-			$data=array();
-			$data['date']=$this->_getXmlData($summary,'Item','???','Name="PubDate"');
-			$data['journal']=$this->_getXmlData($summary,'Item','???','Name="Source"');
-			$data['title']=$this->_getXmlData($summary,'Item','???','Name="Title"');
-			$data['volume']=$this->_getXmlData($summary,'Item','???','Name="Volume"');
-			$data['pages']=$this->_getXmlData($summary,'Item','???','Name="Pages"');
-			$data['pmid']=$this->_getXmlData($summary,'Id','???');
-			$data['authors']='???';
+			$row=array();
+			$row['date']=$this->_getXmlData($summary,'Item','???','Name="PubDate"');
+			$row['journal']=$this->_getXmlData($summary,'Item','???','Name="Source"');
+			$row['title']=$this->_getXmlData($summary,'Item','???','Name="Title"');
+			$row['volume']=$this->_getXmlData($summary,'Item','???','Name="Volume"');
+			$row['pages']=$this->_getXmlData($summary,'Item','???','Name="Pages"');
+			$row['pmid']=$this->_getXmlData($summary,'Id','???');
+			$row['authors']='???';
 			if ($num=preg_match_all('!<Item[\s]+Name="Author"[^>]*>([^<]+)</Item>!',$summary,$matches,PREG_SET_ORDER)){
 				for ($i=0;$i<$num;$i++) {
 					switch($i){
 					case 0:
-						$data['authors']=htmlspecialchars($matches[$i][1]);
+						$row['authors']=htmlspecialchars($matches[$i][1]);
 						break;
 					case 1:case 2:case 3:case 4:
 					case ($num-1):
-						$data['authors'].=', '.htmlspecialchars($matches[$i][1]);
+						$row['authors'].=', '.htmlspecialchars($matches[$i][1]);
 						break;
 					case 5:
-						$data['authors'].=', ... ';
+						$row['authors'].=', ... ';
 					default:
 						break;
 					}
 				}
 			}
-			foreach($data as $key=>$value) $data[$key]=htmlspecialchars($value,ENT_QUOTES);
-			if (array_key_exists((int)$data['pmid'],$dataexists)) {
-				$url=createItemLink($dataexists[(int)$data['pmid']], '');
-				$data['addbutton']='(<a href="'.$url.'" onclick="window.open(this.href);return false;">Data exists for this article</a>)';
+			if (array_key_exists((int)$row['pmid'],$dataexists)) {
+				$row['addbutton']=0;
+				$row['itemurl']=createItemLink($dataexists[(int)$row['pmid']], '');
 			} else {
-				ob_start();
-?>
-<form method="post" action="<?php echo $CONF['AdminURL']; ?>" class="np_pubmed_form">
-<input type="hidden" name="action" value="additem" />
-<input name="blogid" value="<?php echo (int)$blogid; ?>" type="hidden" />
-<input type="hidden" name="draftid" value="0" />
-<?php $manager->addTicketHidden(); ?>
-<input type="hidden" name="title" value="" />
-<input type="hidden" name="more" value="" />
-<input type="hidden" name="closed" value="0" />
-<input type="hidden" name="actiontype" value="addnow" />
-<input type="hidden" name="body" value="PMID:<?php echo (int)$data['pmid']; ?>" class="np_pubmed_form" />
-<input type="submit" value="Add this:" class="np_pubmed_form" />
-<?php echo $categories; ?>
-</form>
-<?php
-				$data['addbutton']=ob_get_contents();
-				ob_end_clean();
+				$row['addbutton']=1;
+				$row['categories']=$categories;
 			}
-			echo TEMPLATE::fill($template,$data);
+			$array[]=$row;
 		}
-		// Footer
+		$this->_showUsingArray('searchresulttd',$array);
+		
+		// Navigation bar and Footer
 		echo $tableth;
 		echo '</table>';
 	}
-	function _getXmlData(&$xml,$tag,$default='???',$extra=''){
+	private function _getXmlData(&$xml,$tag,$default='???',$extra=''){
 		if (preg_match('!<'.$tag.'[^>]*'.$extra.'[^>]*>([^<]+)</'.$tag.'>!',$xml,$matches)){
 			return $matches[1];
 		} else return $default;
 	}
-	function _getNestedXmlData(&$xml,$tag,$default='???'){
+	private function _getNestedXmlData(&$xml,$tag,$default='???'){
 		if (preg_match('!<'.$tag.'[^>]*>([\s\S]+)</'.$tag.'>!',$xml,$matches)){
 			return $matches[1];
 		} else return $default;
 	}
-	function _url_open($url){
+	private function _url_open($url){
 		return $this->oPluginAdmin->plugin->_url_open($url);
 	}
 
 /* Manunscript Management */
-	function manuscriptlist(){
-		global $member,$manager;
-		$mid=$member->getID();
-		echo '<a href="'.$this->oPluginAdmin->plugin->getAdminURL().'?blogid='.(int)$this->blogid.'&amp;action=manuscriptlist">Refresh</a><br />';
-		echo '<table><tr><th>manuscript</th><th>template</th><th colspan="2">&nbsp;</th></tr>';
+	private function action_manuscriptlist(){
+		global $member;
 		$res=sql_query('SELECT * FROM '.sql_table('plugin_pubmed_manuscripts').
-			' WHERE userid='.(int)$mid);
-		while($row=mysql_fetch_assoc($res)){
-			echo '<tr>';
-			echo '<td>'.htmlspecialchars($row['manuscriptname']).'</td>';
-			echo '<td>'.htmlspecialchars($row['templatename']).'</td>';
-?>
-<td><form method="post" action="">
-<input type="hidden" name="action" value="deletemanuscript" />
-<input type="hidden" name="manuscriptid" value="<?php echo (int)$row['manuscriptid']; ?>" />
-<?php $manager->addTicketHIdden() ?>
-<input type="submit" value="Delete" />
-</form></td>
-<td><form method="post" action="">
-<input type="hidden" name="action" value="editmanuscript" />
-<input type="hidden" name="manuscriptid" value="<?php echo (int)$row['manuscriptid']; ?>" />
-<?php $manager->addTicketHIdden() ?>
-<input type="submit" value="Edit" />
-</form></td>
-<?php
-			echo "</tr>\n";
-		}
-		echo "</table>\n";
-?>
-<form method="post" action="">
-<input type="hidden" name="action" value="createmanuscript" />
-<?php $manager->addTicketHIdden() ?>
-<input type="hidden" name="blogid" value="<?php echo (int)$this->blogid; ?>" />
-New manuscript:
-<input type="text" name="manuscriptname" value="" />
-<input type="submit" value="Create" />
-</form>
-<?php
+			' WHERE userid='.(int)$member->getID());
+		$array=array();
+		while($row=mysql_fetch_assoc($res)) $array[]=$row;
+		$this->_showUsingArray('manuscriptlist',$array);
+		return;
 	}
 	
-	function deletemanuscript(){
+	private function action_deletemanuscript(){
 		global $member,$manager;
 		$mid=$member->getID();
 		$manuscriptid=intPostVar('manuscriptid');
@@ -322,34 +328,23 @@ New manuscript:
 			sql_query('DELETE FROM '.sql_table('plugin_pubmed_manuscripts').
 				' WHERE manuscriptid='.(int)$manuscriptid.
 				' AND userid='.(int)$mid);
-			echo "<b>The manuscript, '".htmlspecialchars($mname)."' was deleted.</b><br />\n";
-			return $this->manuscriptlist();
+			$this->template_parse('deletemanuscript',array('mname'=>$mname),'notice');
+			return $this->action_manuscriptlist();
 		}
-		echo "<b>The manuscript, '".htmlspecialchars($mname)."' will be deleted.</b><br /><br />\n";
-?>
-<form method="post" action="">
-<input type="hidden" name="action" value="deletemanuscript" />
-<input type="hidden" name="sure" value="yes" />
-<input type="hidden" name="manuscriptid" value="<?php echo (int)$manuscriptid; ?>" />
-<?php $manager->addTicketHIdden() ?>
-Are you sure?&nbsp;&nbsp;
-<input type="submit" value="Yes. Delete it." />&nbsp;&nbsp;
-<a href="javascript:history.go(-1);">No I'm not.</a>
-</form>
-<?php
+		$this->template_parse('deletemanuscript',array('mid'=>$manuscriptid,'mname'=>$mname));
 	}
 	
-	function createmanuscript(){
+	private function action_createmanuscript(){
 		global $member,$manager;
 		$mid=$member->getID();
 		$mname=$this->_checkmanuscriptname(postVar('manuscriptname'));
 		if ($mname) sql_query('INSERT INTO '.sql_table('plugin_pubmed_manuscripts').' SET'.
 				' userid='.(int)$mid.','.
 				' manuscriptname="'.addslashes($mname).'"');
-		return $this->manuscriptlist();
+		return $this->action_manuscriptlist();
 	}
 	
-	function _checkmanuscriptname($mname,$id=0){
+	private function _checkmanuscriptname($mname,$id=0){
 		global $member;
 		$mid=$member->getID();
 		$mname=preg_replace('/[^0-9a-zA-Z\._\-]+/','',$mname);
@@ -364,7 +359,7 @@ Are you sure?&nbsp;&nbsp;
 		return false;
 	}
 	
-	function editmanuscript(){
+	private function action_editmanuscript(){
 		global $member,$manager;
 		$mid=$member->getID();
 		$manuscriptid=intPostVar('manuscriptid');
@@ -386,7 +381,8 @@ Are you sure?&nbsp;&nbsp;
 				' templatename="'.addslashes($template).'"'.
 				' WHERE manuscriptid='.(int)$manuscriptid.
 				' AND userid='.(int)$mid);
-			return $this->manuscriptlist();
+			$this->template_parse('editmanuscript',array('mname'=>$mname),'notice');
+			return $this->action_manuscriptlist();
 		}
 		// Get template files
 		$templates=array();
@@ -397,34 +393,14 @@ Are you sure?&nbsp;&nbsp;
 		}
 		sort($templates);
 		array_unshift($templates,'default');
-$d->close(); 
-?>
-<form method="post" action="">
-<input type="hidden" name="action" value="editmanuscript" />
-<?php $manager->addTicketHIdden() ?>
-<input type="hidden" name="sure" value="yes" />
-<input type="hidden" name="manuscriptid" value="<?php echo (int)$manuscriptid; ?>" />
-<input type="hidden" name="blogid" value="<?php echo (int)$this->blogid; ?>" />
-<table>
-<tr><td>Manuscript name:</td>
-<td><input type="text" name="manuscriptname" value="<?php echo htmlspecialchars($mname); ?>" /></td></tr>
-<tr><td>Template:</td>
-<!-- td><input type="text" name="templatename" value="<?php echo htmlspecialchars($template); ?>" /></td></tr -->
-<td><select name="templatename">
-<?php
-		foreach($templates as $temp){
-			$temp=htmlspecialchars($temp,ENT_QUOTES);
-			echo '<option value="'.$temp.'"'.
-				($template==$temp ? ' selected="selected"' : '').
-				'>'.$temp."</option>\n";
-		}
-?>
-</select></td>
-</tr>
-</table>
-<input type="submit" value="Edit" />
-</form>
-<?php
+		$d->close();
+		
+		// Show using array
+		$array=array();
+		foreach($templates as $temp) $array[]=array('template'=>$temp,'selected'=>$template==$temp);
+		$this->contents=array('mid'=>$manuscriptid,'mname'=>$mname);
+		$this->_showUsingArray('editmanuscript',$array);
 	}
 }
-?>
+
+new PubMedAdmin;

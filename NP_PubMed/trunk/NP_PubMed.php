@@ -3,7 +3,7 @@ class NP_PubMed extends NucleusPlugin {
 	function getName() { return 'NP_PubMed'; }
 	function getMinNucleusVersion() { return 330; }
 	function getAuthor()  { return 'Katsumi'; }
-	function getVersion() { return '0.1.8'; }
+	function getVersion() { return '0.2.0'; }
 	function getURL() {return 'http://japan.nucleuscms.org/wiki/plugins:authors:katsumi';}
 	function getDescription() {
 		return $this->getName().' plugin<br />'.
@@ -32,7 +32,7 @@ class NP_PubMed extends NucleusPlugin {
 			' userid int(11) not null default 0,'.
 			' manuscriptname varchar(200) not null default "New Manuscript",'.
 			' templatename varchar(200) not null default "default",'.
-			' sortdata text not null default "",'.
+			//' sortdata text not null default "",'.
 			' PRIMARY KEY manuscriptid(manuscriptid) '.
 			') TYPE=MyISAM;');
 	}
@@ -242,7 +242,7 @@ class NP_PubMed extends NucleusPlugin {
 			if (!$blog) return;
 			$msid=intGetVar('manuscriptid');
 			if (!$msid) return;
-			$query='SELECT i.ibody as body, i.ititle as title, i.imore as more'.
+			$query='SELECT i.ibody as body, i.ititle as title, i.imore as more, r.sort as sort'.
 				' FROM '.sql_table('item').' as i, '.
 					sql_table('plugin_pubmed_references').' as r,'.
 					sql_table('plugin_pubmed_manuscripts').' as m'.
@@ -260,7 +260,7 @@ class NP_PubMed extends NucleusPlugin {
 				' AND userid='.(int)$mid);
 			$row=mysql_fetch_assoc($res);
 			if (!$row) return;
-			$tobj=PUBMED_TEMPLATE_BASE::getTemplate($row['templatename'],$row['sortdata']);
+			$tobj=PUBMED_TEMPLATE_BASE::getTemplate($row['templatename']);
 			if (!$tobj) {
 				echo 'The template, "'.htmlspecialchars($row['templatename']).'" cannot be found';
 				break;
@@ -268,10 +268,10 @@ class NP_PubMed extends NucleusPlugin {
 			// Set all the data.
 			$res=sql_query($query);
 			while($row=mysql_fetch_assoc($res)){
-				$tobj->setData($row['more']);
+				$tobj->setData($row['more'],$row['sort']);
 			}
 			// Sort the papers
-			$tobj->sortPapers();
+			if (!$tobj->manualSort()) $tobj->sortPapers();
 			// Let's parse, finally.
 			$tobj->parse_all();
 			break;
