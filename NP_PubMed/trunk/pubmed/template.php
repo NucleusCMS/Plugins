@@ -9,12 +9,8 @@ class PUBMED_TEMPLATE_BASE {
 	 * Default methods follow.
 	 * These methods will be overrided in PUBMED_TEMPLATE class.
 	 */
-	public function manualSort(){
-		// If the order of manuscript is manually sorted (PNAS etc),
-		// this method must return true.
-		return false;
-	}
 	public function sortPapers(){
+		// Either manualSort or sortByAuthorName
 		$this->sortByAuthorName();
 	}
 	public function parse_header(){
@@ -61,7 +57,7 @@ END;
 	/*
 	 * Following methods shouldn't be overrided.
 	 */
-	protected $sortdata=array(),$data=array();
+	protected $sorteddata=array(),$data=array();
 	public static final function getTemplate($template){
 		// Static method.
 		// Define PUBLED_TEMPLATE class
@@ -72,22 +68,49 @@ END;
 		$obj = new PUBMED_TEMPLATE;
 		return $obj;
 	}
-	public final function setData($more,$sort){
+	protected $sortarray=false;
+	public final function setSortText($text){
+		if ($text=='authorname') {
+			$this->sortarray=false;
+			return;
+		}
+		$array=array();
+		$i=0;
+		foreach(explode(',',$text) as $itemid){
+			$array[(int)$itemid]=$i;
+			$i++;
+		}
+		$this->sortarray=$array;
+	}
+	public final function getSortText(){
+		if ($this->sortarray===false) return 'authorname';
+		$ret='';
+		$s=$this->sorteddata;
+		$itemid=$this->itemid;
+		ksort($s);
+		foreach($s as $pmid){
+			if (strlen($ret)) $ret.=',';
+			$ret.=$itemid[$pmid];
+		}
+		return $ret;
+	}
+	protected $itemid=array(); // PMID <-> itemid translation table.
+	public final function setData($more,$itemid){
 		// $more is the $item->more.
 		if (!preg_match('#<MedlineCitation[^>]*>([\s\S]*?)</MedlineCitation>#',$more,$m)) return;
 		$xml="<?xml version='1.0'?>\r\n<document>\r\n$m[1]\r\n</document>";
 		$xml=simplexml_load_string($xml);
 		$pmid=(int)$xml->PMID;
 		$this->data[$pmid]=$xml;
-		if (!isset($this->sortdata[$sort])) $this->sortdata[$sort]=$pmid;
-		else $this->sortdata[]=$pmid;
+		$this->sorteddata[]=$pmid;
+		$this->itemid[$pmid]=$itemid;
 	}
 	public final function parse_all(){
 		echo $this->parse_header();
 		$num=0;
-		$sortdata=$this->sortdata;
-		ksort($sortdata);
-		foreach($sortdata as $pmid) {
+		$sorteddata=$this->sorteddata;
+		ksort($sorteddata);
+		foreach($sorteddata as $pmid) {
 			$xml=$this->data[$pmid];
 			$num++;
 			// Get year
@@ -116,7 +139,19 @@ END;
 	/* Sort methods follow.
 	 * note that these methods will be called from "sortPapers" method
 	 */
+	public final function manualSort(){
+		$itemid=$this->itemid;
+		$position=$this->sortarray;
+		$newarray=array();
+		foreach($this->sorteddata as $pmid){
+			$i=$itemid[$pmid];
+			if (isset($position[$i])) $newarray[$position[$i]]=$pmid;
+			else $newarray[]=$pmid;
+		}
+		$this->sorteddata=$newarray;
+	}
 	public final function sortByAuthorName(){
+		$this->sortarray=false;
 		$citations=array();
 		$papers=array();
 		$i=0;
@@ -166,7 +201,7 @@ END;
 		// Let's get the result.
 		$result=array();
 		foreach($papers as $pmid) $result[]=$pmid;
-		$this->sortdata=$result;
+		$this->sorteddata=$result;
 	}
 	protected final function month($month){
 		if (is_numeric($month)) return (int)$month;

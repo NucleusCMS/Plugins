@@ -209,8 +209,9 @@ Are you sure?&nbsp;&nbsp;
     <head><![CDATA[
 
 <form method="post" action="">
-<input type="hidden" name="action" value="editmanuscript" />
 <%ticket%>
+<input type="hidden" name="action" value="editmanuscript" />
+<input type="hidden" name="sorttext" value="<%hsc(sorttext)%>" />
 <input type="hidden" name="sure" value="yes" />
 <input type="hidden" name="manuscriptid" value="<%int(mid)%>" />
 <input type="hidden" name="blogid" value="<%blogid%>" />

@@ -3,7 +3,7 @@ class NP_PubMed extends NucleusPlugin {
 	function getName() { return 'NP_PubMed'; }
 	function getMinNucleusVersion() { return 330; }
 	function getAuthor()  { return 'Katsumi'; }
-	function getVersion() { return '0.2.0'; }
+	function getVersion() { return '0.2.1'; }
 	function getURL() {return 'http://japan.nucleuscms.org/wiki/plugins:authors:katsumi';}
 	function getDescription() {
 		return $this->getName().' plugin<br />'.
@@ -23,7 +23,7 @@ class NP_PubMed extends NucleusPlugin {
 			' id int(11) not null auto_increment,'.
 			' manuscriptid int(11) not null default 0,'.
 			' itemid int(11) not null default 0,'.
-			' sort int(11) not null default 0, '.
+			//' sort int(11) not null default 0, '.
 			' PRIMARY KEY id(id),'.
 			' UNIQUE KEY manuscriptid(manuscriptid,itemid) '.
 			') TYPE=MyISAM;');
@@ -32,7 +32,7 @@ class NP_PubMed extends NucleusPlugin {
 			' userid int(11) not null default 0,'.
 			' manuscriptname varchar(200) not null default "New Manuscript",'.
 			' templatename varchar(200) not null default "default",'.
-			//' sortdata text not null default "",'.
+			' sorttext text not null default "",'.
 			' PRIMARY KEY manuscriptid(manuscriptid) '.
 			') TYPE=MyISAM;');
 	}
@@ -40,6 +40,16 @@ class NP_PubMed extends NucleusPlugin {
 		if ($this->getOption('droptable')=='yes') {
 			foreach($this->getTableList() as $table) sql_query('DROP TABLE IF EXISTS '.$table);
 		}
+	}
+	function init(){
+		global $member;
+		$manuid=requestVar('manuscriptid');
+		if (!$manuid) return;
+		if ($member->isAdmin()) return;
+		$ok=quickQuery('SELECT COUNT(*) as result FROM '.sql_table('plugin_pubmed_manuscripts').
+			' WHERE manuscriptid='.(int)$manuid.
+			' AND userid='.(int)$member->getID() );
+		if (!$ok) exit("<!-- rem --><b>You aren't allowed to manage this maniscript!</b>");
 	}
 	function event_QuickMenu(&$data) {
 		global $member,$CONF;
@@ -155,7 +165,7 @@ class NP_PubMed extends NucleusPlugin {
 		$manuscripts=array();
 		while($row=mysql_fetch_row($res)) $manuscripts[$row[0]]=0;
 		if (is_array($request)) foreach($request as $key=>$value) $manuscripts[$key]=(int)$value;
-		$res=sql_query('SELECT r.manuscriptid as manuscriptid, r.sort as sort FROM '.
+		$res=sql_query('SELECT r.manuscriptid as manuscriptid FROM '.
 			sql_table('plugin_pubmed_manuscripts').' as m,'.
 			sql_table('plugin_pubmed_references').' as r'.
 			' WHERE m.manuscriptid=r.manuscriptid'.
@@ -242,15 +252,8 @@ class NP_PubMed extends NucleusPlugin {
 			if (!$blog) return;
 			$msid=intGetVar('manuscriptid');
 			if (!$msid) return;
-			$query='SELECT i.ibody as body, i.ititle as title, i.imore as more, r.sort as sort'.
-				' FROM '.sql_table('item').' as i, '.
-					sql_table('plugin_pubmed_references').' as r,'.
-					sql_table('plugin_pubmed_manuscripts').' as m'.
-				' WHERE i.inumber=r.itemid'.
-				' AND r.manuscriptid='.(int)$msid.
-				' AND m.manuscriptid='.(int)$msid.
-				' AND m.userid='.(int)$mid.
-				' ORDER BY i.ititle ASC';
+			$action=postVar('batchaction');
+			if ($action) $this->batchAction($action,$_POST['batch'],$msid);
 			
 			// Construct template object.
 			require_once($this->getDirectory().'template.php');
@@ -260,18 +263,31 @@ class NP_PubMed extends NucleusPlugin {
 				' AND userid='.(int)$mid);
 			$row=mysql_fetch_assoc($res);
 			if (!$row) return;
+			echo '<p>Template: '.htmlspecialchars($row['templatename'])."</p>\n";
+			if ($p1=='edit') $row['templatename']='edit';
 			$tobj=PUBMED_TEMPLATE_BASE::getTemplate($row['templatename']);
 			if (!$tobj) {
 				echo 'The template, "'.htmlspecialchars($row['templatename']).'" cannot be found';
-				break;
+				return;
 			}
+			$tobj->setSortText($row['sorttext']);
+			
 			// Set all the data.
+			$query='SELECT i.inumber as itemid, i.ibody as body, i.ititle as title, i.imore as more'.
+				' FROM '.sql_table('item').' as i, '.
+					sql_table('plugin_pubmed_references').' as r,'.
+					sql_table('plugin_pubmed_manuscripts').' as m'.
+				' WHERE i.inumber=r.itemid'.
+				' AND r.manuscriptid='.(int)$msid.
+				' AND m.manuscriptid='.(int)$msid.
+				' AND m.userid='.(int)$mid.
+				' ORDER BY i.ititle ASC';
 			$res=sql_query($query);
 			while($row=mysql_fetch_assoc($res)){
-				$tobj->setData($row['more'],$row['sort']);
+				$pmid=$tobj->setData($row['more'],$row['itemid']);
 			}
 			// Sort the papers
-			if (!$tobj->manualSort()) $tobj->sortPapers();
+			$tobj->sortPapers();
 			// Let's parse, finally.
 			$tobj->parse_all();
 			break;
@@ -444,6 +460,107 @@ if((document.location+'').indexOf('#pubmed')>0) np_pubmed_timer=setInterval("np_
 ?>
 </table>
 <?php
+	}
+	function batchAction($action,$batch,$msid){
+		global $manager;
+		if ($action=='nothing') return;
+		if (!$manager->checkTicket()) {
+			echo '<p><b>Invalid or expired ticket!</b></p>';
+			return;
+		}
+		// Clean up batch data
+		foreach($batch as $key=>$itemid) $batch[$key]=(int)$itemid;
+		// Get citation information
+		$res=sql_query('SELECT * FROM '. sql_table('plugin_pubmed_references').
+			' WHERE manuscriptid='.(int)$msid);
+		$references=array();
+		while($row=mysql_fetch_assoc($res)){
+			$references[]=(int)$row['itemid'];
+		}
+		$sort=array();
+		$sorttext=quickQuery('SELECT sorttext as result FROM '. sql_table('plugin_pubmed_manuscripts').
+			' WHERE manuscriptid='.(int)$msid);
+		foreach(explode(',',$sorttext) as $itemid){
+			$itemid=(int)(trim($itemid));
+			if (in_array($itemid,$references)) $sort[]=$itemid;
+		}
+		foreach($references as $itemid=>$row){
+			if (!in_array($itemid,$sort)) $sort[]=$itemid;
+		}
+		// Take action
+		switch($action){
+			case 'delete':
+				$in='';
+				foreach($batch as $itemid){
+					if (strlen($in)) $in.=',';
+					$in.=(int)$itemid;
+				}
+				sql_query('DELETE FROM '. sql_table('plugin_pubmed_references').
+					' WHERE itemid in ('.$in.')'.
+					' AND manuscriptid='.(int)$msid);
+				echo '<p> Deleted references: '.$in.'</p>';
+				return;
+			case 'moveup':
+				for($i=0;$i<count($sort);$i++){
+					if (in_array($sort[$i],$batch)) {
+						$i--;
+						break;
+					}
+				}
+				$sorted=array();
+				for($j=0;$j<$i;$j++) $sorted[]=$sort[$j];
+				foreach($batch as $itemid){
+					if (in_array($itemid,$references) && !in_array($itemid,$sorted)) $sorted[]=$itemid;
+				}
+				foreach($sort as $itemid){
+					if (!in_array($itemid,$sorted)) $sorted[]=$itemid;
+				}
+				break;
+			case 'movedown':
+				for($i=count($sort)-1;0<=$i;$i--){
+					if (in_array($sort[$i],$batch)) {
+						if ($i==count($sort)-1) break;
+						$i++;
+						break;
+					}
+				}
+				$sorted=array();
+				for($j=0;$j<=$i;$j++){
+					$itemid=$sort[$j];
+					if (!in_array($itemid,$batch) && !in_array($itemid,$sorted)) $sorted[]=$itemid;
+				}
+				foreach($batch as $itemid){
+					if (in_array($itemid,$references) && !in_array($itemid,$sorted)) $sorted[]=$itemid;
+				}
+				foreach($sort as $itemid){
+					if (!in_array($itemid,$sorted)) $sorted[]=$itemid;
+				}
+				break;
+			case 'totop':
+				$sorted=array();
+				foreach($batch as $itemid){
+					if (in_array($itemid,$references) && !in_array($itemid,$sorted)) $sorted[]=$itemid;
+				}
+				foreach($sort as $itemid){
+					if (!in_array($itemid,$sorted)) $sorted[]=$itemid;
+				}
+				break;
+			case 'tobottom':
+				$sorted=array();
+				foreach($sort as $itemid){
+					if (!in_array($itemid,$batch) && !in_array($itemid,$sorted)) $sorted[]=$itemid;
+				}
+				foreach($batch as $itemid){
+					if (!in_array($itemid,$sorted)) $sorted[]=$itemid;
+				}
+				break;
+			default:
+				return;
+		}
+		// Save sorted data if exists
+		if (isset($sorted)) sql_query('UPDATE '.sql_table('plugin_pubmed_manuscripts').
+			' SET sorttext="'.addslashes(implode(',',$sorted)).'"'.
+			' WHERE manuscriptid='.(int)$msid);
 	}
 }
 ?>

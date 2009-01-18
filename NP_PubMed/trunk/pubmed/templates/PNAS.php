@@ -1,8 +1,8 @@
 <?php
 
 class PUBMED_TEMPLATE extends PUBMED_TEMPLATE_BASE {
-	public function manualSort(){
-		return true;
+	public function sortPapers(){
+		$this->manualSort();
 	}
 	public function _parse_header(){
 		return '<ol start="1"><br />';

@@ -340,10 +340,23 @@ class PubMedAdmin extends BaseActions {
 		$mname=$this->_checkmanuscriptname(postVar('manuscriptname'));
 		if ($mname) sql_query('INSERT INTO '.sql_table('plugin_pubmed_manuscripts').' SET'.
 				' userid='.(int)$mid.','.
-				' manuscriptname="'.addslashes($mname).'"');
+				' manuscriptname="'.addslashes($mname).'"'.
+				' sorttext="authorname"');
 		return $this->action_manuscriptlist();
 	}
-	
+	private function _getSortMethod($tempname){
+		// Note that $tempname is valid once.
+		static $ret;
+		if (isset($ret)) return $ret;
+		require_once(dirname(__FILE__).'/template.php');
+		$tobj=PUBMED_TEMPLATE_BASE::getTemplate($tempname);
+		if (!$tobj) return false;
+		$tobj->setSortText('');
+		$tobj->sortPapers();
+		if ($tobj->getSortText()=='authorname') $ret='authorname';
+		else $ret='manual';
+		return $ret;
+	}
 	private function _checkmanuscriptname($mname,$id=0){
 		global $member;
 		$mid=$member->getID();
@@ -376,12 +389,20 @@ class PubMedAdmin extends BaseActions {
 		$template=$row['templatename'];
 		if (postVar('sure')=='yes') {
 			$template=postVar('templatename');
-			sql_query('UPDATE '.sql_table('plugin_pubmed_manuscripts').' SET'.
-				' manuscriptname="'.addslashes($mname).'",'.
-				' templatename="'.addslashes($template).'"'.
-				' WHERE manuscriptid='.(int)$manuscriptid.
-				' AND userid='.(int)$mid);
-			$this->template_parse('editmanuscript',array('mname'=>$mname),'notice');
+			$sorttext=postVar('sorttext');
+			$sortmethod=$this->_getSortMethod($template);
+			if ($sortmethod) {
+				if ($sortmethod=='authorname') $sorttext='authorname';
+				sql_query('UPDATE '.sql_table('plugin_pubmed_manuscripts').' SET'.
+					' manuscriptname="'.addslashes($mname).'",'.
+					' templatename="'.addslashes($template).'",'.
+					' sorttext="'.addslashes($sorttext).'"'.
+					' WHERE manuscriptid='.(int)$manuscriptid.
+					' AND userid='.(int)$mid);
+				$this->template_parse('editmanuscript',array('mname'=>$mname),'notice');
+			} else {
+				echo "<b>The template '".htmlspecialchars($template)."' does not exist.</b>";
+			}
 			return $this->action_manuscriptlist();
 		}
 		// Get template files
