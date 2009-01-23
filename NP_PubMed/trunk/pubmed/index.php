@@ -410,7 +410,8 @@ class PubMedAdmin extends BaseActions {
 		$d=dir(dirname(__FILE__).'/templates/');
 		while (false !== ($entry = $d->read())) {
 			if (!preg_match('/^(.+)\.php$/',$entry,$m)) continue;
-			if ($m[1]!='default') $templates[]=$m[1];
+			if ($m[1]=='edit' || $m[1]=='default') continue;
+			$templates[]=$m[1];
 		}
 		sort($templates);
 		array_unshift($templates,'default');

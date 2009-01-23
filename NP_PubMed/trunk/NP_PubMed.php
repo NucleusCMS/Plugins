@@ -23,7 +23,6 @@ class NP_PubMed extends NucleusPlugin {
 			' id int(11) not null auto_increment,'.
 			' manuscriptid int(11) not null default 0,'.
 			' itemid int(11) not null default 0,'.
-			//' sort int(11) not null default 0, '.
 			' PRIMARY KEY id(id),'.
 			' UNIQUE KEY manuscriptid(manuscriptid,itemid) '.
 			') TYPE=MyISAM;');
@@ -73,10 +72,42 @@ class NP_PubMed extends NucleusPlugin {
 			)
 		);
 	}
+	function event_EditItemFormExtras(&$data){
+		global $member,$manager;
+		if (!preg_match('/<\!\-\-PMID:([0-9\s]+)\-\->/i',$data['variables']['body'],$m)) return;
+		$pmid=(int)$m[1];
+		$itemid=$data['itemid'];
+		$mid=$member->getID();
+		echo <<<END
+<script type="text/javascript">
+//<![CDATA[
+// Try to go to 'options' tag when the bookmarklet is used.
+var np_pubmed_timer;
+var np_pubmed_timer_count=0;
+function np_pubmed_timer_func(){
+  try { flipBlock('options'); } catch(e) { return; }
+  if (10<np_pubmed_timer_count++) clearInterval(np_pubmed_timer);
+}
+if((document.location+'').indexOf('#pubmed')>0) np_pubmed_timer=setInterval("np_pubmed_timer_func()",100);
+//]]>
+</script>
+<table>
+<tr><th><a name="pubmed" id="pubmed">NP_PubMed</a></th></tr>
+<tr><td>
+<input type="button" value="Refresh" onclick="
+  document.getElementById('inputtitle').value='';
+  document.getElementById('inputbody').value='PMID: {$pmid}';
+  document.getElementById('inputmore').value='';
+  alert('Now save this item to refresh PubMed data.');
+  return false;
+" />
+If the reloading data from PubMed site is required for this paper, push this button and save the item.
+</td></tr>
+</table>
+END;
+	}
 	function event_PreUpdateItem(&$data){
-		$ret=$this->event_PreAddItem($data);
-		$this->_updateManuscriptData($data['itemid']);
-		return $ret;
+		return $this->event_PreAddItem($data);
 	}
 	function event_PreAddItem(&$data){
 		global $CONF;
@@ -156,10 +187,9 @@ class NP_PubMed extends NucleusPlugin {
 			return $matches[1];
 		} else return $default;
 	}
-	function _updateManuscriptData($itemid){
+	function _updateManuscriptData($itemid,$request){
 		global $member,$manager;
 		$mid=$member->getID();
-		$request=requestArray('np_pubmed_manuscript');
 		$res=sql_query('SELECT manuscriptid FROM '.sql_table('plugin_pubmed_manuscripts').
 			' WHERE userid='.(int)$mid);
 		$manuscripts=array();
@@ -313,55 +343,128 @@ class NP_PubMed extends NucleusPlugin {
 			break;
 		}
 	}
-	function doTemplateVar(&$item,$type,$p1='') {
+	function doTemplateVar(&$item,$type,$p1='',$p2='',$p3='') {
 		global $CONF,$member,$DIR_MEDIA;
 		switch($type=strtolower($type)){
-		case 'pdf':
-		default:
-			if (!$member->isLoggedIn()) return;
-			if (!preg_match('/<!--[\s]*(PMID|pmid)[\s]*:[\s]*([0-9]+)[\s]*-->/',$item->body,$matches)) return;
-			$pmid=(int)$matches[2];
-			$filename=$DIR_MEDIA.'pubmed/'.$pmid.'.pdf';
-			if (!file_exists($filename)) return;
-			switch($p1){
-			case 'pmid':
-				$filename=$pmid;
+			case 'pdf': case 'supplement':
+				if (!$member->isLoggedIn()) return;
+				if (!preg_match('/<!--[\s]*(PMID|pmid)[\s]*:[\s]*([0-9]+)[\s]*-->/',$item->body,$matches)) return;
+				$pmid=(int)$matches[2];
+				if ($type=='supplement') $pmid.='s';
+				$filename=$DIR_MEDIA.'pubmed/'.$pmid.'.pdf';
+				if (!file_exists($filename)) return;
+				if ($p1) $text=$p1;
+				elseif ($type=='supplement') $text='Read supplemental info';
+				else $text='Read pdf';
+				switch($p2){
+					case 'pmid':
+						$filename=$pmid;
+						break;
+					case 'author':
+					default:
+						$filename=rawurlencode(strip_tags($item->title));
+						if ($type=='supplement') $filename.='%20supplement';
+						break;
+				}
+				echo '<a href="'.htmlspecialchars($CONF['ActionURL'].'/'.$filename.'.pdf'.
+					'?action=plugin&name=PubMed&type=pdf&file='.
+					$pmid.'.pdf').
+					'" onclick="window.open(this.href);return false;">'.
+					htmlspecialchars($text).'</a>';
 				break;
-			case 'author':
+			case 'edit':
+				$itemid=(int)$item->itemid;
+				$text=$p1?'manuscript management':htmlspecialchars($p1,ENT_QUOTES);
+				$width=(int)$p2;
+				$height=(int)$p3;
+				$link='?action=plugin&name=PubMed&type=manuscripts&itemid='.$itemid;
+				echo <<<END
+<a href="{$link}" onclick="
+  this.style.display='none';
+  var iframe=document.getElementById('iframe_pubmed_{$itemid}');
+  iframe.style.display='block';
+  iframe.src='{$link}';
+  return false;
+">{$text}</a>
+<iframe style="display:none;" id="iframe_pubmed_{$itemid}" width="{$width}" height="{$height}" src="" ></iframe>
+END;
+				break;
 			default:
-				$filename=rawurlencode(strip_tags($item->title));
 				break;
-			}
-			echo '<a href="'.htmlspecialchars($CONF['ActionURL'].'/'.$filename.'.pdf'.
-				'?action=plugin&name=PubMed&type=pdf&file='.
-				$pmid.'.pdf').
-				'" onclick="window.open(this.href);return false;">'.
-				($p1?htmlspecialchars($p1):'Read pdf').'</a>';
-			break;
 		}
 	}
 	function doAction($type){
-		global $member,$DIR_MEDIA;
+		global $manager,$member,$DIR_MEDIA;
 		switch($type=strtolower($type)){
-		case 'pdf':
-		default:
-			if (!$member->isLoggedIn()) return 'Login is required to download pdf file.';
-			$filename=realpath($DIR_MEDIA.'pubmed/'.getVar('file'));
-			if (!file_exists($filename)) return 'File not found.';
-			if (strpos($filename,realpath($DIR_MEDIA.'pubmed/'))!==0) return 'Error:'.__LINE__;
-			header('Content-type: application/pdf; filename="test1.pdf"');
-			readfile($filename);
-			return;
+			case 'pdf':
+				if (!$member->isLoggedIn()) return 'Login is required to download pdf file.';
+				$filename=realpath($DIR_MEDIA.'pubmed/'.getVar('file'));
+				if (!file_exists($filename)) return 'File not found.';
+				if (strpos($filename,realpath($DIR_MEDIA.'pubmed/'))!==0) return 'Error:'.__LINE__;
+				header('Content-type: application/pdf; filename="test1.pdf"');
+				readfile($filename);
+				return;
+			case 'manuscripts':
+				if (!$member->isLoggedIn()) return 'Login is required to manage manuscripts.';
+				$itemid=intGetVar('itemid');
+				if (!$itemid) return 'Itemid not defined.';
+				if (postVar('sure')=='yes') {
+					if (!$manager->checkTicket()) return 'Invalid or expired ticket.';
+					$request=requestArray('msid');
+					$this->_updateManuscriptData($itemid,$request);
+					$msg='Updated';
+				} else $msg='';
+				// Determine if the item is selected as references.
+				$query='SELECT r.manuscriptid as msid FROM '.
+					sql_table('plugin_pubmed_manuscripts').' as m, '.
+					sql_table('plugin_pubmed_references').' as r '.
+					' WHERE m.userid='.(int)$member->getID().
+					' AND m.manuscriptid=r.manuscriptid'.
+					' AND r.itemid='.(int)$itemid;
+				$res=sql_query($query);
+				$checked=array();
+				while($row=mysql_fetch_assoc($res)) $checked[]=$row['msid'];
+				// Get the manuscript list.
+				$query='SELECT * FROM '.sql_table('plugin_pubmed_manuscripts').
+					' WHERE userid='.(int)$member->getID();
+				$res=sql_query($query);
+				$data=array();
+				while($row=mysql_fetch_assoc($res)){
+					if (in_array($row['manuscriptid'],$checked)) $row['checked']=true;
+					else $row['checked']=false;
+					foreach($row as $key=>$value) $row[$key]=htmlspecialchars($value,ENT_QUOTES);
+					$data[]=$row;
+				}
+?><html><body><head><title>Manuscript management</title></head>
+<body>
+<?php if ($msg) echo '<b>'.htmlspecialchars($msg).'</b><br />'; ?>
+<form method="post" action="">
+<?php $manager->addTicketHidden(); ?>
+<input type="hidden" name="sure" value="yes" />
+<table>
+<?php foreach($data as $row) {
+	echo "<tr><td>";
+	if ($row['checked']) echo "<input type=\"checkbox\" name=\"msid[$row[manuscriptid]]\" value=\"1\" checked=\"checked\" />";
+	else echo "<input type=\"checkbox\" name=\"msid[$row[manuscriptid]]\" value=\"1\" />";
+	echo "</td><td>$row[manuscriptname]</td></tr>\n";
+}?>
+<tr><td></td><td><input type="submit" value="update" /></td></tr>
+</table>
+</form>
+</body></html>
+<?php
+			default:
+				return;
 		}
 	}
 	function doIf($p1='',$p2=''){
 		if (preg_match('/^([^=]*)=([.]*)$/',$p2,$matches)) list($p2,$name,$value)=$matches;
 		else list($name,$value)=array('','');
 		switch($mode=strtolower($p1)){
-		case 'getvar': case 'postvar': case 'cookievar':
-			return (call_user_func($mode,$name)==$value);
-		default:
-			return false;
+			case 'getvar': case 'postvar': case 'cookievar':
+				return (call_user_func($mode,$name)==$value);
+			default:
+				return false;
 		}
 	}
 	function isAdmin($blogid=''){
@@ -419,47 +522,6 @@ class NP_PubMed extends NucleusPlugin {
 		if (!($fp = @fsockopen($myHost,$myPort, $errno, $errstr, 30))) return false;
 		fwrite($fp,$t);
 		return $fp;
-	}
-	function event_EditItemFormExtras(&$data){
-		global $member,$manager;
-		$itemid=$data['itemid'];
-		$mid=$member->getID();
-?>
-<script type="text/javascript">
-//<![CDATA[
-//if((document.location+'').indexOf('#pubmed')>0) window.onload=function(){flipBlock('options');};
-var np_pubmed_timer;
-var np_pubmed_timer_count=0;
-function np_pubmed_timer_func(){
-  try { flipBlock('options'); } catch(e) { return; }
-  if (10<np_pubmed_timer_count++) clearInterval(np_pubmed_timer);
-}
-if((document.location+'').indexOf('#pubmed')>0) np_pubmed_timer=setInterval("np_pubmed_timer_func()",100);
-//]]>
-</script>
-<table>
-<tr><th><a name="pubmed" id="pubmed">Manuscript management (NP_PubMed)</a></th></tr>
-<?php
-		$res=sql_query('SELECT r.manuscriptid as manuscriptid, r.sort as sort FROM '.
-			sql_table('plugin_pubmed_manuscripts').' as m,'.
-			sql_table('plugin_pubmed_references').' as r'.
-			' WHERE m.manuscriptid=r.manuscriptid'.
-			' AND m.userid='.(int)$mid.
-			' AND itemid="'.(int)$itemid.'"');
-		$itemdata=array();
-		while($row=mysql_fetch_assoc($res)) $itemdata[$row['manuscriptid']]=$row;
-		$res=sql_query('SELECT * FROM '.sql_table('plugin_pubmed_manuscripts').
-			' WHERE userid='.(int)$mid);
-		while($row=mysql_fetch_assoc($res)) {
-			$checked=$itemdata[$row['manuscriptid']]?'checked="checked"':'';
-			echo '<tr><td>';
-			echo '<input type="checkbox" name="np_pubmed_manuscript['.(int)$row['manuscriptid'].']" value="1" '.$checked.' />';
-			echo htmlspecialchars($row['manuscriptname']);
-			echo "</td></tr>\n";
-		}
-?>
-</table>
-<?php
 	}
 	function batchAction($action,$batch,$msid){
 		global $manager;

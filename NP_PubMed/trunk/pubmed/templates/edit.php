@@ -38,26 +38,29 @@ the selected items.
 (
   <a href="" onclick="if (event &amp;&amp; event.preventDefault) event.preventDefault(); return batchSelectAll(1); ">Select all</a> -
   <a href="" onclick="if (event &amp;&amp; event.preventDefault) event.preventDefault(); return batchSelectAll(0); ">Unselect all</a>
-)
+)<br />
+<table>
 
 END;
 	}
 	public function parse($num,$pmid,$xml,$authors,$year,$journal,$volume,$pages,$title){
-		$itemid=$this->itemid[$pmid];
+		$itemid=(int)$this->itemid[$pmid];
 		if (isset($_POST['batch'])) $checked = in_array($itemid,$_POST['batch']) ? ' checked="checked"' : '';
 		else $checked='';
 		return <<<END
 
-<p>
-<input id="batch{$num}" name="batch[{$num}]" value="{$itemid}" type="checkbox"{$checked}/>
-{$this->parse_authors($authors)} ({$year}) <i>{$journal}</i> <b>{$volume}</b>, {$pages}
-</p>
+<tr>
+<td>{$num}</td>
+<td><input id="batch{$num}" name="batch[{$num}]" value="{$itemid}" type="checkbox"{$checked}/></td>
+<td><a href="?itemid={$itemid}">{$this->parse_authors($authors)} ({$year}) <i>{$journal}</i> <b>{$volume}</b>, {$pages}</a></td>
+</tr>
 
 END;
 	}
 	public function parse_footer(){
 		return <<<END
 
+</table>
 </form>
 <script type="text/javascript">
 /*<![CDATA[*/

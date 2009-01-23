@@ -62,6 +62,32 @@ You are currently viewing archive for <%archivedate%>
 <!-- page footer -->
 <%parsedinclude(footer.inc)%>]]></part>
 
+		<part name="edit"><![CDATA[<%parsedinclude(head.inc)%>
+
+<!-- page header -->
+<%parsedinclude(header.inc)%>
+
+<!-- page content -->
+<div id="container">
+<div class="content">
+
+<p><a href="?special=references&amp;blogid=<%PubMed(getvar,blogid)%>&amp;manuscriptid=<%PubMed(getvar,manuscriptid)%>">Show reference list</a></p>
+
+<%PubMed(parse,edit)%>
+
+<%endif%>
+</div>
+</div>
+
+<!-- page menu -->
+<h2 class="hidden">Sidebar</h2>
+<div id="sidebarcontainer">
+<%parsedinclude(sidebar.inc)%>
+</div>
+
+<!-- page footer -->
+<%parsedinclude(footer.inc)%>]]></part>
+
 		<part name="error"><![CDATA[<%parsedinclude(head.inc)%>
 
 <!-- page header -->
@@ -209,6 +235,8 @@ Website: <a href="<%member(url)%>"><%member(url)%></a>
 <div id="container">
 <div class="content">
 
+<p><a href="?special=edit&amp;blogid=<%PubMed(getvar,blogid)%>&amp;manuscriptid=<%PubMed(getvar,manuscriptid)%>">Edit</a></p>
+
 <%PubMed(parse)%>
 
 <%endif%>
@@ -323,8 +351,11 @@ Category: <a href="<%categorylink%>" title="Category: <%Category%>"><%Category%>
 </div>
 <div class="contentbody">
 <%body%>
-<br /><%PubMed(pdf)%><br /><br />
-<%morelink%>
+<br />
+<%PubMed(pdf)%>&nbsp;&nbsp;&nbsp;
+<%PubMed(supplement)%><br />
+<div style="text-align: right;"><%PubMed(edit,manuscript management,300,150)%></div>
+<br /><%morelink%>
 </div>]]></part>
 
 		<part name="LOCALE"><![CDATA[en]]></part>
@@ -404,7 +435,10 @@ Category: <a href="<%categorylink%>" title="Category: <%category%>"><%category%>
 </div>
 <div class="contentbody">
 <%body%><br />
-<%PubMed(pdf)%><br /><br />
+<%PubMed(pdf)%>&nbsp;&nbsp;&nbsp;
+<%PubMed(supplement)%><br />
+<div style="text-align: right;"><%PubMed(edit,manuscript management,300,150)%></div>
+<br />
 <a name="more"></a><%more%><br />
 </div>]]></part>
 

@@ -143,10 +143,16 @@ END;
 		$itemid=$this->itemid;
 		$position=$this->sortarray;
 		$newarray=array();
+		$max=-1;
 		foreach($this->sorteddata as $pmid){
 			$i=$itemid[$pmid];
-			if (isset($position[$i])) $newarray[$position[$i]]=$pmid;
-			else $newarray[]=$pmid;
+			if (!isset($position[$i])) continue;
+			$newarray[$position[$i]]=$pmid;
+			if ($max<$position[$i]) $max=$position[$i];
+		}
+		foreach($this->sorteddata as $pmid){
+			$i=$itemid[$pmid];
+			if (!isset($position[$i])) $newarray[++$max]=$pmid;
 		}
 		$this->sorteddata=$newarray;
 	}
