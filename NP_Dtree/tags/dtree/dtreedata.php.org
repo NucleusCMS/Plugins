@@ -1,0 +1,57 @@
+		d = new dTree('d');
+
+<?php
+	$strRel = '../../../';
+	include($strRel . 'config.php');
+
+	$blogid = requestVar('bid');
+	$blogname = getBlogNameFromID($blogid);
+	echo "d.add(0,-1,'".$blogname."');\n";
+	
+	$res = sql_query("SELECT * FROM ".sql_table('category')." WHERE cblog= ".$blogid);
+	$n = 1;
+	while($o = mysql_fetch_object($res)){
+		$catid = $o->catid;
+		$nodeArray[cat][$catid] = $n;
+		$url = createBlogidLink($blogid, array('catid'=>$catid));
+		echo "d.add(".$n.",0,'".$o->cname."','".$url."');\n";
+		$catFilter[] = $catid;
+		$n++;
+	}
+	
+	global $manager; 
+	if (!$manager->pluginInstalled('NP_MultipleCategories')){
+		echo 'document.write(d);';
+		return;
+	}
+
+	if($catFilter[1]){
+		$catFilter = @join(',',$catFilter);
+		$catFilter = ' IN ('.$catFilter.')';
+	}else{
+		$catFilter = '='.$catFilter;
+	}
+	
+	$query = "SELECT * FROM ".sql_table('plug_multiple_categories_sub')." WHERE catid".$catFilter;
+	$res = sql_query($query);
+	while($o = mysql_fetch_object($res)){
+		$scatid = $o->scatid;
+		$nodeArray[subcat][$scatid] = $n;
+		$n++;
+	}
+	$query = "SELECT * FROM ".sql_table('plug_multiple_categories_sub')." WHERE catid".$catFilter;
+	$res = sql_query($query);
+	while($u = mysql_fetch_object($res)){
+		$scatid = $u->scatid;
+		$url = createBlogidLink($blogid, array('catid'=>$u->catid, 'subcatid'=>$scatid));
+		$pnode = ($u->parentid)? $nodeArray[subcat][$u->parentid]: $nodeArray[cat][$u->catid];
+		echo "d.add(".$nodeArray[subcat][$u->scatid].",".$pnode.",'".$u->sname."','".$url."');\n";
+	}
+
+?>
+
+		document.write(d);
+		d.openTo(7, true);
+		document.getElementById('sd7').className = 'selectedNode';
+		d.openTo(15, true);
+		document.getElementById('sd15').className = 'selectedNode';
