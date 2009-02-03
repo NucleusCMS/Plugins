@@ -12,8 +12,10 @@
 <dt>Navigation</dt>
 <dd><a href="http://www.ncbi.nlm.nih.gov/sites/entrez?db=PubMed" onclick="window.open(this.href);return false;">NIH PubMed site</a></dd>
 <!-- admin link, only visible if logged in -->
-<%if(loggedin)%>
+<%if(admin)%>
 <dd><a href="<%adminurl%>plugins/pubmed/?blogid=<%blogsetting(id)%>">PubMed search</a></dd>
+<%endif%>
+<%if(loggedin)%>
 <dd><a href="<%adminurl%>" title="Admin Area">Admin</a></dd>
 <%endif%>
 </dl>
@@ -24,7 +26,7 @@
 <div class="sidebar">
 <dl class="sidebardl">
 <dt>Manuscripts</dt>
-<dd><a href="<%adminurl%>plugins/pubmed/?blogid=<%blogsetting(id)%>&amp;action=manuscriptlist">(manegement)</a></dd>
+<dd><a href="<%adminurl%>plugins/pubmed/?action=manuscriptlist">(manegement)</a></dd>
 <%PubMed(manuscriptlist,spring/item)%>
 </dl>
 </div>

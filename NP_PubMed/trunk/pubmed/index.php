@@ -5,8 +5,8 @@ require('../../../config.php');
 // An instance will be created at the end of this file
 
 class PubMedAdmin extends BaseActions {
-	var $oPluginAdmin,$plugin;
-	var $blogid;
+	private $oPluginAdmin,$plugin;
+	private $blogid;
 	function __construct(){
 		if (method_exists($this,'BaseActions')) $this->BaseActions();
 	
@@ -19,9 +19,15 @@ class PubMedAdmin extends BaseActions {
 		if (!($this->blogid=intPostVar('blogid'))) $this->blogid=intGetVar('blogid');
 		$CONF['ItemURL']=quickQuery('SELECT burl as result FROM '.sql_table('blog'). ' WHERE bnumber='.(int)$this->blogid);
 		
-		// Check if there is right to maintain the blog by member.
-		if (!$member->isLoggedIn() || !$member->teamRights($this->blogid) || !$manager->existsBlogID($this->blogid))
-		{
+		// Check if there is right to maintain the blog or the manuscript.
+		$ok=true;
+		if (!$member->isLoggedIn()) $ok=false;
+		if (!$member->CanLogin()) $ok=false;
+		if ($this->blogid) {
+			if (!$member->teamRights($this->blogid)) $ok=false;
+			if (!$manager->existsBlogID($this->blogid)) $ok=false;
+		}
+		if (!$ok) {
 			$this->oPluginAdmin->start();
 			echo '<p>' . _ERROR_DISALLOWED . '</p>';
 			$this->oPluginAdmin->end();
@@ -30,7 +36,6 @@ class PubMedAdmin extends BaseActions {
 		
 		// If some data is/are posted, check the ticket.
 		// Therefore, POST method must be used to change important parameter(s).
-		if (!isset($_POST)) $_POST=&$HTTP_POST_VARS;
 		if (count($_POST) && !$manager->checkTicket()) {
 			$this->oPluginAdmin->start();
 			echo '<p class="error">Error: ' . _ERROR_BADTICKET . '</p>';
@@ -49,8 +54,8 @@ class PubMedAdmin extends BaseActions {
 		$this->oPluginAdmin->start();
 		switch(getVar('action')) {
 			case 'manuscriptlist':
-				echo '<h2><a href="'.$this->plugin->getAdminURL().'?blogid='.
-					(int)$this->blogid.'&amp;action=manuscriptlist">' . 
+				echo '<h2><a href="'.$this->plugin->getAdminURL().
+					'?action=manuscriptlist">' . 
 					'Manuscript management' . "</a></h2>\n";
 				break;
 			default:
@@ -340,8 +345,7 @@ class PubMedAdmin extends BaseActions {
 		$mname=$this->_checkmanuscriptname(postVar('manuscriptname'));
 		if ($mname) sql_query('INSERT INTO '.sql_table('plugin_pubmed_manuscripts').' SET'.
 				' userid='.(int)$mid.','.
-				' manuscriptname="'.addslashes($mname).'"'.
-				' sorttext="authorname"');
+				' manuscriptname="'.addslashes($mname).'"');
 		return $this->action_manuscriptlist();
 	}
 	private function _getSortMethod($tempname){
@@ -422,6 +426,143 @@ class PubMedAdmin extends BaseActions {
 		foreach($templates as $temp) $array[]=array('template'=>$temp,'selected'=>$template==$temp);
 		$this->contents=array('mid'=>$manuscriptid,'mname'=>$mname);
 		$this->_showUsingArray('editmanuscript',$array);
+	}
+	function action_addmanually(){
+		global $manager;
+		if (count($_POST)) {
+			// Add item with the defined PMID
+			$pmid=intPostVar('pmid');
+			// Determine author list
+			$author=requestArray('author');
+			$authorf=requestArray('authorf');
+			$authorm=requestArray('authorm');
+			$authors=array();
+			foreach($author as $key=>$value){
+				if (!strlen($value)) break;
+				$a=$author[$key];
+				$f=$authorf[$key];
+				$m=$authorm[$key];
+				$i=substr($f,0,1).substr($m,0,1);
+				$authors[$key]=array(
+					'LastName'=>$a,
+					'ForeName'=>$f,
+					'Initials'=>$i);
+			}
+			ksort($authors);
+			// Construct Article
+			if (($year=intPostVar('year'))==0) $year='???';
+			if (strlen($journalname=postVar('journal'))==0) $journalname='???';
+			if (strlen($volume=postVar('volume'))==0) $volume='???';
+			if (strlen($pages=postVar('pages'))==0) $pages='???';
+			if (strlen($title=postVar('title'))==0) $title='???';
+			if (strlen($abstract=postVar('abstract'))==0) $abstract='???';
+			$journal=array(
+				'ISOAbbreviation'=>$journalname,
+				'JournalIssue'=>array(
+					'Volume'=>$volume,
+					'PubDate'=>array('Year'=>$year)
+					)
+				);
+			$article=array(
+				'Journal'=>$journal,
+				'ArticleTitle'=>$title,
+				'Pagination'=>array('MedlinePgn'=>$pages),
+				'AuthorList'=>array('Author'=>$authors)
+				);
+			// Construct XML data as more
+			$medline=array(
+				'PMID'=>$pmid,
+				'Article'=>$article
+				);
+			$more='<span class="np_pubmed_abstract">'.htmlspecialchars($abstract).'</span>';
+			$more.="<span style=\"display:none;\"><![CDATA[\n";
+			$more.=$this->_convert2xml('MedlineCitation',$medline);
+			$more.=']]></span>';
+			// Construct body
+			$body="<!--$year--><!--PMID: $pmid-->PMID: $pmid\n";
+			$body.='<span class="np_pubmed_authors">';
+			$n=count($authors);
+			for ($i=1;$i<=$n;$i++) {
+				if (1<$i) {
+					$body.=', ';
+					if ($i==$n) $body.='and ';
+				}
+				$body.=htmlspecialchars($authors[$i]['LastName']);
+			}
+			$body.=" ($year)</span>\n";
+			$body.='<span class="np_pubmed_article"><i>'.htmlspecialchars($journalname).
+				'</i> <b>'.htmlspecialchars($volume).
+				'</b> '.htmlspecialchars($pages)."</span>\n";
+			$body.='<span class="np_pubmed_title">'.htmlspecialchars($title).'</span>';
+			// Construct title
+			switch($n){
+				case 1:
+					$title=$authors[1]['LastName'];
+					break;
+				case 2:
+					$title=$authors[1]['LastName'].' and '.$authors[2]['LastName'];
+					break;
+				default:
+					$title=$authors[1]['LastName'].' et al.';
+					break;
+			}
+			$title=htmlspecialchars($title." ($year) $journalname");
+			// Construct category options
+			$defcatid=(int)cookieVar($CONF['CookiePrefix'] . 'NP_PubMed_defcatid');
+			if (!$defcatid) {
+				$blog=$manager->getBlog($this->blogid);
+				$defcatid=$blog->getDefaultCategory();
+			}
+			$res=sql_query('SELECT * FROM '.sql_table('category').
+				' WHERE cblog='.(int)$this->blogid.' ORDER BY cname ASC');
+			$array=array();
+			while($row=mysql_fetch_assoc($res)){
+				$row['selected']= ($row['catid']==$defcatid);
+				$array[]=$row;
+			}
+			// parse
+			$this->contents=array('title'=>$title,'body'=>$body,'more'=>$more);
+			$this->_showUsingArray('addmanuallyconfirm',$array);
+			return;
+		}
+		// Decide PMID
+		$pmid=1+$this->plugin->getOption('lastmanualpmid');
+		if ($pmid<1000000000) $pmid=1000000001;
+		$i=1;
+		while(quickQuery('SELECT count(*) as result from '.sql_table('item').
+				' WHERE iblog='.(int)$this->blogid.
+				' AND ibody LIKE "%'.(int)$pmid.'%"') ){
+			$this->plugin->setOption('lastmanualpmid',$pmid);
+			$pmid+=$i;
+			$i+=rand(1,$i);
+		}
+		// Get the number of authors
+		$numauthor=intGetVar('numauthor');
+		if (!$numauthor) $numauthor=3;
+		$array=array();
+		for ($i=1;$i<=$numauthor;$i++) {
+			$array[]=array('i'=>$i);
+		}
+		// parse
+		$this->contents=array('pmid'=>$pmid,'i'=>$numauthor,'numauthor'=>$numauthor*2);
+		$this->_showUsingArray('addmanually',$array);
+	}
+	function _convert2xml($key,$value,$nest=0){
+		if (!preg_match('/^[a-zA-Z0-9_]+$/',$key)) exit;
+		if (!is_array($value)) {
+			$value=str_replace(array('<','>'),array('&gt;','&lt;'),$value);
+			return str_repeat('  ',$nest)."<$key>$value</$key>\n";
+		}
+		$xml='';
+		foreach ($value as $k=>$v) {
+			if (is_numeric($k)) $xml.=$this->_convert2xml($key,$v,$nest+1);
+			else {
+				if ($xml=='') $xml=str_repeat('  ',$nest)."<$key>\n";
+				$xml.=$this->_convert2xml($k,$v,$nest+1);
+			}
+		}
+		if (!is_numeric($k)) $xml.=str_repeat('  ',$nest)."</$key>\n";
+		return $xml;
 	}
 }
 

@@ -3,7 +3,7 @@ class NP_PubMed extends NucleusPlugin {
 	function getName() { return 'NP_PubMed'; }
 	function getMinNucleusVersion() { return 330; }
 	function getAuthor()  { return 'Katsumi'; }
-	function getVersion() { return '0.2.1'; }
+	function getVersion() { return '0.2.2'; }
 	function getURL() {return 'http://japan.nucleuscms.org/wiki/plugins:authors:katsumi';}
 	function getDescription() {
 		return $this->getName().' plugin<br />'.
@@ -16,8 +16,9 @@ class NP_PubMed extends NucleusPlugin {
 	function getTableList() { return array(sql_table('plugin_pubmed_references'), sql_table('plugin_pubmed_manuscripts')); }
 	function install(){
 		global $member;
-		$this->createOption('droptable','Drop table when uninstall?','yesno','no');
 		$this->createOption('lastquerytime','hidden option','text','0','access=hidden');
+		$this->createOption('lastmanualpmid','hidden option','text','1000000000','access=hidden');
+		$this->createOption('droptable','Drop table when uninstall?','yesno','no');
 		$this->createOption('email','E-mail address to be sent to PubMed search site (set blank if not use):','text',$member->getEmail());
 		sql_query('CREATE TABLE IF NOT EXISTS '.sql_table('plugin_pubmed_references').' ('.
 			' id int(11) not null auto_increment,'.
@@ -373,6 +374,7 @@ END;
 					htmlspecialchars($text).'</a>';
 				break;
 			case 'edit':
+				if (!$member->isLoggedIn()) return;
 				$itemid=(int)$item->itemid;
 				$text=$p1?'manuscript management':htmlspecialchars($p1,ENT_QUOTES);
 				$width=(int)$p2;

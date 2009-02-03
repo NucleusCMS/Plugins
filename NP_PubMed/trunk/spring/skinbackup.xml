@@ -7,7 +7,7 @@
 
 
 	<skin name="spring" type="text/html" includeMode="skindir" includePrefix="spring/">
-		<description>Nucleus CMS spring skin</description>
+		<description>NP_PubMed spring skin</description>
 		<part name="archive"><![CDATA[<%parsedinclude(head.inc)%>
 
 <!-- page header -->
@@ -141,6 +141,7 @@ body { margin: 0px; }
 <div class="content">
 <%PubMed(SearchLink)%><br /><br />
 <%PubMed(CreateNew)%>
+<a href="<%adminurl%>plugins/pubmed/?blogid=<%blogsetting(id)%>&amp;action=addmanually">Manually add paper</a>
 
 <%parsedinclude(paging.inc)%>
 
@@ -293,7 +294,7 @@ onclick="window.open(this.href);return false;"
 
 
 	<template name="spring/index">
-		<description>Nucleus CMS spring index template</description>
+		<description>NP_PubMed spring index template</description>
 		<part name="ARCHIVELIST_LISTITEM"><![CDATA[<dd>
 <a href="<%archivelink%>" title="Archive for %B, %Y">%Y-%m</a>
 </dd>]]></part>
@@ -387,7 +388,7 @@ return false;
 
 
 	<template name="spring/item">
-		<description>Nucleus CMS spring item template</description>
+		<description>NP_PubMed spring item template</description>
 		<part name="CATLIST_LISTITEM"><![CDATA[<dd>
 <a href="<%catlink%>" title="Manuscript: <%catname%>"><%catname%></a>
 </dd>]]></part>

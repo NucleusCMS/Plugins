@@ -242,4 +242,124 @@ Are you sure?&nbsp;&nbsp;
     ]]></foot>
   </template>
 
+
+
+  <template>
+    <name>addmanually</name>
+    <head><![CDATA[
+
+<p>Add a paper that does not have PMID.</p>
+
+<form method="post" action="">
+<%ticket(hidden)%>
+<table>
+<tr>
+  <td>PMID:</td>
+  <td><input type="text" name="pmid" size="20" value="<%int(pmid)%>"/></td>
+  <td>year:</td>
+  <td colspan="3"><input type="text" name="year" size="10" value=""/></td>
+</tr><tr>
+  <td>title:</td>
+  <td colspan="5"><input type="text" name="title" size="100" value=""/></td>
+</tr><tr>
+  <td>journal name:</td>
+  <td><input type="text" name="journal" size="20" value=""/></td>
+  <td>volume:</td>
+  <td><input type="text" name="volume" size="10" value=""/></td>
+  <td>pages:</td>
+  <td><input type="text" name="pages" size="10" value=""/></td>
+</tr>
+<tr>
+  <td>author(s)</td>
+  <td colspan="5">
+
+    ]]></head>
+    <body><![CDATA[
+
+    <%int(i)%>:
+    <input type="text" name="author[<%int(i)%>]" size="20" value=""/>,
+    <input type="text" name="authorf[<%int(i)%>]" size="20" value=""/>
+    <input type="text" name="authorm[<%int(i)%>]" size="2" value=""/>.
+    <br />
+
+    ]]></body>
+    <foot><![CDATA[
+
+    <span id="np_pubmed_author<%int(i)%>">
+      <a href="<%self%>?blogid=<%blogid%>&amp;action=addmanually&amp;numauthor=<%int(numauthor)%>" onclick="np_pubmed_author(<%int(i)%>); return false;">more authors</a>
+    </span>
+  </td>
+</tr><tr>
+  <td>abstract:</td>
+  <td colspan="5"><textarea name="abstract" cols="100" rows="10"></textarea></td>
+</tr>
+</table>
+<input type="submit" value="Add this paper"/>
+</form>
+<script type="text/javascript">
+//<![CDATA[
+function np_pubmed_author(i){
+  var obj=document.getElementById('np_pubmed_author'+i);
+  i++;
+  var t=''+i+': ';
+  t+='<input type="text" name="author['+i+']" size="20" value=""/>, ';
+  t+='<input type="text" name="authorf['+i+']" size="20" value=""/> ';
+  t+='<input type="text" name="authorm['+i+']" size="2" value=""/>. ';
+  t+='<br />';
+  t+='<span id="np_pubmed_author'+i+'"><a href="" onclick="np_pubmed_author('+i+'); return false;">more authors</a></span>';
+  obj.innerHTML=t;
+}
+//]]>]]<![CDATA[>
+</script>
+
+    ]]></foot>
+
+  </template>
+
+
+
+  <template>
+    <name>addmanuallyconfirm</name>
+    <head><![CDATA[
+
+<form method="post" action="<%conf(AdminURL)%>">
+<%ticket(hidden)%>
+<input name="action" value="additem" type="hidden">
+<input name="blogid" value="<%blogid%>" type="hidden">
+<input name="draftid" value="0" type="hidden">
+<input name="closed" value="0" type="hidden">
+<input name="actiontype" value="addnow" type="hidden">
+<input value="Add this:" type="submit">
+<input name="title" value="<%hsc(title)%>" class="np_pubmed_form" type="hidden">
+<input name="body" value="<%hsc(body)%>" class="np_pubmed_form" type="hidden">
+<input name="more" value="<%hsc(more)%>" class="np_pubmed_form" type="hidden">
+
+<select name="catid" class="np_pubmed_form">
+<option value="newcat-<%blogid%>">New category</option>
+
+    ]]></head>
+    <body><![CDATA[
+
+<%if(selected)%>
+  <option value="<%int(catid)%>" selected="selected"><%stg(cname)%></option>
+<%else%>
+  <option value="<%int(catid)%>"><%stg(cname)%></option>
+<%endif%>
+
+    ]]></body>
+    <foot><![CDATA[
+
+</select>
+&nbsp;
+(<a href="<%self%>?blogid=<%blogid%>&amp;action=addmanually" onclick="history.go(-1); return false;">go back</a>)
+</form>
+
+<pre><%hsc(title)%></pre>
+<pre><%hsc(body)%></pre>
+<pre><%hsc(more)%></pre>
+
+    ]]></foot>
+  </template>
+
+
 </document>
