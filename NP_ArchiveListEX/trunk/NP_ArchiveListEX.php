@@ -15,20 +15,69 @@ class NP_ArchiveListEX extends NucleusPlugin {
 	// an URL to the plugin website
 	function getURL() 
 	{
-		return 'http://xx.nakahara21.net/'; 
+		return 'http://nakahara21.com/'; 
 	}
 	
 	// version of the plugin
 	function getVersion() {
-		return '0.6'; 
+		return '1.01'; 
 	}
 	
-	// a description to be shown on the installed plugins listing
-	function getDescription() { 
-		return 'Show all item title on each archive list. <br />[Required] template: name of the template to use <br />[Optional] mode: [month]shows an entry for each month , [day]shows an entry for each day  <br />[Optional] limit:  limits the amount of links shown (e.g. if you only want to show links to the past 3 months)<br /><br />Usage1: &lt;%ArchiveListEX(default)%&gt; or &lt;%ArchiveListEX(default,month)%&gt; instead of &lt;%archivelist(default)%&gt;,<br />Usage2:  &lt;%ArchiveListEX(default,day,5)%&gt; instead of &lt;%archivedaylist(default,5)%&gt;,<br />Usage3:  &lt;%ArchiveListEX(default,5)%&gt;';
+	function supportsFeature($what) { 
+		switch($what){ 
+			case 'SqlTablePrefix': 
+				return 1; 
+			default: 
+				return 0; 
+		} 
 	}
 
-   function doSkinVar($skinType, $template = 'default', $mode = 'month', $limit = 0) { 
+	// a description to be shown on the installed plugins listing
+	function getDescription() { 
+		return 'Show all item title on each archive list. ';
+	}
+
+	function doAction($type) {
+		
+		$archiveMonth = intRequestVar('a');
+		$bid = intRequestVar('b');
+		$tid = intRequestVar('t');
+
+		switch ($type) {
+			case 'ga' :
+				echo '<ul>'.$this->getArchives($tid, $bid, $archiveMonth).'</ul>';
+				break;
+			default :
+				return 'No such action';
+				break;
+		}
+	}
+
+	function getArchives($tid, $bid, $archiveMonth){
+		global $manager;
+		$b =& $manager->getBlog($bid);
+		
+		list($year, $month) = sscanf($archiveMonth, "%4s%2s");
+
+		$extraQuery = ' and SUBSTRING(itime,1,4)=' . $year
+					. ' and SUBSTRING(itime,6,2)=' . $month;
+		
+		$template = TEMPLATE::getNameFromId($tid);
+
+		ob_start();
+		$b->readLogAmount($template, 0, $extraQuery, 0, 1, 0);
+		$contents =  ob_get_contents();
+		ob_end_clean();
+
+		if (_CHARSET != 'UTF-8'){
+			$contents = mb_convert_encoding($contents, 'UTF-8', _CHARSET);
+		}
+		
+		return $contents;
+	}
+
+
+	function doSkinVar($skinType, $template = 'default/index', $mode = 'month', $limit = 0) { 
 		global $manager, $blog, $CONF, $catid, $itemid; 
 
 		$params = func_get_args();
@@ -44,161 +93,56 @@ class NP_ArchiveListEX extends NucleusPlugin {
 	} else { 
 		$b =& $manager->getBlog($CONF['DefaultBlog']); 
 	} 
-	$blogid = $b->getID();
 
 		if ($catid) {
 			$this->linkparams = array('catid' => $catid);
 		}
 
-switch($skinType) { 
-	case 'archivelist': 
+//switch($skinType) { 
+//	case 'archivelist': 
 
-//**********************************************
-if($_REQUEST['mode'] == "remarks"){
-
-		$numberOfWritebacks   = 50; // defaults to 50
-
-		// select
-        $query = "SELECT c.cnumber, c.cuser, c.cbody, c.citem, c.cmember, c.ctime ,UNIX_TIMESTAMP(c.ctime) as ctimest ,i.inumber, i.ititle 
-        FROM nucleus_comment c ,nucleus_item i 
-        WHERE c.citem = i.inumber 
-        ORDER by ctime DESC 
-        LIMIT 0,".$numberOfWritebacks;
-
-        $comments = mysql_query($query);
-//             echo ' <ul class="nobullets"> ';
-
-        while($row = mysql_fetch_object($comments)) {
-             $cid  = $row->cnumber;
-             $ititle  = htmlspecialchars(strip_tags($row->ititle));
-             $ct  = $row->ctimest;
-             $ctst  = date("Y-m-d H:i",$ct);
-             $ctext  = $row->cbody;
-//             $ctext  = strip_tags($text);
-//             $ctext = substr($text, 0, $numberOfCharacters);
-//             $ctext = mb_substr($ctext, 0, -1);
-
-             if (!$row->cmember) $myname = $row->cuser;
-             else {
-                   $mem = new MEMBER;
-                   $mem->readFromID(intval($row->cmember));
-                   $myname = $mem->getDisplayName();
-             }
-             $itemid= $row->citem;
-             $itemlink = createItemLink($row->citem, '');
-             $l_comments =  "<li class=itembody>■ <span class=\"iteminfo\"><a href=\"".$b->getURL().$itemlink."#c".$cid."\">『".$ititle."』 へのコメント</a></span><br />".$ctext."<br /><span class=\"iteminfo\">".$myname." posted on $ctst</span></li>" ;
-//             echo $l_comments;
-             
-				if(!$arr_res){$arr_res = array();}
-//				array_push($arr_res,array($ct => $l_comments));
-             $arr_res[$ct] = $l_comments;
-             
-         }
-
-
-//=========================
-
-        $query = "SELECT t.title, t.excerpt, t.tb_id, t.blog_name, t.timestamp ,UNIX_TIMESTAMP(t.timestamp) as ttimest ,t.url ,i.inumber, i.ititle 
-        FROM nucleus_plugin_tb t ,nucleus_item i 
-        WHERE t.tb_id = i.inumber 
-        ORDER by timestamp DESC 
-        LIMIT 0,".$numberOfWritebacks;
-
-        $comments = mysql_query($query);
-
-        while($row = mysql_fetch_object($comments)) {
-             $text  = $row->excerpt;
-//             $text  = strip_tags($text);
-//             $ctext = mb_substr($text, 0, $numberOfCharacters);
-
-             $title = $row->title;
-//             $ctitle = substr($title, 0, $numberOfTitleCharacters+1);
-//             $ctitle = mb_substr($ctitle, 0, -1);
-
-             $blogname = $row->blog_name;
-             $tbtime = $row->ttimest;
-             $ititle  = htmlspecialchars(strip_tags($row->ititle));
-             $url = $row->url;
-             $ttst  = date("Y-m-d H:i",$tbtime);
-
-             $itemlink = createItemLink($row->tb_id, '');
-//             echo "<li><a href=\"".$b->getURL().$itemlink."#trackback\">■".$tbtime.":";
-//             echo $blogname."から";
-//             echo $ctitle.$ctext;
-//             echo "....</a></li>";
-             
-             $l_tbs = "<li class=itembody>◆ <span class=\"iteminfo\"><a href=\"".$b->getURL().$itemlink."#trackback\">『".$ititle."』へのトラックバック</a></span><br />## ".$title." ##<br />".$text."<br /><span class=\"iteminfo\">『<a href=\"$url\">{$blogname}</a>』 pinged on ".$ttst."</span></li>";
-
-//				if(!$arr_res){$arr_res = array();}
-//				array_push($arr_res,$l_tbs);
-             $arr_res[$tbtime] = $l_tbs;
-
-
-
-         }
-//=========================
-
-
-
-krsort ($arr_res);
-$output = array_slice ($arr_res, 0, $numberOfWritebacks);
-//             print_r($output);
-
-		echo '<h3>コメントとトラックバック 最新'.$numberOfWritebacks.'件</h3>';
-		echo ' <ul class="nobullets"> ';
-
-		foreach($output as $key => $value){
-			echo $value."\n";
-		}
-		echo " </ul> ";
-
-//**********************************************
-}else{
-
+		$tid = TEMPLATE::getIdFromName($template);
 		$template = TEMPLATE::read($template);
-		$data['blogid'] = $blogid;
+		$data['blogid'] = $b->getID();
+
+		$jshref = $CONF['PluginURL'].'sharedlibs/miniajax.js';
+		$href = htmlspecialchars($CONF['ActionURL'], ENT_QUOTES) . '?action=plugin&name=ArchiveListEX&type=ga&t='.$tid.'&b='.$b->getID().'&a=';
+
+
+?>
+<script type="text/javascript" src="<?php echo $jshref; ?>"></script>
+<script type="text/javascript"><!--
+function getData(id){
+	ajax.update("<?php echo $href; ?>"+id, "result"+id);
+}
+// --></script>
+<?php
+
 //===================================
-		echo TEMPLATE::fill($template['ARCHIVELIST_HEADER'],$data);
-//===================================
-		echo '<a href="http://'.$_SERVER['HTTP_HOST'].$_SERVER['SCRIPT_NAME'].'">HOME</a> ';
-		if($catid){
-			$catName = $blog->getCategoryName($catid);	//カテゴリの名前をget
-//			$catName = $blog->getCategoryDesc($catid);	//カテゴリの説明をget
-			$archivealllistlink = createArchiveListLink($blogid,"");
-			echo ' > <a href="'.$archivealllistlink.'">Archive List</a>';
-			echo ' > Category : <u> '.$catName.' </u> ';
-		}else{
-//			echo 'Category : 選択していません';
-			echo ' > Archive List';
-			echo '';
-		}
-//===================================
-		echo TEMPLATE::fill($template['ARCHIVELIST_FOOTER'],$data);
-//===================================
-		echo TEMPLATE::fill($template['ARCHIVELIST_HEADER'],$data);
-		$now = time();
-		$query = 'SELECT UNIX_TIMESTAMP(itime) as itime, SUBSTRING(itime,1,4) AS Year, SUBSTRING(itime,6,2) AS Month, SUBSTRING(itime,9,2) as Day FROM nucleus_item'
-		. ' WHERE iblog=' . $blogid
-		. ' and UNIX_TIMESTAMP(itime)<=' . $now	// don't show future items!
+		$query = 'SELECT count(*) as sum, itime, SUBSTRING(itime,1,4) AS Year, SUBSTRING(itime,6,2) AS Month, SUBSTRING(itime,9,2) as Day FROM '.sql_table('item')
+		. ' WHERE iblog=' . $b->getID()
+		. ' and itime <=' . mysqldate($b->getCorrectTime())	// don't show future items!
 		. ' and idraft=0'; // don't show draft items
 		
 		if ($catid)
 			$query .= ' and icat=' . intval($catid);
-		
+/**/		
 		$query .= ' GROUP BY Year, Month';
 		if ($mode == 'day')
 			$query .= ', Day';
 		
 			
-//		$query .= ' ORDER BY itime ASC';	//アーカイブリスト昇順
-		$query .= ' ORDER BY itime DESC';	//アーカイブリスト降順
+//		$query .= ' ORDER BY itime ASC';	
+		$query .= ' ORDER BY itime DESC';	
 		
 		if ($limit > 0) 
 			$query .= ' LIMIT ' . $limit;
 		
 		$res = sql_query($query);
 
+		$oldYear = 0;
 		while ($current = mysql_fetch_object($res)) {
+			$current->itime = strtotime($current->itime);	// string time -> unix timestamp
 			if ($mode == 'day') {
 				$archivedate = date('Y-m-d',$current->itime);
 				$archive['day'] = date('d',$current->itime);
@@ -207,63 +151,34 @@ $output = array_slice ($arr_res, 0, $numberOfWritebacks);
 			}
 			$data['month'] = date('m',$current->itime);
 			$data['year'] = date('Y',$current->itime);
-			$data['archivelink'] = createArchiveLink($blogid,$archivedate,$this->linkparams);
+			$data['archivelink'] = createArchiveLink($b->getID(),$archivedate,$this->linkparams);
+			$data['sum'] = $current->sum;
+			$data['monthid'] = $current->Year.$current->Month;
+			
+			if($oldYear && $data['year'] != $oldYear){
+				$tempf = TEMPLATE::fill($template['ARCHIVELIST_FOOTER'],$data);
+				echo $lastFooter = strftime($tempf,$current->itime);
+			}
+
+			if($data['year'] != $oldYear){
+				$temph = TEMPLATE::fill($template['ARCHIVELIST_HEADER'],$data);
+				echo strftime($temph,$current->itime);
+			}
 
 			$temp = TEMPLATE::fill($template['ARCHIVELIST_LISTITEM'],$data);
 			echo strftime($temp,$current->itime);
-			
-	//======================================================		
-	echo '<ul>';
-		$adquery = 'SELECT inumber, ititle, icat FROM nucleus_item'
-		. ' WHERE iblog=' . $blogid
-		. ' and UNIX_TIMESTAMP(itime)<=' . $now	// don't show future items!
-		. ' and idraft=0' // don't show draft items
-		. ' and SUBSTRING(itime,1,4)=' . $data['year']	// year
-		. ' and SUBSTRING(itime,6,2)=' . $data['month'];	// month
-		if ($mode == 'day')
-			$adquery .= ' and SUBSTRING(itime,9,2)=' . $archive['day']; //day
-		
-		if ($catid)
-			$adquery .= ' and icat=' . intval($catid);
-		
-//		$adquery .= ' ORDER BY itime ASC';	//タイトル一覧昇順
-		$adquery .= ' ORDER BY itime DESC';	//タイトル一覧降順
-		
-//		if ($limit > 0) 
-//			$adquery .= ' LIMIT ' . $limit;
-		
-		$adres = sql_query($adquery);
-		
-		while ($adcurrent = mysql_fetch_object($adres)) {
-			$ititle = htmlspecialchars(strip_tags($adcurrent->ititle));
-			$inumber = $adcurrent->inumber;
-			$itemlink = createItemLink($inumber,$this->linkparams);
 
-			if($catid){
-			echo '<li><a href="'.$itemlink.'">'. $ititle . '</a></li>'."\n";
-			}else{
-			$icatName = $blog->getCategoryName($adcurrent->icat);	//カテゴリの名前をget
-//			$icatName = $blog->getCategoryDesc($adcurrent->icat);	//カテゴリの説明をget
-			//タイトル一覧に続いてカテゴリ名を表示
-//			echo '<li><a href="'.$itemlink.'">'. $ititle . ' <small>::' . $icatName .'</small></a></li>'."\n";
-			//タイトル一覧にマウスをあわせるとカテゴリ名をフロート表示
-			echo '<li><a href="'.$itemlink.'" title="Category:'.$icatName.'">'. $ititle . '</a></li>'."\n";
-			}
-		}
-		mysql_free_result($adres);
-	echo '</ul>';
-	//======================================================
+			$oldYear = $data['year'];
+
 		}
 		mysql_free_result($res);
-		echo TEMPLATE::fill($template['ARCHIVELIST_FOOTER'],$data);
+		echo $lastFooter;
 
-}
-
-		break;
+//		break;
 //===================================
-	default: 
+//	default: 
 //				echo "tttt";
-		} 
+//		} 
 	}
 }
 ?>
