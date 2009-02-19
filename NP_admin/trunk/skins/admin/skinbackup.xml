@@ -1,0 +1,36 @@
+<nucleusskin>
+	<meta>
+		<skin name="admin" />
+	</meta>
+
+
+	<skin name="admin" type="text/html" includeMode="skindir" includePrefix="admin/">
+		<description>admin skin for NP_admin</description>
+		<part name="index"><![CDATA[<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<%parsedinclude(head.inc)%>
+<!-- extra-head(AdminPrePageHead) will be here -->
+</head>
+<body>
+
+<div class="header"><h1><%conf(SiteName)%></h1></div>
+
+<div id="container">
+<div id="content">
+<%parsedinclude(header.inc)%>
+<%admin%>
+<!-- AdminPrePageFoot will be here -->
+<%parsedinclude(footer.inc)%>
+</div>
+<%parsedinclude(quickmenu.inc)%>
+</div>
+
+</body>
+</html>]]></part>
+
+	</skin>
+
+
+</nucleusskin>
