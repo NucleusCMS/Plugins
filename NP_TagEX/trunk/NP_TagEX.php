@@ -1,6 +1,6 @@
 <?php
 /**
- *
+ * NP_TagEX
  * TAGGING PLUG-IN FOR NucleusCMS
  * PHP versions 4 and 5
  *
@@ -10,14 +10,23 @@
  * of the License, or (at your option) any later version.
  * (see nucleus/documentation/index.html#license for more info)
  * 
- * 
  * @author     Original Author nakahara21
- * @copyright  2005-2006 nakahara21
+ * @copyright  2005-2008 nakahara21
+ * @copyright  2006-2009 shizuki
  * @license    http://www.gnu.org/licenses/gpl.txt
  *             GNU GENERAL PUBLIC LICENSE Version 2, June 1991
- * @version    0.41
+ * @version    0.73
+ * @version    $Id$
  * @link       http://nakahara21.com
+ */
+/**
+ * HISTORY
  *
+ * 0.73 TemplateExtraFields for v3.40
+ * 0.72 clean up
+ * 0.71 fix flat TAG level
+ * 0.70 add Tag lebel css
+ * 0.67 fix style
  * 0.65 clean up
  * 0.64 modified createTagLink function
  * 0.63 fix Magical code
@@ -33,43 +42,100 @@
  * 0.4  fixed bug: numlic only
  * 0.3  fixed bug: delete action
  * 0.2  supports and/or query
- *
- * 
- * THESE PLUG-INS ARE DEDICATED TO ALL THOSE NucleusCMS USERS
- * WHO FIGHT CORRUPTION AND IRRATIONAL IN EVERY DAY OF THEIR LIVES.
- *
- **/
+ */
 
+/**
+ * define table names using plugin
+ */
 if (!defined('_TAGEX_TABLE_DEFINED')) {
 	define('_TAGEX_TABLE_DEFINED', 1);
 	define('_TAGEX_TABLE',         sql_table('plug_tagex'));
 	define('_TAGEX_KLIST_TABLE',   sql_table('plug_tagex_klist'));
 }
 
+/**
+ * NP_TagEX class
+ */
 class NP_TagEX extends NucleusPlugin
 {
+/**
+ * NP_MultipleCategories installed ?
+ * @var bool
+ */
+public $maURL;
+/**
+ * NP_CustomURL installed ?
+ * @var bool
+ */
+public $cuURL;
 
+// {{{ getName()
+
+	/**
+	 * get Plugin name
+	 * @return string
+	 */
 	function getName()
 	{
 		return 'Tags Extension';
 	}
+
+	// }}}
+	// {{{ getAuthor()
+
+	/**
+	 * get Plugin author
+	 * @return string
+	 */
 	function getAuthor()
 	{
-		return 'nakahara21 + shizuki';
+		return 'nakahara21 + shizuki + Tucker + Cacher';
 	}
+
+	// }}}
+	// {{{ getURL()
+
+	/**
+	 * get Plugin getting URL
+	 * @return string
+	 */
 	function getURL()
 	{
-		return 'http://nakahara21.com';
+		return 'http://japan.nucleuscms.org/wiki/plugins:tagex';
 	}
+
+	// }}}
+	// {{{ getVersion()
+
+	/**
+	 * get Plugin version
+	 * @return string
+	 */
 	function getVersion()
 	{
-		return '0.65';
+		return '0.72';
 	}
+
+	// }}}
+	// {{{ getDescription()
+
+	/**
+	 * get Plugin Description
+	 * @return string
+	 */
 	function getDescription()
 	{
 		return 'Tags Extension (for Japanese users)';
 	}
 
+	// }}}
+	// {{{ supportsFeature()
+
+	/**
+	 * get Plugin supports Nucleus CORE feature
+	 * @param string Nucleus CORE feature
+	 * @return bool
+	 */
 	function supportsFeature($what)
 	{
 		switch ($what) {
@@ -80,37 +146,57 @@ class NP_TagEX extends NucleusPlugin
 		}
 	}
 
+	// }}}
+	// {{{ install()
+
+	/**
+	 * plugin install script
+	 *
+	 * Create plugin options
+	 *
+	 * 'And' template's class 'tagex_and_or' CSS example
+	 * tagex_and_or {
+	 *     font-family:tahoma;
+	 *     font-size:smaller;
+	 * }
+	 *
+	 * 'TagIndex' template is 'taglevel' class ver. for default.
+	 * But there use '<%fontlevel%>' template tag.
+	 * For ex.
+	 * <%and%><%or%>
+	 * <span style="font-size:<%fontlevel%>em" title="<%tagamount%> post(s)! <%tagitems%>">
+	 *     <a href="<%taglinkurl%>"><%tag%></a>
+	 * </span>
+	 */
 	function install()
 	{
-		$this->createOption('flg_erase',         'Erase data on uninstall.',				'yesno',	'no');
-// <editable template mod by shizuki>
-		$this->createOption('editTagOrder',      'editform tag order',                 'select',
-							'1', 'amount(desc)|1|amount(asc)|2|tag\'s order|3|random|4');
-		$this->createOption('and',               'template for \'and\'',               'textarea',
-		                    '<span style="font-family:tahoma;font-size:smaller;"> '
-		                  . ' <a href="<%andurl%>" title="narrow">&amp;</a>.');
-		$this->createOption('or',                'template for \'or\'',                'textarea',
-							'<a href="<%orurl%>" title="expand">or</a> </span>');
-		$this->createOption('tagIndex',          'template for \'tagIndex\'',          'textarea',
-							'<%and%><%or%><span style="font-size:<%fontlevel%>em" '
-						  . 'title="<%tagamount%> post(s)! <%tagitems%>"><a href="<%taglinkurl%>"><%tag%></a></span>');
-		$this->createOption('tagItemHeader',     'template for \'tagItemHeader\'',     'textarea',
-							'');
-		$this->createOption('tagItem',           'template for \'tagItem\'',           'textarea',
-							'<%itemid%>:<%itemtitle%>');//<%
-		$this->createOption('tagItemSeparator',  'template for \'tagItemSeparator\'',  'text',
-							' , ');
-		$this->createOption('tagItemFooter',     'template for \'tagItemFooter\'',     'textarea',
-							'');
-		$this->createOption('tagIndexSeparator', 'template for \'tagIndexSeparator\'', 'text',
-							' | ');
-		$this->createOption('tagsonlycurrent',   'show tags only current blog have',   'yesno',
-							'no');
-		$this->createOption('colorfulhighlight', 'colorful highlight mode ?',          'yesno',
-							'no');
-		$this->createOption('highlight',         'template for normal highlightmode',  'text',
-							'<span class="highlight">\0</span>');
-//</mod by shizuki>*/
+		$tplAND = <<<__ANDTAGTPL__
+<span class="tagex_and_or"> <a href="<%andurl%>" title="narrow">&amp;</a>.
+__ANDTAGTPL__;
+		$tplOR  = <<<__ORTAGTPL__
+<a href="<%orurl%>" title="expand">or</a> </span>
+__ORTAGTPL__;
+		$tplIDX = <<<__ORTAGTPL__
+<%and%><%or%>
+<span class="level<%taglevel%>" title="<%tagamount%> post(s) <%tagitems%>">
+	<a href="<%taglinkurl%>"><%tag%></a>
+</span>
+__ORTAGTPL__;
+		$this->createOption('flg_erase',         _NPTAGEX_ERASE_FLG,    'yesno',    'no');
+		$this->createOption('editTagOrder',      _NPTAGEX_EDT_TAGORDER, 'select',   '1', _NPTAGEX_ORDER_VALUE);
+		$this->createOption('and',               _NPTAGEX_TPL_AND,      'textarea', $tplAND);
+		$this->createOption('or',                _NPTAGEX_TPL_OR,       'textarea', $tplOR);
+		$this->createOption('tagIndex',          _NPTAGEX_TPL_TAGIDX,   'textarea', $tplIDX);
+		$this->createOption('tagItemHeader',     _NPTAGEX_TPL_ITEMHEAD, 'textarea', '');
+		$this->createOption('tagItem',           _NPTAGEX_TPL_TAGITEMS, 'textarea', '<%itemid%>:<%itemtitle%>');
+		$this->createOption('tagItemSeparator',  _NPTAGEX_TPL_ITEMSEPL, 'text',     ' , ');
+		$this->createOption('tagItemFooter',     _NPTAGEX_TPL_ITEMFOOT, 'textarea', '');
+		$this->createOption('tagIndexSeparator', _NPTAGEX_TPL_IDXSEP,   'text',     ' | ');
+		$this->createOption('tagsonlycurrent',   _NPTAGEX_ONLY_CURRENT, 'yesno',    'no');
+		$this->createOption('colorfulhighlight', _NPTAGEX_HILIGHT_MODE, 'yesno',    'no');
+		$this->createOption('highlight',         _NPTAGEX_HILIGHT_NORM, 'text',     '<span class="highlight">\0</span>');
+		$this->createOption('maxTagLevel',       _NPTAGEX_MAX_TAGLEBEL, 'text',     '6', 'datatype=numerical');
+		$this->createOption('minTagLevel',       _NPTAGEX_MIN_TAGLEBEL, 'text',     '1', 'datatype=numerical');
 		$table_q = 'CREATE TABLE IF NOT EXISTS ' . _TAGEX_TABLE . ' ('
 				 . ' `inum`    INT(9)        NOT NULL default "0" PRIMARY KEY, '
 				 . ' `itags`   TEXT          NOT NULL, '
@@ -127,6 +213,119 @@ class NP_TagEX extends NucleusPlugin
 		sql_query($table_q);
 	}
 
+	// }}}
+	// {{{ defineMultilanguage()
+
+	/**
+	 * Multi language support
+	 */
+	function defineMultilanguage()
+	{
+		$multilang = array(
+			'_NPTAGEX_ERASE_FLG'    => array(
+				'Erase data when uninstall ?',
+				'アンインストール時にデータを消去しますか？',
+			),
+			'_NPTAGEX_EDT_TAGORDER' => array(
+				'editform tag order',
+				'アイテム追加/編集時のタグの並び順',
+			),
+			'_NPTAGEX_ORDER_VALUE'  => array(
+				"amount(desc)|1|amount(asc)|2|tag's order|3|random|4",
+				'アイテムの多い順|1|アイテムの少ない順|2|タグ順(キャラクターコード順)|3|ランダム|4',
+			),
+			'_NPTAGEX_TPL_AND'      => array(
+				"template for 'and'",
+				"'and' リンクのテンプレート',
+			),
+			'_NPTAGEX_TPL_OR'       => array(
+				"template for 'or'",
+				"'or' リンクのテンプレート',
+			),
+			'_NPTAGEX_TPL_TAGIDX'   => array(
+				"template for 'tagIndex'",
+				'タグのリンクのテンプレート'
+			),
+			'_NPTAGEX_TPL_ITEMHEAD' => array(
+				"template for 'tagItemHeader'",
+				'タグを含むアイテムごとのヘッダ',
+			), 
+			'_NPTAGEX_TPL_TAGITEMS' => array(
+				"template for 'tagItem'",
+				'タグを含むアイテム',
+			), 
+			'_NPTAGEX_TPL_ITEMSEPL' => array(
+				"template for 'tagItemSeparator'",
+				'タグを含むアイテムのセパレータ',
+			), 
+			'_NPTAGEX_TPL_ITEMFOOT' => array(
+				"template for 'tagItemFooter'",
+				'タグを含むアイテムごとのフッタ',
+			), 
+			'_NPTAGEX_TPL_IDXSEP'   => array(
+				"template for 'tagIndexSeparator'",
+				'タグのリンクのセパレータ'
+			),
+			'_NPTAGEX_ONLY_CURRENT' => array(
+				'show tags only current blog have',
+				'表示中のブログのアイテムに登録してあるタグのみ表示'
+			), 
+			'_NPTAGEX_HILIGHT_MODE' => array(
+				'colorful highlight mode ?',
+				'カラフルハイライトモードにしますか？'
+			), 
+			'_NPTAGEX_HILIGHT_NORM' => array(
+				'template for normal highlightmode',
+				'ノーマルハイライトモードの時のテンプレート'
+			), 
+			'_NPTAGEX_MAX_TAGLEBEL' => array(
+				'MAX tag lebel',
+				'タグレベルの最大値'
+			), 
+			'_NPTAGEX_MIN_TAGLEBEL' => array(
+				'MAX tag lebel',
+				'タグレベルの最小値'
+			), 
+		);
+		switch (ereg_replace('[\\|/]', '', getLanguageName())) {
+			case 'japanese-euc':
+				foreach ($multilang as $key => $value) {
+					define($key, mb_convert_encoding($value[1], 'EUC-JP', 'UTF-8'));
+				}
+				break;
+			case 'japanese-utf8':
+				foreach ($multilang as $key => $value) {
+					define($key, $value[1]);
+				}
+				break;
+			default:
+				foreach ($multilang as $key => $value) {
+					define($key, $value[0]);
+				}
+		}
+	}
+
+	// }}}
+	// {{{ init()
+
+	/**
+	 * initialize plugin
+	 */
+	function init()
+	{
+		global $CONF;
+		$this->defineMultilanguage;
+		$usePathInfo = ($CONF['URLMode'] == 'pathinfo');
+		$this->maURL = (($this->plugCheck('MagicalURL2') || $this->plugCheck('Magical')) && $usePathInfo);
+		$this->cuURL = ($this->plugCheck('CustomURL') && $usePathInfo);
+	}
+
+	// }}}
+	// {{{ uninstall()
+
+	/**
+	 * Plugin uninstall and clear plugin's all data if you want.
+	 */
 	function uninstall()
 	{
 		if ($this->getOption('flg_erase') == 'yes') {
@@ -135,6 +334,12 @@ class NP_TagEX extends NucleusPlugin
 		}
 	}
 
+	// }}}
+	// {{{ getTableList()
+
+	/**
+	 * Plugin has there.
+	 */
 	function getTableList()
 	{
 		return array(
@@ -143,24 +348,54 @@ class NP_TagEX extends NucleusPlugin
 		);
 	}
 
+	// }}}
+	// {{{ getEventList()
+
+	/**
+	 * Plugin fook these API.
+	 * @return array
+	 */
 	function getEventList()
 	{
 		return array(
-					 'PostAddItem',
-					 'AddItemFormExtras',
-					 'PreUpdateItem',
-					 'EditItemFormExtras',
-					 'PreItem',
-					 'PreDeleteItem'
-					);
+			'PostAddItem',
+			'AddItemFormExtras',
+			'PreUpdateItem',
+			'EditItemFormExtras',
+			'PreItem',
+			'PreDeleteItem',
+			'TemplateExtraFields',
+		);
 	}
 
+	// }}}
+
 /**
- *
- * Nucleus event functions
- *
+ * Private functions
  */
-	function quote_smart($value)
+
+	// {{{ plugCheck()
+
+	/**
+	 * other plugins installed ?
+	 * @param string Plugin name
+	 * @return bool
+	 */
+	private function plugCheck($name)
+	{
+		global $manager;
+		return $manager->pluginInstalled('NP_' . $name);
+	}
+
+	// }}}
+	// {{{ quote_smart()
+
+	/**
+	 * Quote string befor SQL.
+	 * @param mix string, int, or array
+	 * @return mix string or int
+	 */
+	private function quote_smart($value)
 	{
 // Escape SQL query strings
 		if (is_array($value)) {
@@ -193,6 +428,19 @@ class NP_TagEX extends NucleusPlugin
 		return $value;
 	}
 
+	// }}}
+
+/**
+ * Processing of the event fook held from here
+ */
+
+	// {{{ event_PreItem()
+
+	/**
+	 * Quote string befor SQL.
+	 * @param mix string, int, or array
+	 * @return mix string or int
+	 */
 	function event_PreItem($data)
 	{
 // Hightlight tags
@@ -207,14 +455,14 @@ class NP_TagEX extends NucleusPlugin
 		if (eregi('<highlightTagsAll>', $currentTemplateDesc)) {
 			$tags = $this->scanExistTags(0, 99999999);
 			if (empty($tags)) {
-				return;
+				return false;
 			} else {
 				$highlightKeys = array_keys($tags);
 			}
 		} elseif (eregi('<highlightTags>', $currentTemplateDesc)) {
 			$requestT = $this->getNoDecodeQuery('tag');
 			if (empty($requestT)) {
-				return;
+				return false;
 			}
 			$requestTarray = $this->splitRequestTags($requestT);
 			$reqAND        = array_map(array(&$this, "_rawdecode"), $requestTarray['and']);
@@ -227,7 +475,7 @@ class NP_TagEX extends NucleusPlugin
 				$highlightKeys = $reqAND;
 			}
 		} else {
-			return;
+			return false;
 		}
 		$template['highlight'] =  $this->getOption('highlight');
 		$curItem               =& $data['item'];
@@ -264,6 +512,20 @@ class NP_TagEX extends NucleusPlugin
 		}
 	}
 
+	function event_TemplateExtraFields($data)
+	{
+		$data['fields']['NP_TagEX'] = array(
+			'nptagex_and'               => _NPTAGEX_TPL_AND,
+			'nptagex_or'                => _NPTAGEX_TPL_OR,
+			'nptagex_tagIndex'          => _NPTAGEX_TPL_TAGIDX,
+			'nptagex_tagItemHeader'     => _NPTAGEX_TPL_ITEMHEAD,
+			'nptagex_tagItem'           => _NPTAGEX_TPL_TAGITEMS,
+			'nptagex_tagItemSeparator'  => _NPTAGEX_TPL_ITEMSEPL,
+			'nptagex_tagItemFooter'     => _NPTAGEX_TPL_ITEMFOOT,
+			'nptagex_tagIndexSeparator' => _NPTAGEX_TPL_IDXSEP,
+			'nptagex_highlight'         => _NPTAGEX_HILIGHT_NORM,
+		); 
+	}
 /**
  *
  * extra forms function
@@ -279,29 +541,33 @@ class NP_TagEX extends NucleusPlugin
  * From http://blog.uribou.net/
  *
  */
-	function _ItemFormExtras($oldforj = '', $itags = '', $tagrows, $tagcols, $blogid = 0)
+	function _ItemFormExtras($tagrows, $tagcols, $blogid = 0, $oldforj = '', $itags = '')
 	{
 		$blogid = intval($blogid);
 // Exstra form for add or update Item
 		if (strstr(serverVar('HTTP_USER_AGENT'), 'Gecko')) {
 			$divStyles = 'height: 24em;'
+					   . 'width: 95%;'
 					   . 'overflow: auto;'
+					   . 'clear: both;'
 					   . 'border:1px solid lightblue;'
 					   . 'margin-top:3.8em;'
 					   . 'padding-left:0.5em;'
 					   . '-moz-column-count: 3;'
+					   . '-moz-column-width: 200px;'
 					   . '-moz-column-gap: 0.5em;';
-			$txAStyles = 'width:10em;'
-					   . 'height: 200px;'
-					   . 'width: 120px;';
+			$txAStyles = ''//'width:10em;'
+					   . 'width: 95%;'
+					   . 'height: 200px;';
 		} else {
 			$divStyles = 'height: 200px;'
+					   . 'clear: both;'
 					   . 'overflow: auto;';
-			$txAStyles = 'width:60%;';
+			$txAStyles = 'width:95%;';
 		}
 		$printData = "\t\t"
 				   . "<h3>TagEX</h3>\n\t\t"
-				   . '<p style="float:left">' . "\n\t\t\t"
+//				   . '<p style="float:left;width:95%;">' . "\n\t\t\t"
 				   . '<label for="tagex">Tag(s):</label>' . "\n\t\t\t"
 				   . '<a href="javascript:resetOlder'
 				   . "('" . $oldforj . "')"
@@ -310,7 +576,7 @@ class NP_TagEX extends NucleusPlugin
 				   . '" cols="' . intval($tagcols) . '" style="' . $txAStyles . '"'
 				   . ' class="tagex">'
 				   . htmlspecialchars($itags) . '</textarea>' . "\n\t\t"
-				   . '</p>'
+//				   . '</p>'
 				   . '<script language="JavaScript" type="text/javascript">' . "\n"
 				   . '<!--' . "\n"
 				   . 'function insertag(tag){' . "\n\t"
@@ -322,7 +588,7 @@ class NP_TagEX extends NucleusPlugin
 				   . "document.getElementById('tagex').value = old;\n"
 				   . "}\n//-->\n"
 				   . "</script>\n"
-				   . '<div style="' . $divStyles . '" class="tagex">' . "\n";
+				   . '<div style="' . $divStyles . '" class="tagex"><ul>' . "\n";
 		echo $printData;
 		$tagOrder = intval($this->getOption('editTagOrder'));
 		if ($this->getOption('tagsonlycurrent') == no) {
@@ -340,12 +606,12 @@ class NP_TagEX extends NucleusPlugin
 					   . $exTags . '</a></li>' . "\n";
 			echo $printData;
 		}
-		echo '</div><br style="clear:all;" />' . "\n";
+		echo '</ul></div><br style="clear:all;" />' . "\n";
 	}
 
 	function event_AddItemFormExtras($data)
 	{
-		global $CONF, $blogid;
+/*		global $CONF, $blogid;
 		if (is_numeric($blogid)) {
 			$blogid = intval($blogid);
 		} else {
@@ -353,10 +619,11 @@ class NP_TagEX extends NucleusPlugin
 		}
 		if (empty($blogid)) {
 			$blogid = intval($CONF['DefaultBlog']);
-		}
+		}*/
+		$blogid  = intval($data['blog']->blogid);
 // Call exstra form
-		$oldforj    = $itags = '';
-		$this->_ItemFormExtras($oldforj, $itags, 3, 40, $blogid);// <current blog only />
+//		$oldforj    = $itags = '';
+		$this->_ItemFormExtras(3, 40, $blogid);//, $oldforj, $itags);// <current blog only />
 	}
 
 	function event_EditItemFormExtras($data)
@@ -369,11 +636,11 @@ class NP_TagEX extends NucleusPlugin
 			$itags  = mysql_result($result,0,0);
 		}
 		$oldforj = str_replace("\n", '\n', htmlspecialchars($itags));
-		$blogid  = getBlogIDFromItemID($item_id);
-		$blogid  = intval($blogid);
+//		$blogid  = getBlogIDFromItemID($item_id);
+		$blogid  = intval($data['blog']->blogid);//$blogid);
 // Call exstra form
 // current blog onry mode
-		$this->_ItemFormExtras($oldforj, $itags, 5, 20, $blogid);
+		$this->_ItemFormExtras(5, 20, $blogid, $oldforj, $itags);
 	}
 
 	function event_PostAddItem($data)
@@ -401,7 +668,7 @@ class NP_TagEX extends NucleusPlugin
 		$query   = 'SELECT itags as result FROM %s WHERE inum = %d';
 		$oldTags = quickQuery(sprintf($query, _TAGEX_TABLE, $inum));
 		if ($itags == $oldTags) {
-			return;
+			return false;
 		}
 		$query = 'DELETE FROM %s WHERE inum = %d';
 		sql_query(sprintf($query, _TAGEX_TABLE, $inum));
@@ -411,6 +678,7 @@ class NP_TagEX extends NucleusPlugin
 			sql_query($query);
 		}
 		$old_tags_array = $this->getTags($oldTags);
+		if (!is_array($old_tags_array)) $old_tags_array = array($old_tags_array);
 		$new_tags_array = $this->getTags($itags);
 		$deleteTags     = $this->array_minus_array($old_tags_array, $new_tags_array);
 		for ($i=0; $i < count($deleteTags); $i++) {
@@ -431,7 +699,7 @@ class NP_TagEX extends NucleusPlugin
 		$query   = 'SELECT itags as result FROM %s WHERE inum = %d';
 		$oldTags = quickQuery(sprintf($query, _TAGEX_TABLE, $inum));
 		if (empty($oldTags)) {
-			return;
+			return false;
 		} else {
 			$query      = 'DELETE FROM %s WHERE inum = %d';
 			sql_query(sprintf($query, _TAGEX_TABLE, $inum));
@@ -447,6 +715,7 @@ class NP_TagEX extends NucleusPlugin
 	function getTags($str)
 	{
 // extract Item's TAG for array
+		if (!$str) return false;
 		$tempArray   = preg_split("/[\r\n,]+/", $str);
 		$returnArray = array_map('trim', $tempArray);
 		return array_unique($returnArray);
@@ -474,7 +743,7 @@ class NP_TagEX extends NucleusPlugin
 			return;
 		}
 		$temp_inums = mysql_result($findres, 0, 0);
-		if ($temp_inums == $inum) {
+		if (preg_match('/^\d+$/', $temp_inums) && $inum == $temp_inums) {
 			$query = 'DELETE FROM %s WHERE tag = %s';
 			sql_query(sprintf($query, _TAGEX_KLIST_TABLE, $tag));
 			return;
@@ -738,13 +1007,13 @@ class NP_TagEX extends NucleusPlugin
 		if ($CONF['URLMode'] == 'pathinfo') {
 			$urlq  = serverVar('REQUEST_URI');
 			$tempq = explode($q . '/', $urlq, 2);
-			if ($manager->pluginInstalled('NP_MagicalURL2') || $manager->pluginInstalled('NP_Magical')) {
+			if ($this->maURL) {//($manager->pluginInstalled('NP_MagicalURL2') || $manager->pluginInstalled('NP_Magical')) {
 				$tempq = explode($q . '_', $urlq, 2);
 			}
 //			if ($tempq[1]) {
 			if (!empty($tempq[1])) {
 				$tagq = explode('/', $tempq[1]);
-				if ($manager->pluginInstalled('NP_MagicalURL2') || $manager->pluginInstalled('NP_Magical')) {
+				if ($this->maURL) {//($manager->pluginInstalled('NP_MagicalURL2') || $manager->pluginInstalled('NP_Magical')) {
 					$tagq = explode('_', $tempq[1]);
 				}
 				$str  = preg_replace('|[^a-z0-9-~+_.#;,:@%]|i', '', $tagq[0]);
@@ -815,11 +1084,16 @@ class NP_TagEX extends NucleusPlugin
 
 	function doSkinVar($skinType, $type='list20/1/0/1/4')
 	{
+//	global $ecatid;
+//	echo 'ecat='.$ecatid.'<br />';
 		// type[0]: type ( + amount (int))
 		// type[1]: $narrowMode (0/1/2)
 		// type[2]: sortMode (1/2/3/4)
 		// type[3]: Minimum font-sizem(em) 0.5/1/1.5/2...
 		// type[4]: Maximum font-sizem(em)
+		$maxtaglevel = $this->getOption('maxTagLevel');
+		$mintaglevel = $this->getOption('minTagLevel');
+		$taglevel    = 1;
 // default
 		if (empty($type)) {
 			$type = 'list20/2/1/1/4';
@@ -935,6 +1209,7 @@ class NP_TagEX extends NucleusPlugin
 						$minFontSize               = min((float)$type[3], (float)$type[4]) - 0.5;
 						$maxFontSize               = max((float)$type[3], (float)$type[4]);
 						$levelsum                  = ($maxFontSize - $minFontSize) / 0.5;
+						$taglevelsum               = $maxtaglevel - $mintaglevel;
 						list($maxCount, $minCount) = $this->scanCount($tags);
 						$eachCount                 = ceil(($maxCount - $minCount) / $levelsum);
 					}
@@ -988,7 +1263,11 @@ class NP_TagEX extends NucleusPlugin
 						} else {
 							$fontlevel = 1;
 						}
-
+						if ($maxCount == $minCount) {//2008-05-22 Cacher
+							$taglevel = 1;
+						}else{
+							$taglevel = round(($tagAmount - $minCount) / ($maxCount - $minCount) * $taglevelsum + $mintaglevel);
+						}
 /// Item's name had TAGs 
 						$iids = array_slice($inums, 0, 4);
 						sort($iids);
@@ -1039,6 +1318,7 @@ class NP_TagEX extends NucleusPlugin
 							'tag'        => htmlspecialchars($tag, ENT_QUOTES, _CHARSET),
 							'tagamount'  => $tagAmount,
 							'fontlevel'  => $fontlevel,
+							'taglevel'   => $taglevel,
 							'taglinkurl' => $this->creatTagLink($tag, intval($type[1])),
 							'tagitems'   => $tagitem
 													  );
@@ -1046,13 +1326,15 @@ class NP_TagEX extends NucleusPlugin
 
 // format outputdata and data output
 						$eachTag[$t] .= $template['tagItemHeader'];
+/*
 						if (!ereg('<%tagitems%>', $template['tagIndex'])) {//<%
 							$eachTag[$t] .= $tagitem;
 						}
+*/
 						$eachTag[$t] .= $template['tagItemFooter'];
 						$t++;
 					}
-					echo implode($template['tagIndexSeparator'], $eachTag);
+					echo implode($template['tagIndexSeparator'] . "\n", $eachTag);
 				}
 				break;
 
@@ -1061,7 +1343,7 @@ class NP_TagEX extends NucleusPlugin
 				if ($reqAND) {
 					$req  = ($reqOR) ? array_merge($reqAND, $reqOR) : $reqAND;
 					$data = htmlspecialchars(implode('|', $req), ENT_QUOTES, _CHARSET);
-					echo ' : Selected Tag(s) &raquo; "' . $data . '"';
+					echo ' : Selected Tag(s) &raquo; &quot;' . $data . '&quot;';
 				}
 				break;
 			default:
