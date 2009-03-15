@@ -37,6 +37,7 @@
   *   v1.66 - Typo fix
   *   v1.67 - Bug fix
   *   v1.68 - Debug development
+  *   v1.69 - Ignored 'SendPing' and 'JustPosted' events!
   *
   * NP_PingJP.php ($Revision: 1.16 $)
   * $Id$
@@ -54,7 +55,7 @@ class NP_PingJP extends NucleusPlugin
 
 var $ahttp;
 var $debug   = false;
-var $bgping  = false;
+//var $bgping  = false;
 var $servers;
 var $faltMessageSet;
 
@@ -110,7 +111,7 @@ var $faltMessageSet;
 	 */
 	function getVersion()
 	{
-		return '1.68';
+		return '1.69';
 	}
 
 	// }}}
@@ -171,7 +172,10 @@ var $faltMessageSet;
 	 */
 	function install()
 	{
-		// Default, http://pingomatic.com
+		// Send update ping ?
+		$this->createBlogOption('pingjp_sendping',    _EBLOG_PING,       'yesno',    'yes');
+		// Default servers
+		// http://pingomatic.com
 		$this->createBlogOption('pingjp_pingomatic',  _PINGJP_PINGOM,    'yesno',    'yes');
 		// http://weblogs.com
 		$this->createBlogOption('pingjp_weblogs',     _PINGJP_WEBLOGS,   'yesno',    'no');
@@ -199,6 +203,21 @@ var $faltMessageSet;
 		$this->createBlogOption('pingjp_updateurl',   _PINGJP_UPDURL,    'text',     '');
 		// Your RSS URL
 		$this->createBlogOption('pingjp_feedurl',     _PINGJP_UPDFEED,   'text',     '');
+
+		$query = 'CREATE TABLE IF NOT EXISTS '
+			   . sql_table('plug_pingjp') . ' ('
+			   . ' `pingid` int(11)      NOT NULL auto_increment, '
+			   . ' `itemid` int(11)      NOT NULL default "0", '
+			   . ' `posted` tinyint(2)   NOT NULL default "1", '
+			   . ' PRIMARY KEY  (`pingid`), '
+			   . ' UNIQUE  KEY `mname` (`itemid`)'
+			   . ') ';
+		if (_CHARSET == 'UTF-8') {
+			$query .= ' DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci';
+		} else {
+			$query .= ' DEFAULT CHARACTER SET ujis COLLATE ujis_japanese_ci';
+		}
+		sql_query($query);
 	}
 
 	// }}}
@@ -211,6 +230,7 @@ var $faltMessageSet;
 	 */
 	function init()
 	{
+		global $CONF;
 		$language = ereg_replace( '[\\|/]', '', getLanguageName());
 		if (file_exists($this->getDirectory() . 'language/' . $language . '.php')) {
 			include_once($this->getDirectory() . 'language/' . $language . '.php');
@@ -279,6 +299,111 @@ var $faltMessageSet;
 				'method' => 'weblogUpdates.extendedPing',
 			),
 		);
+		if ($CONF['DebugVars']) {
+			$this->debug = true;
+		}
+	}
+
+	// }}}
+	// {{{ function extraInputField($check)
+
+	/**
+	 * Add extra inout field for item add/edit form.
+	 *
+	 * @param bool
+	 */
+	function extraInputField($checked)
+	{
+		$check = $checked ? ' checked="checked"' : '';
+		$title = _EBLOG_PING;
+		echo <<<___PINGCHECK___
+			<h3>Ping</h3>
+
+			<p>
+				<label for="plug_ping_check">{$title}</label>
+				<input type="checkbox" value="1" id="plug_ping_check" name="plug_ping_check"{$check} /><br />
+			</p>
+___PINGCHECK___;
+	}
+
+	// }}}
+	// {{{ function goSendPing($itemid)
+
+	/**
+	 * Send Ping Go !
+	 *
+	 * @param intger
+	 */
+	function goSendPing($itemid)
+	{
+		$bid = getBlogIDFromItemID(intval($itemid));
+		if ($this->getBlogOption(intval($bid), 'pingjp_sendping') != 'yes') return;
+		global $manager;
+		$item = &$manager->getItem(intval($itemid), 1, 1);
+		$blog = &$manager->getBlog(intval($bid));
+		if($this->pingCheck($bid) && requestVar('plug_ping_check') == 1) {
+			if (!$item || $item['draft'] || $item['timestamp'] > $blog->getCorrectTime()) {
+				return $item;
+			} elseif ($this->getBlogOption(intval($bid), 'pingjp_background') == 'yes') {
+				register_shutdown_function(array($this, 'sendPingBackground'), intval($bid));
+			} else {
+				$this->sendPing(intval($bid), 1);
+			}
+		}
+		return $item;
+	}
+
+	// }}}
+	// {{{ function pingCheck($bid)
+
+	/**
+	 * Send update ping ?
+	 *
+	 * @param intger value
+	 * @return bool
+	 */
+	function pingCheck($bid)
+	{
+		foreach ($this->servers as $key => $server) {
+			$serverName = 'pingjp_' . $server['server'];
+			$info = $this->getBlogOption(intval($bid), $serverName);
+			if ($info == 'yes') {
+				return true;
+			}
+		}
+		return ($this->getBlogOption(intval($bid), 'pingjp_otherurl'));
+	}
+
+	// }}}
+	// {{{ function event_AddItemFormExtras($data)
+
+	/**
+	 * Extra input field for add item
+	 *
+	 * @param array
+	 */
+	function event_AddItemFormExtras($data)
+	{
+		$bid = $data['blog']->getID();
+		if ($this->getBlogOption(intval($bid), 'pingjp_sendping') == 'yes') {
+			$this->extraInputField(1);
+		}
+	}
+
+	// }}}
+	// {{{ function event_EditItemFormExtras($data)
+
+	/**
+	 * Extra input field for edit item
+	 *
+	 * @param array
+	 */
+	function event_EditItemFormExtras($data)
+	{
+		$bid = $data['blog']->getID();
+		if ($this->getBlogOption(intval($bid), 'pingjp_sendping') == 'yes') {
+			$this->extraInputField(0);
+		}
 	}
 
 	// }}}
@@ -293,61 +418,103 @@ var $faltMessageSet;
 	function getEventList()
 	{
 		return array(
-			'SendPing',
-			'JustPosted',
+//			'SendPing',
+//			'JustPosted',
+			'PostAddItem',
+			'PostUpdateItem',
+			'AddItemFormExtras',
+			'EditItemFormExtras',
+			'PostSkinParse',
 		);
 	}
 
 	// }}}
-	// {{{ function event_JustPosted($data)
+	// {{{ function event_PostAddItem($data)
 
 	/**
-	 * Event ITEM timstamp as now send update ping or etc.
+	 * After item is added
 	 *
-	 * @param  array
-	 *     blogid : value intger
-	 *         blog ID
-	 *     pinged : reference boolean
-	 *         Update ping completed as true
-	 * @return void
+	 * @param array
+	 *     itemid : value intger
 	 */
-	function event_JustPosted($data)
+	function event_PostAddItem($data)
 	{
-		if ($data['pinged'] == true) {
+		$item = $this->goSendPing(intval($data['itemid']));
+		if (!$item) {
 			return;
 		}
-		if ($this->getBlogOption($data['blogid'], 'pingjp_background') == "yes") {
-//			$directory = $this->getDirectory();
-//			// TODO: Check
-//			if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-//				system("start /b php " . $directory . "ping.php " . $data['blogid'] . " > nul"  );
-//			} else {
-//				exec("php " . $directory . "ping.php " . $data['blogid'] . " > /dev/null &");
-//			}
-			register_shutdown_function(array($this, 'SendPingBackground'), $data['blogid'], 2);
-		} else {
-			$this->sendPings($data['blogid'], 1);
+		global $manager;
+		$blog = &$manager->getBlog(intval($item['blogid']));
+		if ($item['timestamp'] > $blog->getCorrectTime() || $item['draft']) {
+			$query = 'INSERT INTO %s (`itemid`, `posted`) VALUES (%d, 0)';
+			$query = sprintf($query, sql_table('plug_pingjp'), intval($data['itemid']));
+			sql_query($query);
 		}
-		$data['pinged'] = true;
 	}
 
 	// }}}
-	// {{{ function event_SendPing($data)
+	// {{{ function event_PostUpdateItem($data)
 
 	/**
-	 * Event send weblog updates ping when add ITEM
+	 * After item is updated
 	 *
-	 * @param  array
-	 *     blogid : value intger
-	 *         blog ID
-	 * @return void
+	 * @param array
+	 *     itemid : value intger
 	 */
-	function event_SendPing($data)
+	function event_PostUpdateItem($data)
 	{
-		if ($this->bgping)
-			register_shutdown_function(array($this, 'SendPingBackground'), $data['blogid']);
-		else
-			$this->sendPing($data['blogid']);
+		$item = $this->goSendPing(intval($data['itemid']));
+		if (!$item) {
+			return;
+		}
+		global $manager;
+		$blog = &$manager->getBlog(intval($item['blogid']));
+		if ($item['timestamp'] > $blog->getCorrectTime() || $item['draft']) {
+			$query = 'SELECT `pingid` as result FROM %s WHERE `itemid` = %d';
+			$query = sprintf($query, sql_table('plug_pingjp'), intval($data['itemid']));
+			if ($pingid = intval(quickQuery($query))) {
+				$query = 'UPDATE %s SET `itemid` = %d, `posted` = 0 WHERE `pingid` = %d';
+				$query = sprintf($query, sql_table('plug_pingjp'), intval($data['itemid']), intval($pingid));
+				sql_query($query);
+			}
+		}
+	}
+
+	// }}}
+	// {{{ function event_PostSkinParse($data)
+
+	/**
+	 * After item is updated
+	 *
+	 * @param array
+	 *     skin : ref object
+	 *     type : value string
+	 */
+	function event_PostSkinParse($data)
+	{
+		$query = 'SELECT * FROM '
+			   . sql_table('plug_pingjp') . ' as p, '
+			   . sql_table('item') . ' as i '
+			   . ' WHERE '
+			   . '     i.itime   < NOW() '
+			   . ' AND p.posted  = 0 '
+			   . ' AND i.inumber = p.itemid ';
+		$res   = sql_query($query);
+		if (mysql_num_rows($res) > 0) {
+			$pings = array();
+			while ($item = mysql_fetch_assoc($res)) {
+				if (!$item['idraft']) {
+					$bid = getBlogIDFromItemID(intval($item['itemid']));
+					$this->sendPingBackground($bid);
+					$pings[] = intval($item['pingid']);
+				}
+			}
+			if (count($pings) > 0) {
+				$query = 'UPDATE %s SET `posted` = 1 WHERE `pingid` IN (%s)';
+				$query = sprintf($query, sql_table('plug_pingjp'), implode(',', $pings));
+				sql_query($query);
+			}
+		}
 	}
 
 	// }}}
@@ -360,7 +527,7 @@ var $faltMessageSet;
 	 *         blog ID
 	 * @return void
 	 */
-	function SendPingBackground($bid)
+	function sendPingBackground($bid)
 	{
 		while( @ob_end_flush() ) ;
 		sql_connect();
@@ -648,4 +815,45 @@ var $faltMessageSet;
 //		print_r($targets);
 		return $targets;
 	}
+
+	// {{{ function event_JustPosted($data)
+
+	/**
+	 * Event ITEM timstamp as now send update ping or etc.
+	 *
+	 * @param  array
+	 *     blogid : value intger
+	 *         blog ID
+	 *     pinged : reference boolean
+	 *         Update ping completed as true
+	 * @return void
+	 *
+	function event_JustPosted($data)
+	{
+		if ($data['pinged'] == true) {
+			return;
+		} else {
+			$data['pinged'] = true;
+			return;
+		}
+	}
+
+	// }}}
+	// {{{ function event_SendPing($data)
+
+	/**
+	 * Event send weblog updates ping when add ITEM
+	 *
+	 * @param  array
+	 *     blogid : value intger
+	 *         blog ID
+	 * @return void
+	 *
+	function event_SendPing($data)
+	{
+		return;
+	}
+*/
+	// }}}
+
 }
