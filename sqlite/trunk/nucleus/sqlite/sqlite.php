@@ -1,7 +1,7 @@
 <?php
     /****************************************
     * SQLite-MySQL wrapper for Nucleus      *
-    *                           ver 0.9.0.3 *
+    *                           ver 0.9.0.4 *
     * Written by Katsumi                    *
     ****************************************/
 
@@ -13,7 +13,7 @@ if (!function_exists('sqlite_open')) exit('Sorry, SQLite is not available from P
 require_once dirname(__FILE__) . '/sqliteconfig.php';
 $SQLITE_DBHANDLE=sqlite_open($SQLITECONF['DBFILENAME']);
 require_once dirname(__FILE__) . '/sqlitequeryfunctions.php';
-$SQLITECONF['VERSION']='0.9.0.3';
+$SQLITECONF['VERSION']='0.9.0.4';
 
 //Following thing may work if MySQL is NOT installed in server.
 if (!function_exists('mysql_query')) {
@@ -515,6 +515,16 @@ function nucleus_mysql_fetch_field($p1,$p2=null){
 		}
 	return $o;
 
+}
+function nucleus_mysql_get_client_info(){
+	return nucleus_mysql_get_server_info();
+}
+function nucleus_mysql_get_server_info(){
+	$res=nucleus_mysql_query('SELECT sqlite_version();');
+	if (!$res) return '?.?.?';
+	$row=nucleus_mysql_fetch_row($res);
+	if (!$row) return '?.?.?';
+	return $row[0];
 }
 
 // This function is called instead of _execute_queries() in backp.php

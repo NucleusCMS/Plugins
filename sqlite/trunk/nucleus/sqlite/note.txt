@@ -80,3 +80,7 @@
   Version 0.9.0.2
     - Debug of CREATE TABLE routine.
     - NP_SQLite: trim the query when 'Copy' is used.
+
+  Version 0.9.0.4
+    - Debug of REGEX function
+    - Add mysql_server_info() and mysql_client_info() functions.
