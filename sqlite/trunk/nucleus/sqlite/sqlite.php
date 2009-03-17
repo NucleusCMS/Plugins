@@ -1,7 +1,7 @@
 <?php
     /****************************************
     * SQLite-MySQL wrapper for Nucleus      *
-    *                           ver 0.9.0.4 *
+    *                           ver 0.9.0.5 *
     * Written by Katsumi                    *
     ****************************************/
 
@@ -13,7 +13,7 @@ if (!function_exists('sqlite_open')) exit('Sorry, SQLite is not available from P
 require_once dirname(__FILE__) . '/sqliteconfig.php';
 $SQLITE_DBHANDLE=sqlite_open($SQLITECONF['DBFILENAME']);
 require_once dirname(__FILE__) . '/sqlitequeryfunctions.php';
-$SQLITECONF['VERSION']='0.9.0.4';
+$SQLITECONF['VERSION']='0.9.0.5';
 
 //Following thing may work if MySQL is NOT installed in server.
 if (!function_exists('mysql_query')) {
@@ -110,6 +110,9 @@ function nucleus_mysql_query($p1,$p2=null,$unbuffered=false){//echo htmlspecialc
 	$query=trim($p1);
 	if (strpos($query,"\xEF\xBB\xBF")===0) $query=substr($query,3);// UTF-8 stuff
 	if (substr($query,-1)==';') $query=substr($query,0,strlen($query)-1);
+	
+	// Remove MySQL specific comment, '-- '.
+	$query=preg_replace('/($|[\r\n])\-\-[\s^\r\n]([^\r\n]*)/','',$query);
 	
 	// Escape style is changed from MySQL type to SQLite type here.
 	// This is important to avoid possible SQL-injection.
