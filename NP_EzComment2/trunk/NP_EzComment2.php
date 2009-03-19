@@ -129,8 +129,8 @@ class NP_EzComment2 extends NucleusPlugin
 	function getPluginDep()
 	{
 		return array(
-			'NP_OpenId',
-			'NP_znSpecialTemplateParts',
+//			'NP_OpenId',
+//			'NP_znSpecialTemplateParts',
 		);
 	}
 
@@ -195,6 +195,7 @@ class NP_EzComment2 extends NucleusPlugin
 			'PostAddComment',
 			'PostDeleteComment',
 			'PreComment',
+			'TemplateExtraFields',
 		);
 	}
 
@@ -296,6 +297,33 @@ class NP_EzComment2 extends NucleusPlugin
 	}
 
 	// }}}
+	// {{{ event_TemplateExtraFields($data)
+
+	/**
+	 * Extra template parts for plugin specified
+	 *
+	 * @param array
+	 *			fields array
+	 *					'PLUGIN_NAME' array
+	 *									'TEMPLATE_PARTS_NAME'
+	 *									'TEMPLATE_PARTS_NAME'
+	 *									'TEMPLATE_PARTS_NAME'...
+	 * @return void
+	 */
+	function event_TemplateExtraFields($data)
+	{
+		$data['fields']['NP_EzComment2'] = array(
+			'_NP_EZCOMMENT2_FORM_LOGGEDIN_IDX'    => _NP_EZCOMMENT2_FORM_LOGGEDIN_IDX, 
+			'_NP_EZCOMMENT2_FORM_NOTLOGGEDIN_IDX' => _NP_EZCOMMENT2_FORM_NOTLOGGEDIN_IDX, 
+			'_NP_EZCOMMENT2_FORM_LOGGEDIN_ITM'    => _NP_EZCOMMENT2_FORM_LOGGEDIN_ITM,
+			'_NP_EZCOMMENT2_FORM_NOTLOGGEDIN_ITM' => _NP_EZCOMMENT2_FORM_NOTLOGGEDIN_ITM, 
+			'COMMENTS_BODY_IDX'                   => _NP_EZCOMMENT2_COMMENTS_BODY_IDX, 
+			'COMMENTS_FOOTER_IDX'                 => _NP_EZCOMMENT2_COMMENTS_FOOTER_IDX, 
+			'COMMENTS_HEADER_IDX'                 => _NP_EZCOMMENT2_COMMENTS_HEADER_IDX,
+		);
+	}
+
+	// }}}
 	// {{{ event_PostAddComment($data)
 
 	/**
@@ -370,9 +398,9 @@ class NP_EzComment2 extends NucleusPlugin
 				echo '<br /><input type="checkbox" value="1" name="EzComment2_Secret" id="EzComment2_Secret_' . $this->numcalled . '" />';
 				echo '<label for="EzComment2_Secret_' . $this->numcalled . '">'.$this->getBlogOption($bid, 'secLabel').'</label><br />';
 		}
-		if ($this->authOpenID) {
-			$this->plugOpenIDdoSkinVar($this->commentSkinType, $this->commentItemId);
-		}
+//		if ($this->authOpenID) {
+//			$this->plugOpenIDdoSkinVar($this->commentSkinType, $this->commentItemId);
+//		}
 	}
 
 	// }}}
@@ -551,7 +579,7 @@ class NP_EzComment2 extends NucleusPlugin
 	 * @param  string
 	 * @param  integer
 	 * @return void.
-	 */
+	 *
 	function plugOpenIDdoSkinVar($skinType, $iid = 0)
 	{
 		global $CONF, $manager, $member;
@@ -597,7 +625,7 @@ class NP_EzComment2 extends NucleusPlugin
 		}
 	}
 
-	// }}}
+	// }}}*/
 	// {{{ checkDestinationurl($destinationurl)
 
 	/**
@@ -702,20 +730,20 @@ class NP_EzComment2 extends NucleusPlugin
 			$formFlg = '_IDX';
 		}
 		if ($member && $member->isLoggedIn()) {
-			$formType = 'FORM_LOGGEDIN' . $formFlg;
+			$formType = '_NP_EZCOMMENT2_FORM_LOGGEDIN' . $formFlg;
 			$loginMember = $member->createFromID($member->getID());
 			$formdata['membername'] = $this->_hsc($loginMember->getDisplayName());
 		} else {
-			$formType = 'FORM_NOTLOGGEDIN' . $formFlg;
+			$formType = '_NP_EZCOMMENT2_FORM_NOTLOGGEDIN' . $formFlg;
 		}
-		if ($this->authOpenID && ($skinType == 'item' || $this->numcalled == 0)) {
-			$this->plugOpenIDdoSkinVar($skinType, intval($commentItem->itemid));
-		}
+//		if ($this->authOpenID && ($skinType == 'item' || $this->numcalled == 0)) {
+//			$this->plugOpenIDdoSkinVar($skinType, intval($commentItem->itemid));
+//		}
 		$this->commentItemId   = intval($commentItem->itemid);
 		$this->commentSkinType = $skinType;
 		$contents   = $template[$formType];
 		include_once($this->getDirectory() . 'EzCommentActions.php');
-		$formAction =& new EzCommentFormActions($commentItem, $formdata, $loginMember);
+		$formAction =& new EzCommentFormActions($skinType, $commentItem, $formdata, $loginMember);
 		$parser     =& new PARSER($formAction->getAllowedActions(), $formAction);
 		$parser->parse(&$contents);
 	}
@@ -948,7 +976,7 @@ class NP_EzComment2 extends NucleusPlugin
 	 * Comment form/list template via NP_znSpecialTemplateParts
 	 *
 	 * @return array
-	 */
+	 *
 	function getTemplateParts()
 	{
 		$this->languageInclude();
