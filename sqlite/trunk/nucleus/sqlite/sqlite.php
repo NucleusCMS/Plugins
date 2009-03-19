@@ -111,9 +111,6 @@ function nucleus_mysql_query($p1,$p2=null,$unbuffered=false){//echo htmlspecialc
 	if (strpos($query,"\xEF\xBB\xBF")===0) $query=substr($query,3);// UTF-8 stuff
 	if (substr($query,-1)==';') $query=substr($query,0,strlen($query)-1);
 	
-	// Remove MySQL specific comment, '-- '.
-	$query=preg_replace('/($|[\r\n])\-\-[\s^\r\n]([^\r\n]*)/','',$query);
-	
 	// Escape style is changed from MySQL type to SQLite type here.
 	// This is important to avoid possible SQL-injection.
 	$strpositions=array();// contains the data show where the strings are (startposition => endposition)
@@ -287,6 +284,8 @@ function sqlite_changeQuote(&$query){
 		if ($i2<($j=$i1)) $j=$i2;
 		if ($i3<$j) $j=$i3;
 		$temp=preg_replace('/[\s]+/',' ',substr($query,$i,$j-$i)); // Change all spacying to ' '.
+		// Remove MySQL specific comment, '-- '.
+		$temp=preg_replace('/($|[\r\n])\-\-[\s^\r\n]([^\r\n]*)/',' ',$temp);
 		$ret.=($temp);
 		$c=$query[($i=$j)]; // $c keeps the type of quote.
 		if (strstr($temp,';')) exit('Warning: try to use more than two queries?');
