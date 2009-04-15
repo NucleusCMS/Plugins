@@ -9,7 +9,7 @@
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
  * (see nucleus/documentation/index.html#license for more info)
- * 
+ *
  * @author     Original Author nakahara21
  * @copyright  2005-2008 nakahara21
  * @copyright  2006-2009 shizuki
@@ -236,11 +236,11 @@ __ORTAGTPL__;
 			),
 			'_NPTAGEX_TPL_AND'      => array(
 				"template for 'and'",
-				"'and' リンクのテンプレート',
+				"'and' リンクのテンプレート",
 			),
 			'_NPTAGEX_TPL_OR'       => array(
 				"template for 'or'",
-				"'or' リンクのテンプレート',
+				"'or' リンクのテンプレート",
 			),
 			'_NPTAGEX_TPL_TAGIDX'   => array(
 				"template for 'tagIndex'",
@@ -249,19 +249,19 @@ __ORTAGTPL__;
 			'_NPTAGEX_TPL_ITEMHEAD' => array(
 				"template for 'tagItemHeader'",
 				'タグを含むアイテムごとのヘッダ',
-			), 
+			),
 			'_NPTAGEX_TPL_TAGITEMS' => array(
 				"template for 'tagItem'",
 				'タグを含むアイテム',
-			), 
+			),
 			'_NPTAGEX_TPL_ITEMSEPL' => array(
 				"template for 'tagItemSeparator'",
 				'タグを含むアイテムのセパレータ',
-			), 
+			),
 			'_NPTAGEX_TPL_ITEMFOOT' => array(
 				"template for 'tagItemFooter'",
 				'タグを含むアイテムごとのフッタ',
-			), 
+			),
 			'_NPTAGEX_TPL_IDXSEP'   => array(
 				"template for 'tagIndexSeparator'",
 				'タグのリンクのセパレータ'
@@ -269,23 +269,23 @@ __ORTAGTPL__;
 			'_NPTAGEX_ONLY_CURRENT' => array(
 				'show tags only current blog have',
 				'表示中のブログのアイテムに登録してあるタグのみ表示'
-			), 
+			),
 			'_NPTAGEX_HILIGHT_MODE' => array(
 				'colorful highlight mode ?',
 				'カラフルハイライトモードにしますか？'
-			), 
+			),
 			'_NPTAGEX_HILIGHT_NORM' => array(
 				'template for normal highlightmode',
 				'ノーマルハイライトモードの時のテンプレート'
-			), 
+			),
 			'_NPTAGEX_MAX_TAGLEBEL' => array(
 				'MAX tag lebel',
 				'タグレベルの最大値'
-			), 
+			),
 			'_NPTAGEX_MIN_TAGLEBEL' => array(
 				'MAX tag lebel',
 				'タグレベルの最小値'
-			), 
+			),
 		);
 		switch (ereg_replace('[\\|/]', '', getLanguageName())) {
 			case 'japanese-euc':
@@ -524,7 +524,7 @@ __ORTAGTPL__;
 			'nptagex_tagItemFooter'     => _NPTAGEX_TPL_ITEMFOOT,
 			'nptagex_tagIndexSeparator' => _NPTAGEX_TPL_IDXSEP,
 			'nptagex_highlight'         => _NPTAGEX_HILIGHT_NORM,
-		); 
+		);
 	}
 /**
  *
@@ -658,7 +658,7 @@ __ORTAGTPL__;
 		for ($i=0; $i < count($temp_tags_array); $i++) {
 			$this->mergeTags(trim($temp_tags_array[$i]), $inum);
 		}
-	} 
+	}
 
 	function event_PreUpdateItem($data)
 	{
@@ -688,7 +688,7 @@ __ORTAGTPL__;
 		for ($i=0; $i < count($addTags); $i++) {
 			$this->mergeTags($addTags[$i], $inum);
 		}
-		
+
 	}
 
 	function event_PreDeleteItem($data)
@@ -726,7 +726,7 @@ __ORTAGTPL__;
 // update Item's TAGs
 		$c = array_diff($a,$b);
 		$c = array_intersect($c, $a);
-		return array_values($c); 
+		return array_values($c);
 	}
 
 	function deleteTags($tag, $inum)
@@ -796,7 +796,7 @@ __ORTAGTPL__;
 					 . 'VALUES (%s, %d, 1)';
 			sql_query(sprintf($q_query, _TAGEX_KLIST_TABLE, $tag, intval($inum)));
 		}
-		
+
 		if (!empty($inums)) {
 			$q_query    = 'UPDATE %s SET inums = %s, inums_count = %d WHERE tag = %s';
 			$iCount     = intval($inums_count);
@@ -815,7 +815,7 @@ __ORTAGTPL__;
 		if ($blogid > 0) {
 			$b =& $manager->getBlog($blogid);
 		} elseif ($blog) {
-			$b =& $blog; 
+			$b =& $blog;
 		} else {
 			$b =& $manager->getBlog($CONF['DefaultBlog']);
 		}
@@ -871,7 +871,7 @@ __ORTAGTPL__;
 			sscanf($archive, '%d-%d-%d', $y, $m, $d);
 			if ($d) {
 				$timestamp_start = mktime(0, 0, 0, $m,   $d,   $y);
-				$timestamp_end   = mktime(0, 0, 0, $m,   $d+1, $y);  
+				$timestamp_end   = mktime(0, 0, 0, $m,   $d+1, $y);
 			} elseif ($m) {
 				$timestamp_start = mktime(0, 0, 0, $m,   1,    $y);
 				$timestamp_end   = mktime(0, 0, 0, $m+1, 1,    $y);
@@ -1120,7 +1120,7 @@ __ORTAGTPL__;
 				$reqOR = array_map(array(&$this, "_rawdecode"), $requestTarray['or']);
 			}
 		}
-		switch($type[0]){ 
+		switch($type[0]){
 
 			case 'tag':
 				if ($requestTarray) {
@@ -1268,7 +1268,7 @@ __ORTAGTPL__;
 						}else{
 							$taglevel = round(($tagAmount - $minCount) / ($maxCount - $minCount) * $taglevelsum + $mintaglevel);
 						}
-/// Item's name had TAGs 
+/// Item's name had TAGs
 						$iids = array_slice($inums, 0, 4);
 						sort($iids);
 						$qQuery  = ' SELECT '
@@ -1401,7 +1401,7 @@ __ORTAGTPL__;
 
 	function _rawencode($str)
 	{
-		
+
 		if (_CHERSET != 'UTF-8') {
 			$str = mb_convert_encoding($str, "UTF-8", _CHARSET);
 		}
