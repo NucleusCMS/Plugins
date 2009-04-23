@@ -271,21 +271,27 @@ function sqlite_changeQuote(&$query){
 	$ret='';
 	$qlen=strlen($query);
 	for ($i=0;$i<$qlen;$i++) {
+		// Check MySQL specific comment, '--'.
+		$temp=substr($query,$i);
+		if (preg_match('/^([^"`\']*)[\r\n]\-\-[\s^\r\n][^\r\n]*/',$temp,$m)) {
+			// Found.
+			$ret.=preg_replace('/[\s]+/',' ',$m[1]); // Change all spacing to ' '.
+			$i += strlen($m[0]);
+			continue;
+		}
 		// Go to next quote
 		if (($i1=strpos($query,'"',$i))===false) $i1=$qlen;
 		if (($i2=strpos($query,"'",$i))===false) $i2=$qlen;
 		if (($i3=strpos($query,'`',$i))===false) $i3=$qlen;
 		if ($i1==$qlen && $i2==$qlen && $i3==$qlen) {
-			$temp=preg_replace('/[\s]+/',' ',substr($query,$i)); // Change all spacying to ' '.
+			$temp=preg_replace('/[\s]+/',' ',substr($query,$i)); // Change all spacing to ' '.
 			$ret.=($temp);
 			if (strstr($temp,';')) exit('Warning: try to use more than two queries?');
 			break;
 		}
 		if ($i2<($j=$i1)) $j=$i2;
 		if ($i3<$j) $j=$i3;
-		$temp=preg_replace('/[\s]+/',' ',substr($query,$i,$j-$i)); // Change all spacying to ' '.
-		// Remove MySQL specific comment, '-- '.
-		$temp=preg_replace('/($|[\r\n])\-\-[\s^\r\n]([^\r\n]*)/',' ',$temp);
+		$temp=preg_replace('/[\s]+/',' ',substr($query,$i,$j-$i)); // Change all spacing to ' '.
 		$ret.=($temp);
 		$c=$query[($i=$j)]; // $c keeps the type of quote.
 		if (strstr($temp,';')) exit('Warning: try to use more than two queries?');
