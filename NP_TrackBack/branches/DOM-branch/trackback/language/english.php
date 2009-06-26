@@ -80,6 +80,7 @@ define('_TB_msgLINK_CHECK_OK',          "Trackback: LinkCheck OK. (link: %s pat:
 define('_TB_msgLINK_CHECK_IGNORE',      "Trackback: LinkCheck NG. [ignore] (itemid:%d from: %s cnt: %s pat: %s)");
 define('_TB_msgLINK_CHECK_BLOCK',       "Trackback: LinkCheck NG. [block] (itemid:%d from: %s cnt: %s pat: %s)");
 define('_TB_msgCOULDNOT_SAVE_DOUBLE',   'Could not save trackback data, possibly because of a double entry: ');
+define('_TB_msgTRACKBACK_ERROR',        'TrackBack Error: %s (%s)');
 
 
 

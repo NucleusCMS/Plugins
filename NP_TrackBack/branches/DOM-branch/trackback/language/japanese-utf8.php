@@ -78,6 +78,12 @@ define('_TB_msgLINK_CHECK_OK',          "Trackback: リンクチェック OK. (l
 define('_TB_msgLINK_CHECK_IGNORE',      "Trackback: リンクチェック NG. [拒否] (itemid:%d from: %s cnt: %s pat: %s)");
 define('_TB_msgLINK_CHECK_BLOCK',       "Trackback: リンクチェック NG. [ブロック] (itemid:%d from: %s cnt: %s pat: %s);
 define('_TB_msgCOULDNOT_SAVE_DOUBLE',   'データ重複のためトラックバックを保存できませんでした: ');
+define('_TB_msgTRACKBACK_ERROR',        'トラックバックエラー: %s (%s)');
+
+
+
+
+
 
 
 

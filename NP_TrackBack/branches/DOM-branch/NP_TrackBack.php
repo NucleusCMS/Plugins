@@ -1816,88 +1816,67 @@ ___RDFCODE___;
             $ping_urlsTemp = array();
             $ping_urlsTemp = preg_split("/[\s,]+/", trim($ping_url));
             for ($i=0; $i<count($ping_urlsTemp); $i++) {
+                $ping_urls[] = trim($ping_urlsTemp[$i]);
+                $ping_urls_count++;
+            }
         }
-        $ping_urls_count = count($ping_urls);
         $tb_url_amount   = requestVar('tb_url_amount');
+        for ($i=0; $i<$tb_url_amount; $i++) {
+            $tb_temp_url = requestVar('tb_url_' . $i);
+            if ($tb_temp_url) {
+                $ping_urls[$ping_urls_count] = $tb_temp_url;
+                $localflag[$ping_urls_count] = (requestVar('tb_url_' . $i . '_local') == 'on') ? 1 : 0;
+                $ping_urls_count++;
+            }
+        }
+        if ($ping_urls_count <= 0) {
+            return;
+        }
+        $itemid =  $data['itemid'];
+        $item   =& $manager->getItem($itemid, 0, 0);
+        if (!$item) {
+            return; // don't ping for draft & future
+        }
+        if ($item['draft']) {
+            return;   // don't ping on draft items
+        }
+        // gather some more information, needed to send the ping (blog name, etc)      
+        $blog      =& $manager->getBlog(getBlogIDFromItemID($itemid));
+        $blog_name =  $blog->getName();
+        $title     =  $data['title'] != '' ? $data['title'] : $item['title'];
+        $title     =  strip_tags($title);
+        $excerpt   =  $data['body'] != '' ? $data['body'] : $item['body'];
+        $excerpt   =  strip_tags($excerpt);
+        $excerpt   =  $this->_cut_string($excerpt, 200);
+        $url       =  $this->_createItemLink($item['itemid'], $blog);    
+        for ($i=0; $i<count($ping_urls); $i++) {
+            if (!$localflag[$i]) {
+                $res = $this->sendPing($itemid, $title, $url, $excerpt, $blog_name, $ping_urls[$i]);
+            } else {
+                $res = $this->handleLocalPing($itemid, $title, $excerpt, $blog_name, $ping_urls[$i]);
+            }
+            if ($res) {
+                ACTIONLOG::add(WARNING, 'TrackBack Error:' . $res . ' (' . $ping_urls[$i] . ')');
+            
+        }
+    }
 
 
 
 
 
 
-		/**
-		 * Ping all URLs
-		 */
-		function pingTrackback($data) {
-			global $manager, $CONF;
-			
-			$ping_urls_count = 0;
-			$ping_urls = array();
-			$localflag = array();
-			
-			$ping_url = requestVar('trackback_ping_url');
-//modify start+++++++++
+    
+    
+    
+
+    
 /*
-			if ($ping_url) {
-				$ping_urls[0] = $ping_url;
-				$ping_urls_count++;
-			}
+            $CONF['ItemURL'] = preg_replace('/\/$/', '', $blog->getURL());   
+            $url = createItemLink($itemid);
 */
-			if (trim($ping_url)) {
-				$ping_urlsTemp = array();
-				$ping_urlsTemp = preg_split("/[\s,]+/", trim($ping_url));
-				for($i=0;$i<count($ping_urlsTemp);$i++){
-					$ping_urls[] = trim($ping_urlsTemp[$i]);
-					$ping_urls_count++;
-				}
-			}
-//modify end+++++++++
-	
-			$tb_url_amount = requestVar('tb_url_amount');
-			for ($i=0;$i<$tb_url_amount;$i++) {
-				$tb_temp_url = requestVar('tb_url_'.$i);
-				if ($tb_temp_url) {
-					$ping_urls[$ping_urls_count] = $tb_temp_url;
-					$localflag[$ping_urls_count] = (requestVar('tb_url_'.$i.'_local') == 'on')? 1: 0;
-					$ping_urls_count++;
-				}
-			}
-	
-			if ($ping_urls_count <= 0) {
-				return;
-			}
-	
-			$itemid = $data['itemid'];
-			$item = &$manager->getItem($itemid, 0, 0);
-			if (!$item) return; // don't ping for draft & future
-			if ($item['draft']) return;   // don't ping on draft items
-	
-			// gather some more information, needed to send the ping (blog name, etc)      
-			$blog =& $manager->getBlog(getBlogIDFromItemID($itemid));
-			$blog_name 	= $blog->getName();
-
-			$title      = $data['title'] != '' ? $data['title'] : $item['title'];
-			$title 		= strip_tags($title);
-
-			$excerpt    = $data['body'] != '' ? $data['body'] : $item['body'];
-			$excerpt 	= strip_tags($excerpt);
-			$excerpt    = $this->_cut_string($excerpt, 200);
-	
-/*
-			$CONF['ItemURL'] = preg_replace('/\/$/', '', $blog->getURL());   
-			$url = createItemLink($itemid);
-*/
-			$url 	= $this->_createItemLink($item['itemid'],$blog);	
-	
-			// send the ping(s) (add errors to actionlog)
-			for ($i=0; $i<count($ping_urls); $i++) {
-				if( ! $localflag[$i] )
-					$res = $this->sendPing($itemid, $title, $url, $excerpt, $blog_name, $ping_urls[$i]);
-				else
-					$res = $this->handleLocalPing($itemid, $title, $excerpt, $blog_name, $ping_urls[$i]);
-				if ($res) ACTIONLOG::add(WARNING, 'TrackBack Error:' . $res . ' (' . $ping_urls[$i] . ')');
-			}
-		}
+    
+            // send the ping(s) (add errors to actionlog)
 
 
 
