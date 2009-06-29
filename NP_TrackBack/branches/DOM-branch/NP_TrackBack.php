@@ -1267,7 +1267,7 @@ ___FORMEXTRA___;
     dc:identifier="{$uri}"
     dc:title="{$title}"
     dc:description="{$desc}"
-    trackback:ping="{$tburi}"
+    trackback:ping="{$tburl}"
     dc:date="{$time}" />
 </rdf:RDF>
 -->
@@ -1344,83 +1344,103 @@ ___RDFCODE___;
      * Send a Trackback ping to another website
      *
      * @param int
-     * @param str
-     * @param str
-     * @param str
-     * @param str
-     * @param str
+     * @param arr
+     * @param arr
+     * @param arr
      */
-    function sendPing($itemid, $title, $url, $excerpt, $blog_name, $ping_url)
+    function sendPing($itemid, $pingData, $pingURLs, &$res)
     {
-//        $sendEncoding = 'UTF-8';
         // 1. Check some basic things
         if (!$this->canSendPing()) {
-            return _TB_msgNOTALLOWED_SEND;
+            $res[]['mess'] = _TB_msgNOTALLOWED_SEND;
+            $res[]['url']  = '';
+            return;
         }
         if ($this->getOption('SendPings') == 'no') {
-            return _TB_msgDISABLED_SEND;
+            $res[]['mess'] = _TB_msgDISABLED_SEND;
+            $res[]['url']  = '';
+            return;
         }
-        if ($ping_url == '') {
-            return _TB_msgNO_SENDER_URL;
+        if (empty($pingURLs) || !is_array($pingURLs)) {
+            $res[]['mess'] = _TB_msgNO_SENDER_URL;
+            $res[]['url']  = '';
+            return;
         }
-        // 2. Check if protocol is correct http URL
-        $parsed_url = parse_url($ping_url);
-        if (strpos($parsed_url['scheme'], 'http') !== 0 || !$parsed_url['host']) {
-                return _TB_msgBAD_SENDER_URL;
-        }
-        // 3. Create contents
-//        if ($sendEncoding != _CHARSET) {
+
+        // 2. Check if protocol is correct http URL & Create handle
+        $cmh = curl_multi_init();
         if (strtoupper(_CHARSET) != 'UTF-8') {
-            $title     = mb_convert_encoding($title, 'UTF-8', _CHARSET);
-            $excerpt   = mb_convert_encoding($excerpt, 'UTF-8', _CHARSET);
-            $blog_name = mb_convert_encoding($blog_name, 'UTF-8', _CHARSET);
+            $pingData['title']     = mb_convert_encoding($pingData['title'], 'UTF-8', _CHARSET);
+            $pingData['excerpt']   = mb_convert_encoding($pingData['excerpt'], 'UTF-8', _CHARSET);
+            $pingData['blog_name'] = mb_convert_encoding($pingData['blog_name'], 'UTF-8', _CHARSET);
         }
-        $ch      = curl_init();
-        $data    = array(
-            'title'     => $title,
-            'url'       => $url,
-            'excerpt'   => $excerpt,
-            'blog_name' => $blog_name
-        );
-        $options = array(
-            CURLOPT_URL            => $ping_url,
-            CURLOPT_POST           => 1,
-            CURLOPT_POSTFIELDS     => $data,
-            CURLOPT_RETURNTRANSFER => 1,
-        );
-        curl_setopt_array($ch, $options);
-        $response = curl_exec($ch);
-        if ($response === false) {
-            return sprintf(_TB_msgCOULDNOT_SEND_PING, curl_error($ch), curl_errno($ch));
+        foreach ($pingURLs as $key => $pingURL) {
+            $parsed = parse_url($pingURL);
+            if (strpos($parsed['scheme'], 'http') !== 0 || !$parsed['host']) {
+                $res[]['mess'] = _TB_msgBAD_SENDER_URL;
+                $res[]['url']  = $pingURL;
+                unset($pingURLs[$key]);
+            } else {
+                $ch[$key] = curl_init();
+                $options = array(
+                    CURLOPT_URL            => $pingURL,
+                    CURLOPT_POST           => 1,
+                    CURLOPT_POSTFIELDS     => $pingData,
+                    CURLOPT_RETURNTRANSFER => 1,
+                );
+                curl_setopt_array($ch[$key], $options);
+                curl_multi_add_handle($cmh, $ch[$key]); 
+            }
         }
-        $respCd = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        if ($respCd != 200) {
-            return sprintf(_TB_msgRESP_HTTP_ERROR, $respCd, curl_error($ch));
+        if (empty($pingURLs)) {
+            return;
         }
-        $domDoc   = new DOMDocument;
-        $domDoc->preserveWhiteSpace = false;
-        $domDoc->loadXML($response);
-        $encoding = $dom->encoding;
-        if (empty($encoding)) {
-            $encoding = $this->_detect_encoding($response);  //mb_detect_encoding($response, 'ASCII,ISO-2022-JP,UTF-8,EUC-JP,SJIS')
-        }
-        if (strtoupper($encoding) != "UTF-8" && strtoupper($encoding) != "ISO-8859-1") {
-            $response = @mb_convert_encoding($response, "UTF-8", $encoding);
+
+        // 3. Send TrackBack ping data
+        $running = null;
+        do {
+            curl_multi_exec($cmh, $running);
+        } while($running > 0);
+
+        // 4. Get response and remove handle
+        foreach($ch as $key => $c) {
+            $response = curl_multi_getcontent($c);
+            if ($response === false) {
+                $res[]['mess'] = sprintf(_TB_msgCOULDNOT_SEND_PING, curl_error($c), curl_errno($c));
+                $res[]['url']  = $pingURLs[$key];
+            }
+            $respCd = curl_getinfo($c, CURLINFO_HTTP_CODE);
+            if ($respCd != 200) {
+                $res[]['mess'] = sprintf(_TB_msgRESP_HTTP_ERROR, $respCd, curl_error($c));
+                $res[]['url']  = $pingURLs[$key];
+            }
             $domDoc   = new DOMDocument;
             $domDoc->preserveWhiteSpace = false;
             $domDoc->loadXML($response);
-        }
-        $errors  = $domDoc->getElementsByTagName('error');
-        $error   = $errors->item(0)->nodeValue;
-        if (intval($error)) {
-            $mesages = $domDoc->getElementsByTagName('message');
-            $mesage  = $mesages->item(0)->nodeValue;
-            if (strtoupper(_CHARSET) != 'UTF-8') {
-                $mesage = @mb_convert_encoding($mesage, _CHARSET, "UTF-8");
+            $encoding = $dom->encoding;
+            if (empty($encoding)) {
+                $encoding = $this->_detect_encoding($response);  //mb_detect_encoding($response, 'ASCII,ISO-2022-JP,UTF-8,EUC-JP,SJIS')
             }
-            return sprintf(_TB_msgAN_ERROR_OCCURRED, htmlspecialchars($mesage, ENT_QUOTES));
+            if (strtoupper($encoding) != "UTF-8" && strtoupper($encoding) != "ISO-8859-1") {
+                $response = @mb_convert_encoding($response, "UTF-8", $encoding);
+                $domDoc   = new DOMDocument;
+                $domDoc->preserveWhiteSpace = false;
+                $domDoc->loadXML($response);
+            }
+            $errors = $domDoc->getElementsByTagName('error');
+            $error  = $errors->item(0)->nodeValue;
+            if (intval($error)) {
+                $mesages = $domDoc->getElementsByTagName('message');
+                $mesage  = $mesages->item(0)->nodeValue;
+                if (strtoupper(_CHARSET) != 'UTF-8') {
+                    $mesage = @mb_convert_encoding($mesage, _CHARSET, "UTF-8");
+                }
+                $res[]['mess'] = sprintf(_TB_msgAN_ERROR_OCCURRED, htmlspecialchars($mesage, ENT_QUOTES));
+                $res[]['url']  = $pingURLs[$key];
+            }
+            curl_multi_remove_handle($cmh, $c);
         }
-        return '';
+        curl_multi_close($mh);
     }
 
 // }}}
@@ -1534,7 +1554,7 @@ ___RDFCODE___;
                     `block` = 1 and 
                     `url`   = "' . sql_real_escape_string($url) . '"
             ');
-            if (mysql_num_rows($res) != 0) {
+            if (sql_num_rows($res) != 0) {
                 // NP_Trackback has blocked tb !
                 ACTIONLOG :: add(INFO, sprintf(_TB_msgDUPLICATED_TB_BLOCKED, $tb_id, $url));
                 return _TB_tplNO_ACCEPT;
@@ -1808,57 +1828,243 @@ ___RDFCODE___;
     function pingTrackback($data)
     {
         global $manager, $CONF;
-        $ping_urls_count = 0;
-        $ping_urls       = array();
-        $ping_url        = requestVar('trackback_ping_url');
-        $localflag       = array();
-        if (trim($ping_url)) {
-            $ping_urlsTemp = array();
-            $ping_urlsTemp = preg_split("/[\s,]+/", trim($ping_url));
-            for ($i=0; $i<count($ping_urlsTemp); $i++) {
-                $ping_urls[] = trim($ping_urlsTemp[$i]);
-                $ping_urls_count++;
+        $localPing = array();
+        $pingURLs  = array();
+        $pingCount = 0;
+        if ($tmpPings = trim(requestVar('trackback_ping_url'))) {
+            $pingURLs  = array_map('trim', preg_split("/[\s,]+/", $tmpPings));
+            $pingCount = count($pingURLs);
+        }
+        $URLamount = intRequestVar('tb_url_amount');
+        for ($i = 0; $i < $URLamount; $i++;) {
+            if ($tmpURL = requestVar('tb_url_' . $i)) {
+                if (requestVar('tb_url_' . $i . '_local') == 'on') {
+                    $localPing[] = $tmpURL;
+                } else {
+                    $pingURLs[$pingCount] = $tmpURL;
+                    $pingCount++;
+                }
             }
         }
-        $tb_url_amount   = requestVar('tb_url_amount');
-        for ($i=0; $i<$tb_url_amount; $i++) {
-            $tb_temp_url = requestVar('tb_url_' . $i);
-            if ($tb_temp_url) {
-                $ping_urls[$ping_urls_count] = $tb_temp_url;
-                $localflag[$ping_urls_count] = (requestVar('tb_url_' . $i . '_local') == 'on') ? 1 : 0;
-                $ping_urls_count++;
-            }
-        }
-        if ($ping_urls_count <= 0) {
+        if ($pingCount <= 0 && count($localPing) <= 0) {
             return;
         }
-        $itemid =  $data['itemid'];
+        $itemid =  intval($data['itemid']);
         $item   =& $manager->getItem($itemid, 0, 0);
-        if (!$item) {
+        if (empty($item)) {
             return; // don't ping for draft & future
         }
-        if ($item['draft']) {
-            return;   // don't ping on draft items
+        // gather some more information, needed to send the ping (blog name, etc)
+        $blog     =& $manager->getBlog(getBlogIDFromItemID($itemid));
+        $pingData =  array(
+            'blog_name' => $blog->getName(),
+            'title'     => strip_tags($item['title']),
+            'excerpt'   => $this->_cut_string(strip_tags($item['body']), 200),
+            'url'       => $this->_createItemLink($itemid, $blog);
+        );
+        $res = array();
+        if ($pingCount) {
+            $this->sendPing($itemid, $pingData, $pingURLs, &$res);
         }
-        // gather some more information, needed to send the ping (blog name, etc)      
-        $blog      =& $manager->getBlog(getBlogIDFromItemID($itemid));
-        $blog_name =  $blog->getName();
-        $title     =  $data['title'] != '' ? $data['title'] : $item['title'];
-        $title     =  strip_tags($title);
-        $excerpt   =  $data['body'] != '' ? $data['body'] : $item['body'];
-        $excerpt   =  strip_tags($excerpt);
-        $excerpt   =  $this->_cut_string($excerpt, 200);
-        $url       =  $this->_createItemLink($item['itemid'], $blog);    
-        for ($i=0; $i<count($ping_urls); $i++) {
-            if (!$localflag[$i]) {
-                $res = $this->sendPing($itemid, $title, $url, $excerpt, $blog_name, $ping_urls[$i]);
-            } else {
-                $res = $this->handleLocalPing($itemid, $title, $excerpt, $blog_name, $ping_urls[$i]);
+        if (count($localPing)) {
+            $this->handleLocalPing($itemid, $pingData, $pingURLs, &$res);
+        }
+        if (!empty($res)) {
+            foreach ($res as $value) {
+                ACTIONLOG::add(WARNING, sprintf(_TB_msgTRACKBACK_ERROR, $value['mess7}, $value['url']));
             }
-            if ($res) {
-                ACTIONLOG::add(WARNING, 'TrackBack Error:' . $res . ' (' . $ping_urls[$i] . ')');
-            
         }
+    }
+
+// }}}
+// {{{ function autoDiscovery($text)
+
+    /**
+     * Auto-Discovery of TrackBack Ping URLs based on HTML story
+     *
+     * @param str
+     * @return arr
+     */
+    function autoDiscovery($text)
+    {
+        $dom = new DOMDocument;
+        $dom->preserveWhiteSpace = false;
+        $dom->loadHTML($text);
+
+        $links  = $this->getPermaLinksFromText($text);
+        $result = array();
+        foreach ($links as $link) {
+            list($url, $title) => $this->getURIfromLink($link);
+            if (!empty($url)) {
+                $result[$url] = $title;
+            }
+        }
+        return $result;
+    }
+
+// }}}
+// {{{ function getURIfromLink($link)
+
+    /**
+     * Auto-Discovery of TrackBack Ping URLs based on single link
+     *
+     * @param str
+     * @return arr
+     */
+    function getURIfromLink($link)
+    {
+        // Check to see if the cache contains this link
+        $res = sql_query('
+            SELECT
+                `url`,
+                `title`,
+            FROM
+                `' . sql_table('plugin_tb_lookup') . '`
+            WHERE
+                `link` = "' . sql_real_escape_string($link) . '"
+        ');
+        if ($row = sql_fetch_assoc($res)) {
+            if ($row['title'] != '') {
+                if (strtoupper(_CHARSET) != 'UTF-8') {
+                    $row['title'] = mb_convert_encoding($row['title'], 'UTF-8', _CHARSET);
+                    $row['title'] = $this->_decode_entities($row['title']);
+                }
+                return array(
+                    $row['url'],
+                    $row['title'],
+                );
+            } else {
+                return array(
+                    $row['url'],
+                    $row['url'],
+                );
+            }
+        }
+        $rdf = $this->retrieveUrl($link);
+        if ($rdf) {
+            if (($uri = $this->getAttributeFromRDF($rdf, 'trackback:ping')) !== false) {
+                if (($title = $this->getAttributeFromRDF($rdf, 'dc:title')) !== false) {
+                    if (($author = $this->getAttributeFromRDF($rdf, 'dc:creator')) !== false) {
+                        $title = $author . ": " . $title;
+                    }
+                    $uri = $this->_decode_entities($uri);
+                    $convertedTitle = (strtoupper(_CHARSET) != 'UTF-8') ? mb_convert_encoding($title, _CHARSET, 'UTF-8')
+                                                                        : $title;
+                    $res = sql_query("
+                        INSERT INTO 
+                            `" . sql_table('plugin_tb_lookup') . "`
+                        (
+                            `link`,
+                            `url`,
+                            `title`
+                        ) VALUES (
+                            '" . sql_real_escape_string($link) . "',
+                            '" . sql_real_escape_string($uri) . "',
+                            '" . sql_real_escape_string($convertedTitle) . "'
+                        )
+                    ");
+                    $title = $this->_decode_entities($title);
+                    return array (
+                        $uri,
+                        $title
+                    );
+                } else {
+                    $uri = html_entity_decode($uri, ENT_COMPAT);
+                    $res = sql_query("
+                        INSERT INTO 
+                            `" . sql_table('plugin_tb_lookup') . "`
+                        (
+                            `link`,
+                            `url`,
+                            `title`
+                        ) VALUES (
+                            '" . sql_real_escape_string($link) . "',
+                            '" . sql_real_escape_string($uri) . "',
+                            ''
+                        )
+                    ");
+                    return array (
+                        $uri,
+                        $uri
+                    );
+                }
+            }
+        }
+        $res = sql_query("
+            INSERT INTO 
+                `" . sql_table('plugin_tb_lookup') . "`
+            (
+                `link`,
+                `url`,
+                `title`
+            ) VALUES (
+                '" . sql_real_escape_string($link) . "',
+                '',
+                ''
+            )
+        ");
+        return array (
+            '',
+            ''
+        );
+    }
+
+// }}}
+// {{{ function getPermaLinksFromText($text)
+
+    /**
+     * Detect links used in HTML code
+     *
+     * @param str
+     * @return arr
+     */
+    function getPermaLinksFromText($text)
+    {
+        $lnk = array();
+        $dom = new DOMDocument;
+        $dom->load($text);
+        $anc = $dom->getElementsByTagName('a');
+        foreach ($anc as $a) {
+            $ink[] = $a->getAttribute('href');
+        }
+        return $lnk;
+    }
+
+// }}}
+// {{{ function retrieveUrl($link)
+
+    /**
+     * Retrieve the contents of an external (X)HTML document
+     *
+     * @param str
+     * @return str
+     */
+    function retrieveUrl($url)
+    {
+        $ua  = ini_set('user_agent', $this->userAgent);
+        $ch  = curl_init();
+        $opt = array(
+            CURLOPT_URL            => $url,
+            CURLOPT_HEADER         => 1,
+            CURLOPT_BINARYTRANSFER => 1,
+            CURLOPT_FOLLOWLOCATION => 1,
+            CURLOPT_MAXREDIRS      => 5,
+            CURLOPT_RETURNTRANSFER => 1,
+            CURLOPT_TIMEOUT        => 20,
+            CURLOPT_USERAGENT      => $this->userAgent,
+        );
+        curl_setopt_array($ch, $opt);
+        // Retrieve response
+        $raw  = curl_exec($ch);
+        $info = curl_getinfo($ch);
+        // Split into headers and contents
+        $headers  = substr($raw, 0, $info['header_size']);
+        $contents = substr($raw, $info['header_size']);
+        curl_close($ch);
+        ini_set('user_agent', $ua);
+        // Next normalize the encoding to UTF8...
+        $contents = $this->_convert_to_utf8_auto($contents, $headers);
+        return $contents;
     }
 
 
@@ -1866,63 +2072,7 @@ ___RDFCODE___;
 
 
 
-    
-    
-    
 
-    
-/*
-            $CONF['ItemURL'] = preg_replace('/\/$/', '', $blog->getURL());   
-            $url = createItemLink($itemid);
-*/
-    
-            // send the ping(s) (add errors to actionlog)
-
-
-
-
-
-
-
-
-
-
-
-            $dom      =  new DOMDocument('1.0', 'UTF-8');
-            $response =  $dom->appendChild($dom->createElement('response'));
-            $response->appendChild($dom->createElement('error', '0'));
-            $rss      =  $response->appendChild($dom->createElement('rss'));
-            $rss->setAttribute("version", "0.91");
-            $channel  =  $rss->appendChild($dom->createElement('channel'));
-            $channel->appendChild($dom->createElement('title', htmlspecialchars($title, ENT_QUOTES)));
-            $channel->appendChild($dom->createElement('link', htmlspecialchars($url, ENT_QUOTES)));
-            $channel->appendChild($dom->createElement('description', htmlspecialchars($excerpt, ENT_QUOTES)));
-
-            $query = 'SELECT '
-                   .    '`url`, '
-                   .    '`blog_name`, '
-                   .    '`excerpt`, '
-                   .    '`title`, '
-                   .    'UNIX_TIMESTAMP(`timestamp`) as timestamp '
-                   . 'FROM '
-                   .    sql_table('plugin_tb') . ' '
-                   . 'WHERE '
-                   .    '`tb_id` = ' . $tb_id . ' AND '
-                   .    '`block` = 0 '
-                   . 'ORDER BY '
-                   .    '`timestamp` DESC';
-            $res   = sql_query($query);
-            while($data = sql_fetch_assoc($res)) {
-                $data['title']   = htmlspecialchars($this->_restore_to_utf8($data['title']), ENT_QUOTES);
-                $data['excerpt'] = htmlspecialchars($this->_restore_to_utf8($data['excerpt']), ENT_QUOTES);
-                $data['url']     = htmlspecialchars($data['url'], ENT_QUOTES);
-                $item            = $channel->appendChild($dom->createElement('item'));
-                $item->appendChild($dom->createElement('title', $data['title']);
-                $item->appendChild($dom->createElement('link', $data['url']);
-                $item->appendChild($dom->createElement('description', $data['excerpt']);
-            }
-            header('Content-Type: text/xml');
-            echo $dom->saveXML();
 
 
 
