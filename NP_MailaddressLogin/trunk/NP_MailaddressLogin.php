@@ -2,7 +2,6 @@
 
 class NP_MailaddressLogin extends NucleusPlugin
 {
-{
     function getName()
     {
         return 'Login by Mailaddress';
@@ -53,10 +52,10 @@ class NP_MailaddressLogin extends NucleusPlugin
             SELECT
                 mname as result
             FROM
-                ' . sql_query('member') . '
+                ' . sql_table('member') . '
             WHERE
-                memail = ' . sql_real_escape_string($data['login']) ' and
-                mpassword = ' . md5($data['password']);
+                memail = "' . sql_real_escape_string($data['login']) .    '" and
+                mpassword = "' . md5($data['password']) . '"';
         if ($mname = quickQuery($query)) {
             $data['login']      = $mname;
             $data['success']    = 1;
@@ -75,19 +74,13 @@ class NP_MailaddressLogin extends NucleusPlugin
             SELECT
                 COUNT(*) as result
             FROM
-                ' . sql_query('member') . '
+                ' . sql_table('member') . '
             WHERE
-                memail = ' $mailAddr
+                memail = "' . sql_real_escape_string($mailAddr) . '"'
         );
-        if ($userMail > 0) {
-            $query = '
-                DELETE
-                FROM
-                    ' . sql_query('member') . '
-                WHERE
-                    mnumber = ' . $this->getID();
-            sql_query($query);
-            $data['member'] = false;
+        if ($userMail > 1) {
+            $adm = new ADMIN;
+            $adm->deleteOneMember($member->getID());
             return;
         }
     }
@@ -108,11 +101,10 @@ class NP_MailaddressLogin extends NucleusPlugin
             SELECT
                 COUNT(*) as result
             FROM
-                ' . sql_query('member') . 
+                ' . sql_table('member') . 
                 '
             WHERE
-                memail = ' $mailAddr
-            '
+                memail = "' . sql_real_escape_string($mailAddr) . '"'
         );
         if ($userMail > 0) {
             $data['error'] = 'Mail address is avaiable';
