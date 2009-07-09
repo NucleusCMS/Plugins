@@ -189,7 +189,8 @@ class PubMedAdmin extends BaseActions {
 		$likes='';
 		foreach($contents as $value){
 			if (!($value=(int)$value)) continue;
-			$ids.='&id='.$value;
+			if (!$ids) $ids='&id='.$value;
+			else $ids.=','.$value;
 			$likes.=' OR ibody LIKE "%<!--PMID: '.(int)$value.'-->%"';
 		}
 		// Check if there are records for the articles
