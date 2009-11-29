@@ -2,14 +2,14 @@
 // vim: tabstop=2:shiftwidth=2
 
 /**
-  * NP_Clap ($Revision: 1.2 $)
+  * NP_Clap ($Revision: 1.97 $)
   * by hsur ( http://blog.cles.jp/np_cles )
   * 
-  * $Id: NP_Clap.php,v 1.2 2008-05-18 07:15:15 hsur Exp $
+  * $Id: NP_Clap.php,v 1.97 2009/11/29 11:18:04 hsur Exp $
 */
 
 /*
-  * Copyright (C) 2006-2008 CLES. All rights reserved.
+  * Copyright (C) 2006-2009 CLES. All rights reserved.
   *
   * This program is free software; you can redistribute it and/or
   * modify it under the terms of the GNU General Public License
@@ -64,7 +64,7 @@ class NP_Clap extends NucleusPlugin {
 
 	// version of the plugin
 	function getVersion() {
-		return '1.6.1';
+		return '1.7.0';
 	}
 
 	function install() {
@@ -151,7 +151,7 @@ class NP_Clap extends NucleusPlugin {
 	
 	// a description to be shown on the installed plugins listing
 	function getDescription() {
-		return '[$Revision: 1.2 $]<br />'.NP_CLAP_description ;
+		return '[$Revision: 1.97 $]<br />'.NP_CLAP_description ;
 	}
 	
 	function supportsFeature($what) {
@@ -518,6 +518,7 @@ class NP_Clap extends NucleusPlugin {
 			'key' => htmlspecialchars($key, ENT_QUOTES),
 			'type' => ($key == 'preview') ? 'preview' : 'clap',
 			'contentid' => $content['id'],
+			'comment' => htmlspecialchars(requestVar('comment'), ENT_QUOTES),
 		);
 		
 		$tpl = $this->_getTemplateEngine();

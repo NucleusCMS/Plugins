@@ -2,14 +2,14 @@
 // vim: tabstop=2:shiftwidth=2
 
 /**
-  * index.php ($Revision: 1.1 $)
+  * index.php ($Revision: 1.53 $)
   * 
   * by hsur ( http://blog.cles.jp/np_cles )
-  * $Id: index.php,v 1.1 2008-05-17 19:11:10 hsur Exp $
+  * $Id: index.php,v 1.53 2009/11/29 11:41:06 hsur Exp $
 */
 
 /*
-  * Copyright (C) 2005-2007 CLES. All rights reserved.
+  * Copyright (C) 2005-2009 CLES. All rights reserved.
   *
   * This program is free software; you can redistribute it and/or
   * modify it under the terms of the GNU General Public License
@@ -45,6 +45,8 @@ require_once($DIR_PLUGINS . 'sharedlibs/sharedlibs.php');
 require_once('cles/Feedback.php');
 require_once('cles/Template.php');
 
+define('NP_CLAP_ITEM_PER_PAGE', 20);
+
 sendContentType('application/xhtml+xml', 'admin-clap', _CHARSET);
 
 // create the admin area page
@@ -72,7 +74,7 @@ $templateEngine =& new cles_Template(dirname(__FILE__).'/template');
 define('NP_CLAP_TEMPLATEDIR_INDEX', 'index');
 $tplVars = array(
 	'indexurl' => serverVar('PHP_SELF'),
-	'itemperpage' => '20',
+	'itemperpage' => NP_CLAP_ITEM_PER_PAGE,
 	'optionurl' => $CONF['AdminURL'] . 'index.php?action=pluginoptions&amp;plugid=' . $oPluginAdmin->plugin->getid(),
 	'actionurl' => $CONF['ActionURL'],
 	'ticket' => $manager->_generateTicket(),
@@ -170,7 +172,7 @@ switch ($action) {
 		}
 		$tplVars['offset'] = intRequestVar('offset') ? intRequestVar('offset') : 0;
 		
-		$res = $oPluginAdmin->plugin->getDetail($tplVars['key'], $tplVars['offset'], 99999999);
+		$res = $oPluginAdmin->plugin->getDetail($tplVars['key'], 0, 99999999);
 		$tplVars['rowcount'] = mysql_num_rows($res);
 
 		$res = $oPluginAdmin->plugin->getDetail($tplVars['key'], $tplVars['offset'], $tplVars['itemperpage']);
@@ -178,10 +180,13 @@ switch ($action) {
 			$content = $templateEngine->fetch('detail_nextbutton', NP_CLAP_TEMPLATEDIR_INDEX);
 			$tplVars['next_offset'] = $tplVars['offset'] + $tplVars['itemperpage'];
 			$tplVars['next_button'] = $templateEngine->fill($content, $tplVars, null);	
+		} else {
+			$tplVars['itemperpage'] = $tplVars['rowcount'] - $tplVars['offset'];
 		}
+		
 		if( $tplVars['offset'] > 0 ){
 			$content = $templateEngine->fetch('detail_prevbutton', NP_CLAP_TEMPLATEDIR_INDEX);
-			$tplVars['prev_offset'] = $tplVars['offset'] - $tplVars['itemperpage'];
+			$tplVars['prev_offset'] = $tplVars['offset'] - NP_CLAP_ITEM_PER_PAGE;
 			$tplVars['prev_button'] = $templateEngine->fill($content, $tplVars, null);	
 		}
 
@@ -203,7 +208,7 @@ switch ($action) {
 		
 	case 'messagelist' :
 		$tplVars['offset'] = intRequestVar('offset') ? intRequestVar('offset') : 0;
-		$res = $oPluginAdmin->plugin->getMessageList($tplVars['offset'], 99999999);
+		$res = $oPluginAdmin->plugin->getMessageList(0, 99999999);
 		$tplVars['rowcount'] = mysql_num_rows($res);
 
 		$res = $oPluginAdmin->plugin->getMessageList($tplVars['offset'], $tplVars['itemperpage']);
@@ -211,10 +216,13 @@ switch ($action) {
 			$content = $templateEngine->fetch('messagelist_nextbutton', NP_CLAP_TEMPLATEDIR_INDEX);
 			$tplVars['next_offset'] = $tplVars['offset'] + $tplVars['itemperpage'];
 			$tplVars['next_button'] = $templateEngine->fill($content, $tplVars, null);	
+		} else {
+			$tplVars['itemperpage'] = $tplVars['rowcount'] - $tplVars['offset'];
 		}
+		
 		if( $tplVars['offset'] > 0 ){
 			$content = $templateEngine->fetch('messagelist_prevbutton', NP_CLAP_TEMPLATEDIR_INDEX);
-			$tplVars['prev_offset'] = $tplVars['offset'] - $tplVars['itemperpage'];
+			$tplVars['prev_offset'] = $tplVars['offset'] - NP_CLAP_ITEM_PER_PAGE;
 			$tplVars['prev_button'] = $templateEngine->fill($content, $tplVars, null);	
 		}
 
@@ -235,7 +243,7 @@ switch ($action) {
 		
 	case 'thanksmsg' :
 		$tplVars['offset'] = intRequestVar('offset') ? intRequestVar('offset') : 0;
-		$res = $oPluginAdmin->plugin->getThanksMsgList($tplVars['offset'], 99999999);
+		$res = $oPluginAdmin->plugin->getThanksMsgList(0, 99999999);
 		$tplVars['rowcount'] = mysql_num_rows($res);
 		
 		$res = $oPluginAdmin->plugin->getThanksMsgList($tplVars['offset'], $tplVars['itemperpage']);
@@ -243,10 +251,13 @@ switch ($action) {
 			$content = $templateEngine->fetch('thanksmsg_nextbutton', NP_CLAP_TEMPLATEDIR_INDEX);
 			$tplVars['next_offset'] = $tplVars['offset'] + $tplVars['itemperpage'];
 			$tplVars['next_button'] = $templateEngine->fill($content, $tplVars, null);	
+		} else {
+			$tplVars['itemperpage'] = $tplVars['rowcount'] - $tplVars['offset'];
 		}
+		
 		if( $tplVars['offset'] > 0 ){
 			$content = $templateEngine->fetch('thanksmsg_prevbutton', NP_CLAP_TEMPLATEDIR_INDEX);
-			$tplVars['prev_offset'] = $tplVars['offset'] - $tplVars['itemperpage'];
+			$tplVars['prev_offset'] = $tplVars['offset'] - NP_CLAP_ITEM_PER_PAGE;
 			$tplVars['prev_button'] = $templateEngine->fill($content, $tplVars, null);	
 		}
 
@@ -338,7 +349,7 @@ switch ($action) {
 		$tplVars['offset'] = intRequestVar('offset') ? intRequestVar('offset') : 0;
 		$tplVars['blog'] = requestVar('blog') ? requestVar('blog') : '' ;
 		
-		$res = $oPluginAdmin->plugin->getOverview($tplVars['blog'], $tplVars['offset'], 99999999);
+		$res = $oPluginAdmin->plugin->getOverview($tplVars['blog'], 0, 99999999);
 		$tplVars['rowcount'] = mysql_num_rows($res);
 
 		$res = $oPluginAdmin->plugin->getOverview($tplVars['blog'], $tplVars['offset'], $tplVars['itemperpage']);
@@ -346,11 +357,13 @@ switch ($action) {
 			$content = $templateEngine->fetch('overview_nextbutton', NP_CLAP_TEMPLATEDIR_INDEX);
 			$tplVars['next_offset'] = $tplVars['offset'] + $tplVars['itemperpage'];
 			$tplVars['next_button'] = $templateEngine->fill($content, $tplVars, null);	
+		} else {
+			$tplVars['itemperpage'] = $tplVars['rowcount'] - $tplVars['offset'];
 		}
-		
+				
 		if( $tplVars['offset'] > 0 ){
 			$content = $templateEngine->fetch('overview_prevbutton', NP_CLAP_TEMPLATEDIR_INDEX);
-			$tplVars['prev_offset'] = $tplVars['offset'] - $tplVars['itemperpage'];
+			$tplVars['prev_offset'] = $tplVars['offset'] - NP_CLAP_ITEM_PER_PAGE;
 			$tplVars['prev_button'] = $templateEngine->fill($content, $tplVars, null);
 		}
 		
