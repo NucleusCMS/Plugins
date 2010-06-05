@@ -162,7 +162,6 @@ switch($type) {
 						if (isset($info["APP13"])) {
 							$iptc = iptcparse($info["APP13"]);
 							$description = $iptc["2#120"][0];
-							$description = addslashes($description);
 						}
 					//adds a picture to the temp table so user can add description, etc before actually adding to database
 					echo 'creating thumbnail for ';
