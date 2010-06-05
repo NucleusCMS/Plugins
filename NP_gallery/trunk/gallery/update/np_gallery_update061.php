@@ -57,7 +57,7 @@ if(!mysql_num_rows($res)) {
 		' add column tdesc int unsigned first ';
 	sql_query($query);
 	if(!$new_id) $new_id = 1;
-	$query = 'UPDATE '.sql_table('plug_gallery_template').' set tdesc = '.$new_id;
+	$query = 'UPDATE '.sql_table('plug_gallery_template').' set tdesc = '.intval($new_id);
 	sql_query($query);
 }
 

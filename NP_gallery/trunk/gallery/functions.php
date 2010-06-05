@@ -173,7 +173,7 @@ function database_cleanup() {
 			$result2 = mysql_query("select numberofimages from ".sql_table('plug_gallery_album')." where albumid = ".intval($row['albumid']));
 			$row2 = mysql_fetch_assoc($result2);
 			if($row2['numberofimages'] <> $row['noi']) {
-				sql_query("update ".sql_table('plug_gallery_album')." set numberofimages={$row['noi']} where albumid = ".intval($row['albumid']));
+				sql_query("update ".sql_table('plug_gallery_album')." set numberofimages=".intval($row['noi'])." where albumid = ".intval($row['albumid']));
 			}
 		}
 	}

@@ -293,6 +293,7 @@ function addPictureForm($albumid = 0, $num_files = 0) {
 
 function addpictureformjupload($albumid = 0, $num_files = 0) {
 	global $NPG_CONF,$CONF;
+	if (!preg_match('/^([a-z0-9_]+|`[^`]+`)$/i',$NPG_CONF['temp_table'])) exit;
 	$exist_temp_table = mysql_query('SELECT 1 FROM '.$NPG_CONF['temp_table'].' LIMIT 0');
 	if ($exist_temp_table) sql_query('drop table '. $NPG_CONF['temp_table']);
 
@@ -358,6 +359,7 @@ function addTempPictureForm($albumid = 0) {
 	global $NPG_CONF, $gmember,$manager,$CONF,$NP_BASE_DIR;
 	
 	$NPG_CONF = getNPGConfig();
+	if (!preg_match('/^([a-z0-9_]+|`[^`]+`)$/i',$NPG_CONF['temp_table'])) exit;
 	$table_name = $NPG_CONF['temp_table'];
 	
 	$promo_allowed = false;

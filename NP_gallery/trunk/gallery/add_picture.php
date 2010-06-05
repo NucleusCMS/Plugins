@@ -70,7 +70,7 @@ if(!$NPG_CONF['batch_add_num']) $NPG_CONF['batch_add_num'] = 10;
 
 //todo: display header
 
-
+if (!preg_match('/^([a-z0-9_]+|`[^`]+`)$/i',$NPG_CONF['temp_table'])) exit;
 $type = requestvar('type');
 switch($type) {
 	case 'firststage':
@@ -366,6 +366,7 @@ switch($type) {
 function add_temp($albumid = 0, $filename, $filetype, $filesize, $filetempname, $description = '') {
 	global $NPG_CONF, $gmember, $NP_BASE_DIR,$manager;
 	$memberid = $gmember->getID();
+	if (!preg_match('/^([a-z0-9_]+|`[^`]+`)$/i',$NPG_CONF['temp_table'])) exit;
 	$temp_table = $NPG_CONF['temp_table'];
 	$int_filename = '';
 	$thumb_filename = '';

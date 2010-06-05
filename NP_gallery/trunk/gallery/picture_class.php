@@ -77,8 +77,8 @@ class PICTURE {
 			$this->description = stripslashes($this->description);
 			$this->description = addslashes($this->description);
 			sql_query("update ".sql_table('plug_gallery_picture')
-				." set title='".addslashes($this->title)."', "
-				."description='".addslashes($this->description)."', " 
+				." set title='".$this->title."', "
+				."description='".$this->description."', " 
 				."keywords='".addslashes($this->keywords)."',"
 				."albumid=".intval($this->albumid)." "
 				."where pictureid=".intval($this->id) );
@@ -465,7 +465,7 @@ class PICTURE {
 		if(!$NPG_CONF['viewtime']) $NPG_CONF['viewtime'] = 30 ;
 		$cuttime = $NPG_CONF['viewtime'];
 		//first test for duplicates
-		$query = 'select * from '.sql_table('plug_gallery_views')." where vpictureid = ".($pictureid);
+		$query = 'select * from '.sql_table('plug_gallery_views')." where vpictureid = ".intval($pictureid);
 		//$result = mysql_query($query);
 		//print_r($result);
 		//$numrows= mysql_num_rows($result);
