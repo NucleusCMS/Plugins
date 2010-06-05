@@ -4,8 +4,8 @@
 global $DIR_NUCLEUS,$DIR_LIBS;
 
 global $NP_GALLERY_DIR, $NP_BASE_DIR;
-$NP_GALLERY_DIR = $DIR_NUCLEUS . 'plugins/gallery/';
-$NP_BASE_DIR = substr($DIR_NUCLEUS,0,strlen($DIR_NUCLEUS) - 8);
+$NP_GALLERY_DIR = dirname(__FILE__) . '/';
+$NP_BASE_DIR = dirname(dirname(dirname(dirname(__FILE__)))) . '/';
 
 
 include_once($NP_GALLERY_DIR.'functions.php');

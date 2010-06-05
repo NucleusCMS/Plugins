@@ -15,7 +15,7 @@ body {
 
 //add_picture.php
 include('../../../config.php');
-include_once('config.php'); //gallery config
+include_once(dirname(__FILE__).'/config.php'); //gallery config
 include_once($DIR_LIBS . 'ITEM.php');
 
 
@@ -306,7 +306,7 @@ switch($type) {
 			else {
 				$j=0;
 				while($ids[$j]) {
-					$query = 'insert into '.sql_table('plug_gallery_promo').' values ('.$ids[$j].', '.$result['itemid'].')';
+					$query = 'insert into '.sql_table('plug_gallery_promo').' values ('.intval($ids[$j]).', '.intval($result['itemid']).')';
 					sql_query($query);
 					$j++;
 				}
@@ -457,7 +457,7 @@ function add_temp($albumid = 0, $filename, $filetype, $filesize, $filetempname, 
      $query = 'insert into '
       .$temp_table
       .'(tempid,memberid,albumid,filename,intfilename,thumbfilename,title,description,promote,error)'
-      ." values (NULL, $memberid, $albumid, '$filename', '$int_filename', '$thumb_filename', '$defaulttitle', '$description', 0, '$error') ";
+      ." values (NULL, ".intval($memberid).", ".intval($albumid).", '".addslashes($filename)."', '".addslashes($int_filename)."', '".addslashes($thumb_filename)."', '".addslashes($defaulttitle)."', '".addslashes($description)."', 0, '".addslashes($error)."') ";
    //echo $query.'<br/>';
    $result = sql_query($query);
 

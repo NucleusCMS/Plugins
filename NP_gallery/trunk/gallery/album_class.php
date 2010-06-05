@@ -43,7 +43,7 @@ class ALBUM {
 	}
 	
 	function commentsallowed($pictureid) {
-		$query = 'select a.commentsallowed from '.sql_table('plug_gallery_album').' as a, '.sql_table('plug_gallery_picture').' as b where a.albumid=b.albumid and pictureid='.$pictureid;
+		$query = 'select a.commentsallowed from '.sql_table('plug_gallery_album').' as a, '.sql_table('plug_gallery_picture').' as b where a.albumid=b.albumid and pictureid='.intval($pictureid);
 		$res = sql_query($query);
 		$row = mysql_fetch_object($res);
 		return $row->commentsallowed;
@@ -61,8 +61,8 @@ class ALBUM {
 	function add_new($data) {
 		$atitle = addslashes($data['title']);
 		$adescription = addslashes($data['description']);
-		$aowner = $data['ownerid'];
-		$apublicalbum = $data['publicalbum'];
+		$aowner = intval($data['ownerid']);
+		$apublicalbum = addslashes($data['publicalbum']);
 		if(!$aowner) $aowner = 0; //make the owner guest
 		$query = "insert into ".sql_table('plug_gallery_album')." (albumid, title, description, ownerid, modified, numberofimages, commentsallowed, publicalbum) values ".
 					"(NULL, '$atitle','$adescription',$aowner,NULL,0,1,'$apublicalbum')";
@@ -71,7 +71,7 @@ class ALBUM {
 	}
 	
 	function get_data($id) {
-		$result = sql_query("select a.*,b.mname as name from ".sql_table('plug_gallery_album').' as a left join '.sql_table('member')." as b on a.ownerid=b.mnumber where a.albumid=$id" );
+		$result = sql_query("select a.*,b.mname as name from ".sql_table('plug_gallery_album').' as a left join '.sql_table('member')." as b on a.ownerid=b.mnumber where a.albumid=".intval($id) );
 		if(mysql_num_rows($result)) $data = mysql_fetch_object($result); 
 		else {
 			$data->albumid = 0;
@@ -82,19 +82,19 @@ class ALBUM {
 		
 		//default album thumbnail if thumbnail is blank
 		if(!$data->thumbnail) {
-			$query = 'select thumb_filename from '.sql_table('plug_gallery_picture').' where albumid='.$data->albumid.' LIMIT 1';
+			$query = 'select thumb_filename from '.sql_table('plug_gallery_picture').' where albumid='.intval($data->albumid).' LIMIT 1';
 			$result = sql_query($query);
 			if(mysql_num_rows($result) ){
 				$row = mysql_fetch_object($result);
 				$data->thumbnail = $row->thumb_filename;
-				sql_query('update '.sql_table('plug_gallery_album').' set thumbnail=\''.$row->thumb_filename.'\' where albumid='.$data->albumid);
+				sql_query('update '.sql_table('plug_gallery_album').' set thumbnail=\''.addslashes($row->thumb_filename).'\' where albumid='.intval($data->albumid));
 			}
 		}
 		return $data;
 	}
 	
 	function get_team($id) {
-		$result = sql_query("select a.*, b.mname from ".sql_table('member').' as b, '.sql_table('plug_gallery_album_team')." as a where a.talbumid=$id and a.tmemberid=b.mnumber");
+		$result = sql_query("select a.*, b.mname from ".sql_table('member').' as b, '.sql_table('plug_gallery_album_team')." as a where a.talbumid=".intval($id)." and a.tmemberid=b.mnumber");
 		if(!mysql_num_rows($result)) return false;
 		$j=0;
 		while ($team[$j] = mysql_fetch_object($result)) {
@@ -105,12 +105,12 @@ class ALBUM {
 	
 	function get_pictures($id = 0,$so) {
 		if($this->query == '' && $id == 0) return null;
-		if($this->query == '') $this->query = "select * from ".sql_table('plug_gallery_picture')." where albumid=$id $so";
+		if($this->query == '') $this->query = "select * from ".sql_table('plug_gallery_picture')." where albumid=".intval($id)." $so";
 		$result = sql_query($this->query);
 		$i=0;
 		while ($row = mysql_fetch_object($result)) {
 			$data[$i] = $row;
-			$res = sql_query('select views from '.sql_table('plug_gallery_views').' where vpictureid = '.$row->pictureid);
+			$res = sql_query('select views from '.sql_table('plug_gallery_views').' where vpictureid = '.intval($row->pictureid));
 			if(mysql_num_rows($res)) {
 				$row2 = mysql_fetch_object($res);
 				$data[$i]->views = $row2->views;
@@ -134,11 +134,11 @@ class ALBUM {
 		while ($j<$limit){
 			$keyword = $splitdata[$j];
 			//echo $keyword;
-			$this->query = "select * from ".sql_table('plug_gallery_picture')." WHERE keywords like '%".$keyword."%' ";
+			$this->query = "select * from ".sql_table('plug_gallery_picture')." WHERE keywords like '%".addslashes($keyword)."%' ";
 			$result = sql_query($this->query);
 			while ($row = @mysql_fetch_object($result)) {
 				$data[$i] = $row;
-				$res = sql_query('select views from '.sql_table('plug_gallery_views').' where vpictureid = '.$row->pictureid);
+				$res = sql_query('select views from '.sql_table('plug_gallery_views').' where vpictureid = '.intval($row->pictureid));
 				if(mysql_num_rows($res)) {
 					$row2 = mysql_fetch_object($res);
 					$data[$i]->views = $row2->views;
@@ -156,12 +156,12 @@ class ALBUM {
 	
 	function increaseNumberByOne($id) {
 		if(!$id) $id = $this->id;
-		$result = sql_query("update ".sql_table('plug_gallery_album')." set numberofimages = numberofimages + 1 where albumid =$id");
+		$result = sql_query("update ".sql_table('plug_gallery_album')." set numberofimages = numberofimages + 1 where albumid =".intval($id));
 	}
 	
 	function decreaseNumberByOne($id) {
 		if(!$id) $id = $this->id;
-		$result = sql_query("update ".sql_table('plug_gallery_album')." set numberofimages = numberofimages - 1 where albumid =$id");
+		$result = sql_query("update ".sql_table('plug_gallery_album')." set numberofimages = numberofimages - 1 where albumid =".intval($id));
 	}
 	
 	function fixnumberofimages($id) {
@@ -170,25 +170,25 @@ class ALBUM {
 			$numberofimages = $this->numberofimages;
 		}
 		else {
-			$result = sql_query('select numberofimages from '.sql_table('plug_gallery_album'). " where albumid=$id");
+			$result = sql_query('select numberofimages from '.sql_table('plug_gallery_album'). " where albumid=".intval($id));
 			$row = mysql_fetch_object($result);
 			$numberofimages = $row->numberofimages;
 		}
-		$result = sql_query('select count(*) as noi from '.sql_table('plug_gallery_picture')." where albumid=$id");
+		$result = sql_query('select count(*) as noi from '.sql_table('plug_gallery_picture')." where albumid=".intval($id));
 		$row = mysql_fetch_object($result);
 		$noi = $row->noi;
 		if($noi <> $numberofimages) {
-			sql_query("update ".sql_table('plug_gallery_album')." set numberofimages=$noi where albumid=$id");
+			sql_query("update ".sql_table('plug_gallery_album')." set numberofimages=$noi where albumid=".intval($id));
 		}
 	}
 	function write() {
 		$query = "update ".sql_table('plug_gallery_album')
-			." set title='{$this->title}', "
-			." commentsallowed= {$this->option['commentsallowed']}, "
-			." thumbnail='{$this->thumbnail}', "
-			." description='{$this->description}', "
-			." publicalbum= {$this->option['publicalbum']}"
-			." where albumid={$this->id}";
+			." set title='".addslashes($this->title)."', "
+			." commentsallowed= ".intval($this->option['commentsallowed']).", "
+			." thumbnail='".addslashes($this->thumbnail)."', "
+			." description='".addslashes($this->description)."', "
+			." publicalbum= ".intval($this->option['publicalbum']).""
+			." where albumid=".intval($this->id)."";
 		sql_query($query);
 	}
 	

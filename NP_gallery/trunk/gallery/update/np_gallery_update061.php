@@ -1,8 +1,9 @@
 <?php
 
-include('.\..\..\..\..\config.php');
-global $DIR_PLUGINS;
-include_once ($DIR_PLUGINS.'gallery/config.php');
+require_once('./../../../../config.php');
+global $member;
+if (!($member->isLoggedIn() && $member->isAdmin())) exit('You are not admin.');
+include_once (dirname(__FILE__).'/../config.php');
 
 //from 0.61a to 0.75
 global $NPG_CONF;
@@ -167,5 +168,5 @@ if (!NPG_TEMPLATE::exists('default075')) {
 
 setNPGoption('currentversion',75);
 
-include('np_gallery_update075.php');
+include(dirname(__FILE__).'/np_gallery_update075.php');
 ?>

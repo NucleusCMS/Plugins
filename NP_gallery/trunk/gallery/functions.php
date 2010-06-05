@@ -155,6 +155,8 @@ function getNPGConfig() {
 }
 
 function setNPGoption($oname, $ovalue) {
+	$oname=addslashes($oname);
+	$ovalue=addslashes($ovalue);
 	$result = mysql_query("select * from ".sql_table('plug_gallery_config')." where oname='$oname'" );
 	if(@ mysql_num_rows($result)) {
 		sql_query("update ".sql_table('plug_gallery_config')." set ovalue='$ovalue' where oname='$oname'");
@@ -168,10 +170,10 @@ function database_cleanup() {
 	$result = mysql_query("select count(*) as noi, albumid from ".sql_table('plug_gallery_picture')." group by albumid" );
 	if($result) {
 		while ($row = mysql_fetch_assoc($result)) {
-			$result2 = mysql_query("select numberofimages from ".sql_table('plug_gallery_album')." where albumid = ".$row['albumid']);
+			$result2 = mysql_query("select numberofimages from ".sql_table('plug_gallery_album')." where albumid = ".intval($row['albumid']));
 			$row2 = mysql_fetch_assoc($result2);
 			if($row2['numberofimages'] <> $row['noi']) {
-				sql_query("update ".sql_table('plug_gallery_album')." set numberofimages={$row['noi']} where albumid = ".$row['albumid']);
+				sql_query("update ".sql_table('plug_gallery_album')." set numberofimages={$row['noi']} where albumid = ".intval($row['albumid']));
 			}
 		}
 	}
@@ -187,7 +189,7 @@ function rethumb($id=0) {
 	$abs_dir = substr($DIR_NUCLEUS,0,strlen($DIR_NUCLEUS) - 8);
 	
 	//redo the thumbnails and intermediate images
-	if($id) $album = ' where albumid='.$id;
+	if($id) $album = ' where albumid='.invtal($id);
 	$query = 'select * from '.sql_table('plug_gallery_picture').$album;
 	$result = sql_query($query);
 
@@ -199,12 +201,12 @@ function rethumb($id=0) {
 		if(is_file($abs_dir.$row->filename)) {
 			//make new thumbnail
 			if($new_thumb = resizeImage($row->filename, $NPG_CONF['thumbwidth'], $NPG_CONF['thumbheight'], $row->thumb_filename)) {
-				sql_query('update '.sql_table('plug_gallery_picture').' set thumb_filename=\''.$new_thumb.'\' where pictureid='.$row->pictureid);
+				sql_query('update '.sql_table('plug_gallery_picture').' set thumb_filename=\''.addslashes($new_thumb).'\' where pictureid='.intval($row->pictureid));
 			}
 			else echo '<br/>file: '.$abs_dir.$row->thumb_filename.' could not be resized<br/>';
 			//make new intermediate picture
 			if($new_thumb = resizeImage($row->filename, $NPG_CONF['maxwidth'], $NPG_CONF['maxheight'], $row->int_filename)) {
-				sql_query('update '.sql_table('plug_gallery_picture').' set int_filename=\''.$new_thumb.'\' where pictureid='.$row->pictureid);
+				sql_query('update '.sql_table('plug_gallery_picture').' set int_filename=\''.addslashes($new_thumb).'\' where pictureid='.intval($row->pictureid));
 
 			}
 			else echo '<br/>file: '.$abs_dir.$row->int_filename.' could not be resized<br/>';

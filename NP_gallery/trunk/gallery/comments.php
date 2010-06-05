@@ -27,7 +27,7 @@ class NPG_COMMENTS {
 
 		} else {
 			$query = 'select * from '.sql_table('plug_gallery_comment').
-				' where cpictureid='.$this->itemid.' order by ctime';
+				' where cpictureid='.intval($this->itemid).' order by ctime';
 			$comments = sql_query($query);
 			$this->commentcount = mysql_num_rows($comments);
 			
@@ -56,7 +56,7 @@ class NPG_COMMENTS {
 	function amountComments() {
 		$query = 'select count(*)'.
 			' from '.sql_table('plug_gallery_comment').
-			' where cpictureid='.$this->itemid;
+			' where cpictureid='.intval($this->itemid);
 		$res = sql_query($query);
 		$arr = mysql_fetch_row($res);
 		return $arr[0];
@@ -91,7 +91,7 @@ class NPG_COMMENTS {
 		$host = addslashes($comment['host']);
 		$ip = addslashes($comment['ip']);
 		$memberid  = intval($comment['memberid']);
-		$pictureid = $this->itemid;
+		$pictureid = intval($this->itemid);
  		
  		$query = 'insert into '.sql_table('plug_gallery_comment').
  			'(cbody, cuser, cmail, chost, cip, cmemberid, ctime, cpictureid) '.

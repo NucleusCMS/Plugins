@@ -1,8 +1,9 @@
 <?php
 
-include('./../../../../config.php');
-global $DIR_PLUGINS;
-include_once ($DIR_PLUGINS.'gallery/config.php');
+require_once('./../../../../config.php');
+global $member;
+if (!($member->isLoggedIn() && $member->isAdmin())) exit('You are not admin.');
+include_once (dirname(__FILE__).'/../config.php');
 
 //from 0.75 to 0.76
 global $NPG_CONF;
@@ -15,10 +16,10 @@ if(!mysql_num_rows($res)) {
 	sql_query($query);
 }
 
-include($DIR_PLUGINS.'gallery/update/default_templates_076.inc');
+include(dirname(__FILE__).'/default_templates_076.inc');
 
 setNPGoption('currentversion',76);
 
-include('np_gallery_update077.php');
+include(dirname(__FILE__).'/np_gallery_update077.php');
 
 ?>

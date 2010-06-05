@@ -394,7 +394,7 @@ class NPG_ADMIN {
 		
 		if(!$page) $page='1';
 		
-		$query = 'select * from '.sql_table('plug_gallery_comment').' as a left join '.sql_table('member').' as b on a.cmemberid=b.mnumber left join '.sql_table('plug_gallery_picture').' as c on a.cpictureid=c.pictureid limit '.$offset.', '.($NPG_CONF['AdminCommentsPerPage']+1);
+		$query = 'select * from '.sql_table('plug_gallery_comment').' as a left join '.sql_table('member').' as b on a.cmemberid=b.mnumber left join '.sql_table('plug_gallery_picture').' as c on a.cpictureid=c.pictureid limit '.intval($offset).', '.intval($NPG_CONF['AdminCommentsPerPage']+1);
 		$res = sql_query($query);
 		$nrows = mysql_num_rows($res);
 		
@@ -543,7 +543,7 @@ class NPG_ADMIN {
 		
 		$id = $_GET['id'];
 		if($gmember->isAdmin() && $id) { 
-			$query = 'select * from '.sql_table('plug_gallery_template')." where tdesc = $id";
+			$query = 'select * from '.sql_table('plug_gallery_template')." where tdesc = ".intval($id);
 			$result = sql_query($query);
 			if(mysql_num_rows($result)) {
 				while ($row = mysql_fetch_object($result)) {
@@ -551,7 +551,7 @@ class NPG_ADMIN {
 				}
 			}
 			
-			$query2 = 'select * from '.sql_table('plug_gallery_template_desc')." where tdid = $id";
+			$query2 = 'select * from '.sql_table('plug_gallery_template_desc')." where tdid = ".intval($id);
 			$result2 = sql_query($query2);
 			if(!mysql_num_rows($result2)) {
 				echo __NPG_ERR_BAD_TEMPLATE.'<br/>';
@@ -754,9 +754,9 @@ class NPG_ADMIN {
 		$res = sql_query($query);
 		$nr = mysql_fetch_row($res);
 		if ($nr[0] > 1 && $id && NPG_TEMPLATE::existsID($id) && $gmember->isAdmin()) {
-			$query = 'delete from '.sql_table('plug_gallery_template_desc').' where tdid='.$id;
+			$query = 'delete from '.sql_table('plug_gallery_template_desc').' where tdid='.intval($id);
 			sql_query($query);
-			$query = 'delete from '.sql_table('plug_gallery_template').' where tdesc='.$id;
+			$query = 'delete from '.sql_table('plug_gallery_template').' where tdesc='.intval($id);
 			sql_query($query);
 		}
 		
@@ -803,7 +803,7 @@ class NPG_ADMIN {
 		global $galleryaction;
 		
 		$id = intval(requestvar('id'));
-		$query = 'select * from '.sql_table('plug_gallery_comment').' as a left join '.sql_table('member').' as b on a.cmemberid=b.mnumber where a.commentid='.$id;
+		$query = 'select * from '.sql_table('plug_gallery_comment').' as a left join '.sql_table('member').' as b on a.cmemberid=b.mnumber where a.commentid='.intval($id);
 		$res = sql_query($query);
 		$row = mysql_fetch_object($res);
 		
@@ -1066,7 +1066,7 @@ class NPG_ADMIN {
 	function action_removeselectuser() {
 		global $gmember;
 		
-		$mid = requestvar('userid');
+		$mid = intval(requestvar('userid'));
 		if($mid) {
 			$query='delete from '.sql_table('plug_gallery_member')." where memberid=$mid";
 			if($gmember->isAdmin()) $result = mysql_query($query);
@@ -1077,7 +1077,7 @@ class NPG_ADMIN {
 	function action_addselectuser() {
 		global $gmember;
 		
-		$mid = requestvar('userid');
+		$mid = intval(requestvar('userid'));
 		if($mid) {
 			$query = 'insert into '.sql_table('plug_gallery_member')." values ('$mid',1) ";
 			if($gmember->isAdmin()) $result = mysql_query($query);
@@ -1120,8 +1120,8 @@ class NPG_ADMIN {
 	function action_deltmember() {
 		global $gmember,$galleryaction;
 		
-		$aid = requestvar('aid');
-		$mid = requestvar('mid');
+		$aid = intval(requestvar('aid'));
+		$mid = intval(requestvar('mid'));
 		if($aid && $mid) 
 		if($gmember->canModifyAlbum($aid)) {
 			$query = 'delete from '.sql_table('plug_gallery_album_team')." where tmemberid=$mid and talbumid=$aid";
@@ -1135,8 +1135,8 @@ class NPG_ADMIN {
 	function action_toggleadmin() {
 		global $gmember,$galleryaction;
 		
-		$aid = requestvar('aid');
-		$mid = requestvar('mid');
+		$aid = intval(requestvar('aid'));
+		$mid = intval(requestvar('mid'));
 		if($aid && $mid) 
 		if($gmember->canModifyAlbum($aid)) {
 			$query = 'update '.sql_table('plug_gallery_album_team')." set tadmin=abs(tadmin-1) where tmemberid=$mid and talbumid=$aid";
@@ -1152,9 +1152,9 @@ class NPG_ADMIN {
 	function action_addalbumteam() {
 		global $gmember,$galleryaction;
 		
-		$id = requestvar('id');
-		$tmember = requestvar('tmember');
-		$admin = requestvar('admin');
+		$id = intval(requestvar('id'));
+		$tmember = intval(requestvar('tmember'));
+		$admin = intval(requestvar('admin'));
 		if($id && $tmember) {
 			if(!$admin) $admin = 0;
 			if($gmember->canModifyAlbum($id)) {
@@ -1196,7 +1196,7 @@ class NPG_ADMIN {
 		$option = requestVar('deleteoption');
 		if($id && $option && $gmember->canmodifyalbum($id)) {
 			if($option == '-1') { //delete pictures
-				$query = 'select * from '.sql_table('plug_gallery_picture').' where albumid='.$id;
+				$query = 'select * from '.sql_table('plug_gallery_picture').' where albumid='.intval($id);
 				$result = mysql_query($query);
 				if(!$result) echo mysql_error().":$query<br/>";
 				while($row = mysql_fetch_object($result)) {
@@ -1207,13 +1207,13 @@ class NPG_ADMIN {
 					}
 					else {
 						$delresult = PICTURE::deletepromoposts($row->pictureid);
-						$query2 = 'delete from '.sql_table('plug_gallery_picture').' where pictureid='.$row->pictureid;
+						$query2 = 'delete from '.sql_table('plug_gallery_picture').' where pictureid='.intval($row->pictureid);
 						$result2 = mysql_query($query2);
 						if(!$result2) echo mysql_error().":$query<br/>";
 					}
 				}
 				if($ok) {
-					$query = 'delete from '.sql_table('plug_gallery_album').' where albumid='.$id;
+					$query = 'delete from '.sql_table('plug_gallery_album').' where albumid='.intval($id);
 					$result = mysql_query($query);
 					if(!$result) echo mysql_error().":$query<br/>";
 				}
@@ -1221,11 +1221,11 @@ class NPG_ADMIN {
 			}
 			else {
 				if($gmember->canaddpicture($option)) {
-					$query = 'update '.sql_table('plug_gallery_picture').' set albumid='.$option.' where albumid='.$id;
+					$query = 'update '.sql_table('plug_gallery_picture').' set albumid='.intval($option).' where albumid='.intval($id);
 					$result = mysql_query($query);
 					if(!$result) echo mysql_error().'<br/>';
 					ALBUM::fixnumberofimages($option);
-					$query = 'delete from '.sql_table('plug_gallery_album').' where albumid='.$id;
+					$query = 'delete from '.sql_table('plug_gallery_album').' where albumid='.intval($id);
 					$result = mysql_query($query);
 					if(!$result) echo mysql_error().'<br/>';
 				}

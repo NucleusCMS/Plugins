@@ -3,8 +3,8 @@
 
 	$strRel = '../../../';
 
-	include($strRel . 'config.php'); //nucleus config
-	include('config.php'); //gallery config
+	require($strRel . 'config.php'); //nucleus config
+	include(dirname(__FILE__).'/config.php'); //gallery config
 		
 	if (!$member->isLoggedIn())	doError(_NOTLOGGEDIN);
 

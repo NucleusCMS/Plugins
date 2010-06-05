@@ -3,12 +3,13 @@
 NP_Gallery
 Gallery Plugin for nucleus cms http://nucleuscms.org
 
+Security fix in 0.95 by Katsumi
+http://sourceforge.jp/projects/nucleus-jp/svn/view/plugin/NP_gallery/trunk/
 
 */
 
 
-global $DIR_NUCLEUS;
-include_once($DIR_NUCLEUS.'/plugins/gallery/config.php');
+include_once(dirname(__FILE__).'/gallery/config.php');
 
 class NP_gallery extends NucleusPlugin {
 
@@ -21,7 +22,7 @@ class NP_gallery extends NucleusPlugin {
 	function getName() {return 'Nucleus Image Gallery';}
 	function getAuthor()  {	return 'John Bradshaw, Gene Cambridge Tsai';	}
 	function getURL() 	{ return 'http://www.sircambridge.net/nucleus/index.php?itemid=57'; 	}
-	function getVersion() { return '0.94'; }
+	function getVersion() { return '0.95'; }
 	function getDescription() { return 'Image Gallery for Nucleus CMS'; 	}
 	function supportsFeature($what) { switch($what) {
 		case 'SqlTablePrefix': return 1; break;
@@ -415,7 +416,7 @@ class NP_gallery extends NucleusPlugin {
 				$text = $desc;
 				//these lines should be moved into picture_class.php
 				sql_query("INSERT INTO ".sql_table('plug_gallery_picturetag')." ( `pictureid` , `top` , `left` , `height` , `width` , `text` )
-				VALUES ( '" . $pictureid ." ', '" .$top."', '" .$left." ' , '" .$height."' , '" .$width."' , '" .$text."' ); ");
+				VALUES ( '" . addslashes($pictureid) ." ', '" .addslashes($top)."', '" .addslashes($left)." ' , '" .addslashes($height)."' , '" .addslashes($width)."' , '" .addslashes($text)."' ); ");
 				echo "<SCRIPT LANGUAGE=\"JavaScript\">
 				window.location=\"" . $NP_BASE_DIR  . "action.php?action=plugin&name=gallery&type=item&id=". $pictureid . "\"" .
 				"</script>";
@@ -423,7 +424,7 @@ class NP_gallery extends NucleusPlugin {
 			case 'tagdelete' :
 				$pictureid = requestVar('pictureid');
 				//these lines should be moved into picture_class.php
-				sql_query("DELETE FROM ".sql_table('plug_gallery_picturetag'). " WHERE `pictureid` = '" . $pictureid . "' LIMIT 1; ");
+				sql_query("DELETE FROM ".sql_table('plug_gallery_picturetag'). " WHERE `pictureid` = '" . addslashes($pictureid) . "' LIMIT 1; ");
 				echo "<SCRIPT LANGUAGE=\"JavaScript\">
 				window.location=\"" . $NP_BASE_DIR  . "action.php?action=plugin&name=gallery&type=item&id=". $pictureid . " \"" .
 				"</script>";

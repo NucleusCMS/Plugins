@@ -12,7 +12,7 @@ class NPG_TEMPLATE {
 		$this->section = array();
 		if($this->existsID($this->id)) {
 			$this->readall();
-			$query = 'select * from '.sql_table('plug_gallery_template_desc').' where tdid='.$this->id;
+			$query = 'select * from '.sql_table('plug_gallery_template_desc').' where tdid='.intval($this->id);
 			$res = sql_query($query);
 			$row = mysql_fetch_object($res);
 			$this->name = stripslashes($row->tdname);
@@ -39,7 +39,7 @@ class NPG_TEMPLATE {
 		$query =  'UPDATE '.sql_table('plug_gallery_template_desc').' SET'
 		. " tdname='" . addslashes($name) . "',"
 		. " tddesc='" . addslashes($desc) . "'"
-		. " WHERE tdid=" . $this->getID();
+		. " WHERE tdid=" . intval($this->getID());
 		sql_query($query); 
 	}
 	
@@ -52,7 +52,7 @@ class NPG_TEMPLATE {
 		}
 	}
 	
-	function deleteallparts() { sql_query('DELETE FROM '.sql_table('plug_gallery_template').' WHERE tdesc='.$this->getID()); }
+	function deleteallparts() { sql_query('DELETE FROM '.sql_table('plug_gallery_template').' WHERE tdesc='.intval($this->getID())); }
 	
 	function createnew($name,$desc) {
 		sql_query('INSERT INTO '.sql_table('plug_gallery_template_desc')." (tdname, tddesc) VALUES ('" . addslashes($name) . "','" . addslashes($desc) . "')");
@@ -71,6 +71,7 @@ class NPG_TEMPLATE {
 	}
 	
 	function gettemplate($type) {
+		$type=addslashes($type);
 		$result = mysql_query("select * from ".sql_table('plug_gallery_template')." where name='$type'" );
 		$data = mysql_fetch_assoc($result);
 		$template = stripslashes($data['content']);
@@ -82,7 +83,7 @@ class NPG_TEMPLATE {
 	}
 	
 	function readall() {
-		$query = 'select * from '.sql_table('plug_gallery_template').' where tdesc='.$this->id;
+		$query = 'select * from '.sql_table('plug_gallery_template').' where tdesc='.intval($this->id);
 		$res = sql_query($query);
 		while ($row = mysql_fetch_object($res)){
 			$this->section[$row->name] = stripslashes($row->content);

@@ -1,8 +1,9 @@
 <?php
 
-include('./../../../../config.php');
-global $DIR_PLUGINS;
-include_once ($DIR_PLUGINS.'gallery/config.php');
+require_once('./../../../../config.php');
+global $member;
+if (!($member->isLoggedIn() && $member->isAdmin())) exit('You are not admin.');
+include_once (dirname(__FILE__).'/../config.php');
 
 //from 0.77 to 0.80
 
@@ -10,7 +11,7 @@ include_once ($DIR_PLUGINS.'gallery/config.php');
 global $NPG_CONF;
 
 //add .80 templates -- sircambridge mods
-include($DIR_PLUGINS.'gallery/update/default_templates_080.inc');
+include(dirname(__FILE__).'/default_templates_080.inc');
 ?>
 <p>The templates included with 0.8 use a different css technique to display the album thumbnails. To use these templates, you will need to add the three graphics files (shadow.gif, shadow2.png, shadow2.gif) to your skin directory. Then add the following lines to your css file. You will need to modify the location of the image files (bolded) to match your installation.</p>
 <hr />

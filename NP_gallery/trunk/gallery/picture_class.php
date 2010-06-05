@@ -61,14 +61,14 @@ class PICTURE {
 			$this->description = stripslashes($this->description);
 			$this->description = addslashes($this->description);
 			sql_query("insert into ".sql_table('plug_gallery_picture')
-				." values (NULL, '{$this->title}' , '{$this->description}' , {$this->ownerid} , "
-				."NULL , {$this->albumid} , '{$this->filename}' , '{$this->int_filename}' , '{$this->thumb_filename}', '{$this->keywords}' )" );
+				." values (NULL, '{$this->title}' , '{$this->description}' , ".intval($this->ownerid)." , "
+				."NULL , ".intval($this->albumid)." , '".addslashes($this->filename)."' , '".addslashes($this->int_filename)."' , '".addslashes($this->thumb_filename)."', '".addslashes($this->keywords)."' )" );
 				
 			//picture id of most recently added -- could be referenced by calling fuction (or PICTURE->getID()
 			$this->id = mysql_insert_id(); 
 				
 			//increment album number of images -- consider rewrite as an album method that actually counts number of images?
-			sql_query("update ".sql_table('plug_gallery_album')." set numberofimages = numberofimages + 1 where albumid = {$this->albumid}");
+			sql_query("update ".sql_table('plug_gallery_album')." set numberofimages = numberofimages + 1 where albumid = ".intval($this->albumid));
 		} 
 		//present, so just update values
 		else {  
@@ -77,24 +77,24 @@ class PICTURE {
 			$this->description = stripslashes($this->description);
 			$this->description = addslashes($this->description);
 			sql_query("update ".sql_table('plug_gallery_picture')
-				." set title='{$this->title}', "
-				."description='{$this->description}', " 
-				."keywords='{$this->keywords}',"
-				."albumid={$this->albumid} "
-				."where pictureid={$this->id}" );
+				." set title='".addslashes($this->title)."', "
+				."description='".addslashes($this->description)."', " 
+				."keywords='".addslashes($this->keywords)."',"
+				."albumid=".intval($this->albumid)." "
+				."where pictureid=".intval($this->id) );
 		}
 		
 	}
 	
 	function get_data($id) {
-		$result = sql_query("select a.*, b.mname from ".sql_table('plug_gallery_picture').' as a left join '.sql_table('member')." as b on a.ownerid=b.mnumber where a.pictureid=$id" );
+		$result = sql_query("select a.*, b.mname from ".sql_table('plug_gallery_picture').' as a left join '.sql_table('member')." as b on a.ownerid=b.mnumber where a.pictureid=".intval($id) );
 		if(mysql_num_rows($result)) {
 			if(mysql_num_rows($result)){
 				$data = mysql_fetch_object($result);
 				if(!$data->mname) $data->mname = 'guest';
 				
 				//get number of views
-				$res = sql_query('select views from '.sql_table('plug_gallery_views').' where vpictureid = '.$data->pictureid);
+				$res = sql_query('select views from '.sql_table('plug_gallery_views').' where vpictureid = '.intval($data->pictureid));
 				if(mysql_num_rows($res)) {
 					$row = mysql_fetch_object($res);
 					$data->views = $row->views;
@@ -102,7 +102,7 @@ class PICTURE {
 				else $data->views = 0;
 				
 				//get albumtitle for breadcrumb
-				$res = sql_query('select title from '.sql_table('plug_gallery_album').' where albumid='.$data->albumid);
+				$res = sql_query('select title from '.sql_table('plug_gallery_album').' where albumid='.intval($data->albumid));
 				if(mysql_num_rows($res)) {
 					$row = mysql_fetch_object($res);
 					$data->albumtitle = $row->title;
@@ -181,19 +181,19 @@ class PICTURE {
 		else {
 			$so = 'order by '.$sorting[$defaultorder].', pictureid DESC';
 		}
-		if(!$query) $this->query = 'select pictureid, thumb_filename from '.sql_table('plug_gallery_picture').' where albumid='.$this->albumid.$so;
+		if(!$query) $this->query = 'select pictureid, thumb_filename from '.sql_table('plug_gallery_picture').' where albumid='.intval($this->albumid).$so;
 		else $this->query = $query;
 		
 		//sql_query('create temporary table temptableview (tempid int unsigned not null auto_increment primary key) '.$this->query);
 		
-		//$result = sql_query('select tempid from temptableview where pictureid='.$this->id);
+		//$result = sql_query('select tempid from temptableview where pictureid='.intval($this->id));
 		//$tid = mysql_fetch_object($result);
 		
 		
 		
 		
 		//next thumb
-		$query = 'select pictureid, thumb_filename from '.sql_table('plug_gallery_picture').' where pictureid > '.$pid.' '.$so.' '.$sortingascdesc[$sort].' and albumid = '.$this->albumid.' limit 0,1';
+		$query = 'select pictureid, thumb_filename from '.sql_table('plug_gallery_picture').' where pictureid > '.intval($pid).' '.$so.' '.$sortingascdesc[$sort].' and albumid = '.intval($this->albumid).' limit 0,1';
 		echo $query;
 		$result = sql_query($query);
 		if(!mysql_num_rows($result)) 
@@ -204,7 +204,7 @@ class PICTURE {
 			$this->nextid = $row->pictureid;
 			}
 		//previous thumb
-		$result = sql_query('select pictureid, thumb_filename from '.sql_table('plug_gallery_picture').' where pictureid < '.$pid.' '.$so.' '.$oppositeorder.' and albumid = '.$albumid.' limit 0,1');
+		$result = sql_query('select pictureid, thumb_filename from '.sql_table('plug_gallery_picture').' where pictureid < '.intval($pid).' '.$so.' '.$oppositeorder.' and albumid = '.intval($albumid).' limit 0,1');
 		if(!mysql_num_rows($result)) 
 			$this->previous = 0;
 		else {
@@ -246,7 +246,7 @@ class PICTURE {
 		//if someone can figure out a better way of doing this, please do it!
 		
 		//getting forward offset
-		$query = 'select pictureid, thumb_filename from '.sql_table('plug_gallery_picture').' where albumid = '.$this->albumid.' order by '.$sorting[$sort].$order[$sort];
+		$query = 'select pictureid, thumb_filename from '.sql_table('plug_gallery_picture').' where albumid = '.intval($this->albumid).' order by '.$sorting[$sort].$order[$sort];
 		$result = sql_query($query);
 		$i=0;
 		while ($row = mysql_fetch_object($result)){
@@ -256,7 +256,7 @@ class PICTURE {
 		}
 		//next thumb	
 
-		$query = 'select pictureid, thumb_filename from '.sql_table('plug_gallery_picture').' where albumid = '.$this->albumid.' order by '.$sorting[$sort].$order[$sort].' limit '.$offset.',1';
+		$query = 'select pictureid, thumb_filename from '.sql_table('plug_gallery_picture').' where albumid = '.intval($this->albumid).' order by '.$sorting[$sort].$order[$sort].' limit '.intval($offset).',1';
 		$result = sql_query($query);
 		
 		//echo $query;
@@ -268,7 +268,7 @@ class PICTURE {
 			$this->nextid = $row->pictureid;
 			}
 		//getting backwards offset
-		$query = 'select pictureid, thumb_filename from '.sql_table('plug_gallery_picture').' where albumid = '.$this->albumid.' order by '.$sorting[$sort].$oppositeorder;
+		$query = 'select pictureid, thumb_filename from '.sql_table('plug_gallery_picture').' where albumid = '.intval($this->albumid).' order by '.$sorting[$sort].$oppositeorder;
 		$result = sql_query($query);
 		$i=0;
 		while ($row = mysql_fetch_object($result)){
@@ -278,7 +278,7 @@ class PICTURE {
 		}
 		
 		//previous thumb
-		$query = 'select pictureid, thumb_filename from '.sql_table('plug_gallery_picture').' where albumid = '.$this->albumid.' order by '.$sorting[$sort].$oppositeorder.' limit '.$offset.',1';
+		$query = 'select pictureid, thumb_filename from '.sql_table('plug_gallery_picture').' where albumid = '.intval($this->albumid).' order by '.$sorting[$sort].$oppositeorder.' limit '.intval($offset).',1';
 		//echo $query;
 		$result = sql_query($query);
 		if(!mysql_num_rows($result)) 
@@ -318,7 +318,7 @@ class PICTURE {
 			$returnval['message'] = 'ID is null in PICTURE::delete';
 			return $returnval;
 		}
-		$query = 'select * from '.sql_table('plug_gallery_picture').' where pictureid='.$id;
+		$query = 'select * from '.sql_table('plug_gallery_picture').' where pictureid='.intval($id);
 		$result = mysql_query($query);
 		if(!$result) {
 			$returnval['status'] = 'error';
@@ -335,7 +335,7 @@ class PICTURE {
 				if(@ !unlink($NP_BASE_DIR.$row->filename)) echo 'file: '.$row->filename.' could not be deleted<br/>';
 				if(@ !unlink($NP_BASE_DIR.$row->int_filename)) echo 'file: '.$row->int_filename.' could not be deleted<br/>';
 				if(@ !unlink($NP_BASE_DIR.$row->thumb_filename)) echo 'file: '.$row->thumb_filename.' could not be deleted<br/>';
-				$query = 'delete from '.sql_table('plug_gallery_picture').' where pictureid='.$row->pictureid;
+				$query = 'delete from '.sql_table('plug_gallery_picture').' where pictureid='.intval($row->pictureid);
 				$result2 = mysql_query($query);
 				if(!$result2) {
 					$returnval['status'] = 'error';
@@ -355,7 +355,7 @@ class PICTURE {
 		
 		$manager->loadClass('ITEM');
 		
-		$query = 'select * from '.sql_table('plug_gallery_promo').' where ppictureid='.$id;
+		$query = 'select * from '.sql_table('plug_gallery_promo').' where ppictureid='.intval($id);
 		$result = mysql_query($query);
 		if(!$result) {
 			$returnval['status'] = 'error';
@@ -372,7 +372,7 @@ class PICTURE {
 				while ($row = mysql_fetch_object($result) ){
 					ITEM::delete($row->pblogitemid);
 				}
-				sql_query('delete from '.sql_table('plug_gallery_promo').' where ppictureid='.$id);
+				sql_query('delete from '.sql_table('plug_gallery_promo').' where ppictureid='.intval($id));
 				$returnval['status'] = 'success';
 				return $returnval;
 			}
@@ -380,14 +380,14 @@ class PICTURE {
 	}
 	function tagaccept($left,$top,$width,$height,$text){
 				sql_query("INSERT INTO ".sql_table('plug_gallery_picturetag')." ( `pictureid` , `top` , `left` , `height` , `width` , `text` )
-				VALUES ( '" . $this->id ." ', '" .$top."', '" .$left." ' , '" .$height."' , '" .$width."' , '" .$text."' ); ");
+				VALUES ( '" . addslashes($this->id) ." ', '" .addslashes($top)."', '" .addslashes($left)." ' , '" .addslashes($height)."' , '" .addslashes($width)."' , '" .addslashes($text)."' ); ");
 				echo "<SCRIPT LANGUAGE=\"JavaScript\">
 				window.location=\"" . $NP_BASE_DIR  . "action.php?action=plugin&name=gallery&type=item&id=". $this->id . "\"" .
 				"</script>";
 			}
 	
 	function tagdelete(){
-				sql_query("DELETE FROM ".sql_table('plug_gallery_picturetag'). " WHERE `pictureid` = '" . $this->id  . "' LIMIT 1; ");
+				sql_query("DELETE FROM ".sql_table('plug_gallery_picturetag'). " WHERE `pictureid` = '" . intval($this->id)  . "' LIMIT 1; ");
 				echo "<SCRIPT LANGUAGE=\"JavaScript\">
 				window.location=\"" . $NP_BASE_DIR  . "action.php?action=plugin&name=gallery&type=item&id=". $this->id . " \"" .
 				"</script>";
@@ -465,37 +465,37 @@ class PICTURE {
 		if(!$NPG_CONF['viewtime']) $NPG_CONF['viewtime'] = 30 ;
 		$cuttime = $NPG_CONF['viewtime'];
 		//first test for duplicates
-		$query = 'select * from '.sql_table('plug_gallery_views')." where vpictureid = $pictureid";
+		$query = 'select * from '.sql_table('plug_gallery_views')." where vpictureid = ".($pictureid);
 		//$result = mysql_query($query);
 		//print_r($result);
 		//$numrows= mysql_num_rows($result);
 		//echo $numrows;
 		if(@mysql_num_rows($result)>1){
 			//if theres more than one
-			$query= 'DELETE FROM '.sql_table('plug_gallery_views').' WHERE vpictureid = $pictureid ORDER BY views LIMIT 1' ;
+			$query= 'DELETE FROM '.sql_table('plug_gallery_views').' WHERE vpictureid = '.intval($pictureid).' ORDER BY views LIMIT 1' ;
 			mysql_query($query);
 			}
 		
-		$query = 'select time from '.sql_table('plug_gallery_views_log')." where ip = '$remoteip' and vlpictureid = $pictureid";
+		$query = 'select time from '.sql_table('plug_gallery_views_log')." where ip = '".addslashes($remoteip)."' and vlpictureid = ".intval($pictureid);
       $result = sql_query($query);
       if(mysql_num_rows($result)) {
          $row = mysql_fetch_object($result);
-         $query2 = 'update '.sql_table('plug_gallery_views_log')." set time = NOW() where ip = '$remoteip' and vlpictureid = $pictureid";
+         $query2 = 'update '.sql_table('plug_gallery_views_log')." set time = NOW() where ip = '".addslashes($remoteip)."' and vlpictureid = ".intval($pictureid);
          $result2 = sql_query($query2);
          if( ($curtime - (intval($NPG_CONF['viewtime']) * 60) ) > converttimestamp($row->time) ) {
-            $query3 = 'select * from '.sql_table('plug_gallery_views')." where vpictureid = $pictureid";
+            $query3 = 'select * from '.sql_table('plug_gallery_views')." where vpictureid = ".intval($pictureid);
             $result3 = mysql_query($query3);
             if(mysql_num_rows($result3))
-               sql_query('update '.sql_table('plug_gallery_views')." set views = views + 1 where vpictureid = $pictureid");
-            else sql_query('insert into '.sql_table('plug_gallery_views')." (vpictureid, views) values ($pictureid, 1)");
+               sql_query('update '.sql_table('plug_gallery_views')." set views = views + 1 where vpictureid = ".intval($pictureid));
+            else sql_query('insert into '.sql_table('plug_gallery_views')." (vpictureid, views) values (".intval($pictureid).", 1)");
          }
       } else {
-         $query3 = 'select * from '.sql_table('plug_gallery_views')." where vpictureid = $pictureid";
+         $query3 = 'select * from '.sql_table('plug_gallery_views')." where vpictureid = ".intval($pictureid);
          $result3 = mysql_query($query3);
          if(mysql_num_rows($result3))
-            sql_query('update '.sql_table('plug_gallery_views')." set views = views + 1 where vpictureid = $pictureid");
-         else sql_query('insert into '.sql_table('plug_gallery_views')." (vpictureid, views) values ($pictureid, 1)");
-         sql_query('insert into '.sql_table('plug_gallery_views_log')." (vlpictureid, ip, time) values ($pictureid, '$remoteip', NULL)");
+            sql_query('update '.sql_table('plug_gallery_views')." set views = views + 1 where vpictureid = ".intval($pictureid));
+         else sql_query('insert into '.sql_table('plug_gallery_views')." (vpictureid, views) values (".intval($pictureid).", 1)");
+         sql_query('insert into '.sql_table('plug_gallery_views_log')." (vlpictureid, ip, time) values (".intval($pictureid).", '".addslashes($remoteip)."', NULL)");
       } 
 		
 	}
@@ -644,7 +644,7 @@ class PICTURE_ACTIONS extends BaseActions {
 	function parse_tooltip() {
 			//get picture tag infor
 			$gid = requestVar('id');
-			$res = sql_query('select * from '.sql_table('plug_gallery_picturetag').' where pictureid= '. $gid .' ');
+			$res = sql_query('select * from '.sql_table('plug_gallery_picturetag').' where pictureid= '. intval($gid) .' ');
 			$numrows = @mysql_num_rows($res);
 			echo "<div id=\"tooltip2\">";
 			for ($i=0 ; $i<$numrows;$i++) {

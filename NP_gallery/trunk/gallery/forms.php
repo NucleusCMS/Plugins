@@ -167,7 +167,7 @@ function editAlbumForm($id) {
 		<td>
 		<?php
 		//this query lists the members that are not already part of the team, not the admins(they already have permissions) and are not the owner of the album
-		$result = mysql_query('select mname, mnumber from '.sql_table('member').' left join '.sql_table('plug_gallery_album_team').' on mnumber=tmemberid and talbumid='.$id.' where mnumber <> '.$data->ownerid.' and madmin=0 and tmemberid is null');
+		$result = mysql_query('select mname, mnumber from '.sql_table('member').' left join '.sql_table('plug_gallery_album_team').' on mnumber=tmemberid and talbumid='.intval($id).' where mnumber <> '.intval($data->ownerid).' and madmin=0 and tmemberid is null');
 		if($result) {
 			$num_rows = mysql_num_rows($result);
 			if($num_rows) {
