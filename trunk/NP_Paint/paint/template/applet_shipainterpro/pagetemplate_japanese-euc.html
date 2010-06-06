@@ -1,0 +1,137 @@
+<html lang="ja">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset={{charset}}" />
+<title>NP_Paint - {{name}}</title>
+<meta http-equiv="Content-Script-Type" content="text/javascript" />
+<meta http-equiv="Content-Style-Type" content="text/css" />
+
+<script type="text/javascript" src="{{PluginURL}}paint/prototype-1.4.0.js"></script>	
+<script type="text/javascript" src="{{PluginURL}}paint/paint.js"></script>	
+
+<link rel="stylesheet" type="text/css" href="{{PluginURL}}paint/paint.css" />
+
+<script language="javascript" type="text/javascript" src="{{appletBaseUrl}}sp.js"></script>
+
+<!-- header -->
+{{header}}
+<!-- header -->
+
+</head>
+<body>
+
+{{beforeapplet}}
+
+<div style="height: 600px; width: 600px; float:left">
+<applet code="c.ShiPainter.class"
+		name="paintbbs" 
+		archive="{{appletBaseUrl}}spainter.jar,{{appletBaseUrl}}res/pro.zip" 
+		width="600"
+		height="600"
+		align="top"
+		mayscript="true"
+		>
+	<param name="header_magic" value="{{magic}}" />
+	<param name="image_width" value="{{w}}" />
+	<param name="image_height" value="{{h}}" />
+	
+	<param name="image_jpeg" value="{{imgJpeg}}" />
+	<param name="image_size" value="{{imgDecrease}}" />
+	<param name="compress_level" value="{{imgCompress}}" />
+	<param name="animation_max" value="0" />
+	<param name="image_interlace" value="false" />
+	<param name="layer_count" value="3" />
+	
+	<param name="dir_resource" value="{{appletBaseUrl}}res/" />
+	<param name="tt.zip" value="{{appletBaseUrl}}res/tt.zip" />
+	<param name="res.zip" value="{{appletBaseUrl}}res/res_pro.zip" />
+	<param name="tools" value="pro" />
+	<param name="quality" value="{{quality}}" />
+	
+	<param name="undo" value="100" />
+	<param name="undo_in_mg" value="50" />
+	<param name="mayscript" value="true" />
+	<param name="scriptable" value="true" />
+
+	<param name="url_save" value="{{ActionURL}}?action=plugin&name=Paint&type=postimg&parser={{parser}}" />
+	<param name="url_exit" value="{{ActionURL}}?action=plugin&name=Paint&type=postsuccess&prefix={{prefix}}&w={{w}}&h={{h}}&ow={{ow}}&applet=shipainterpro" />
+	<param name="send_header" value="user={{user}}&loginkey={{loginkey}}&prefix={{prefix}}&ow={{ow}}&applet=shipainterpro" />
+	
+	<param name="send_language" value="utf-8" />
+	<param name="send_header_image_type" value="true" />
+	<param name="send_header_timer" value="true" />
+	<param name="send_header_count" value="true" />
+	<param name="poo" value="false" />
+	
+	<!-- color -->
+	<param name="pro_menu_color_on" value="#FFFFFF" />
+	<param name="pro_menu_color_on_dk" value="#FFFFFF" />
+	<param name="pro_menu_color_on_hl" value="#FFFFFF" />
+	<param name="pro_menu_color_text" value="#222222" />
+	<param name="pro_menu_color_off" value="#FFFFFF" />
+	<param name="pro_menu_color_off_hl" value="#FFFFFF" />
+	<param name="pro_menu_color_off_dk" value="#222222" />
+
+	<param name="bar_color_bk" value="#FFFFFF" />
+	<param name="bar_color_frame" value="#FFFFFF" />
+	<param name="bar_color_off" value="#FFFFFF" />
+	<param name="bar_color_off_dk" value="#222222" />
+	<param name="bar_color_off_hl" value="#FFFFFF" />
+	<param name="bar_color_on" value="#FFFFFF" />
+	<param name="bar_color_on_dk" value="#AA1111" />
+	<param name="bar_color_on_hl" value="#AA1111" />
+	<param name="bar_color_text" value="#222222" />
+		
+	<param name="window_color_bar" value="#222222" />
+	<param name="window_color_bar_bk" value="#222222" />
+	<param name="window_color_bar_hl" value="#222222" />
+	<param name="window_color_bar_text" value="#FFFFFF" />
+	<param name="window_color_frame" value="#222222" />
+	<param name="window_color_text" value="#222222" />
+	
+	<param name="dlg_color_bk" value="#FFFFFF" />
+	<param name="dlg_color_text" value="#222222" />
+	
+	<param name="color_bar" value="#222222" />
+	<param name="color_bar_hl" value="#FFFFFF" />
+	<param name="color_bar_shadow" value="#FFFFFF" />
+	<param name="color_bk" value="#FFFFFF" />
+	<param name="color_bk2" value="#FFFFFF" />
+	<param name="color_frame" value="#222222" />
+	<param name="color_icon" value="#FFFFFF" />
+	<param name="color_iconselect" value="#AA1111" />
+	<param name="color_text" value="#222222" />
+	
+	<param name="image_bkcolor" value="#FFFFFF" />
+	
+	<param name="l_m_color" value="#222222" />
+	<param name="l_m_color_text" value="#FFFFFF" />
+		
+	<param name="tool_color_bar" value="#FFFFFF" />
+	<param name="tool_color_bk" value="#FFFFFF" />
+	<param name="tool_color_button" value="#FFFFFF" />
+	<param name="tool_color_button2" value="#FFFFFF" />
+	<param name="tool_color_frame" value="#222222" />
+	<param name="tool_color_text" value="#222222" />
+	<!-- color -->
+	{{param}}
+</applet>
+</div>
+	
+{{afterapplet}}
+
+<hr color="#222222" noshade style="clear: both;" />
+
+<input type="button" onclick="getLoginkey()" value="チケットを更新する" /><br/>
+message:
+<div id="message"></div>
+		
+<div>
+{{copyright}}
+</div>
+
+<script type="text/javascript">
+	header = 'user={{user}}&loginkey={{loginkey}}&prefix={{prefix}}&ow={{ow}}&applet=paintbbs';
+</script>	
+
+</body>
+</html>

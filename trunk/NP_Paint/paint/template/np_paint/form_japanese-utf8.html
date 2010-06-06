@@ -1,0 +1,40 @@
+<form method="get" action="{{ActionURL}}">
+<fieldset>
+<legend>NP_Paint</legend>
+<dl>
+<dt>Canvas-Size:</dt>
+<dd>
+<input name="w" title="width" type="text" size="4" maxlength="5" value="{{defaultWidth}}" />
+x
+<input name="h" title="height" type="text" size="4" maxlength="5" value="{{defaultHeight}}" />
+</dd>
+
+<dt>Applet:</dt>
+<dd>
+{{appletSelect}}
+</dd>
+
+<dt>Palette:</dt>
+<dd>
+{{paletteSelect}}
+</dd>
+{{paletteSelectExtra}}
+	
+<dt>save animation:</dt>
+<dd><input name="animation" type="checkbox" value="1" {{animation}} /></dd>
+
+<dt>Quality:</dt>
+<dd>{{qualitySelect}}</dd>
+
+<dt>Paint?</dt>
+<dd><input type="submit" name="submit" value="Paint" /></dd>
+</dl>
+	
+<p>
+<input type="hidden" name="action" value="plugin" />
+<input type="hidden" name="name" value="Paint" />
+<input type="hidden" name="type" value="applet" />
+</p>
+
+</fieldset>
+</form>

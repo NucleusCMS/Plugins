@@ -1,0 +1,25 @@
+<html lang="ja">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset={{charset}}" />
+<title>NP_Paint - {{file}} - {{name}}</title>
+<meta http-equiv="Content-Script-Type" content="text/javascript" />
+<meta http-equiv="Content-Style-Type" content="text/css" />
+
+</head>
+<body>
+
+<applet code="pch2.PCHViewer.class" name="paintbbs" width="{{w}}" height="{{h}}" archive="{{appletBaseUrl}}PCHViewer.jar" mayscript="true">
+	<param name="pch_file" value="{{MediaURL}}{{file}}" />
+	<param name="speed" value="-1" />
+	
+	<param name="res.zip" value="{{appletBaseUrl}}res/res.zip" />
+	<param name="tt.zip" value="{{appletBaseUrl}}res/tt.zip" />
+</applet>
+
+<form method="get" action="{{MediaURL}}{{file}}">
+<input type="submit" value="アニメデータ ダウンロード" />
+<input type="button" value="閉じる" onclick="window.close()" />
+</form>
+
+</body>
+</html>

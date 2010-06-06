@@ -1,0 +1,314 @@
+<h2>NP_Paint ヘルプ</h2>
+
+<h3>Plugin概要<a href="http://cles.jp/"><img border="0" src="http://blog.cles.jp/cles.png"  alt="Powered by CLES" /></a></h3>
+
+<p>お絵かきアプレットとの連携を可能にするプラグインです</p>
+<p>※このプラグインは単体では動きません。下記の<a href="#must">「最低限やらなければならないこと」</a>をご覧の上セットアップを行ってください。</p>
+
+<h3>必要環境</h3>
+<p>Nucleus: 3.2以降</p>
+<p>PHP: 4.3.2以降、サーバ側でJPEG変換を使う場合にはGDサポートが必要です。</p>
+<p><em>動作確認はサーバ側PHP 5.2.5および、Nucleus 3.31SP1(UTF-8/EUC-JP)で行っています</em></p>
+
+<p>動作確認済みクライアント(これ以外の環境で動作確認ができた場合にはご連絡ください)</p>
+<p>・Firefox(win)</p>
+<p>・IE6(win)</p>
+<p>・Firefox(MacOSX)</p>
+<p>・Safari(MacOSX)</p>
+<p>・IE5.1(MacOS9)[ただし、動的パレット動作不可]</p>
+<p><strike>・Netscape7(MacOS9)</strike><em>動作不安定のため</em></p>
+
+<h3>ファイル構成</h3>
+
+<p>圧縮ファイルを展開すると以下の通りになります。</p>
+
+<p>
+<pre>(Nucleusのpluginフォルダ)
+├NP_Paint.php
+├paint/<a name="appletdir"></a>
+│├<strong>applet/　←　お絵かきアプレット配置ディレクトリ</strong>
+││├index.html
+││└readme.txt
+│├Applet_PaintBBS.php <em>(PaintBBS)</em>
+│├Applet_Shipainter.php <em>(しぃペインター)</em>
+│├Applet_Shipainterpro.php <em>(しぃペインターPro)</em>
+│├index.php
+│├paint.css
+│├paint.js
+│├PaintPlugin.php
+│├Palette_None.php <em>(パレットなし)</em>
+│├Palette_Selfy.php <em>(Selfyパレット)</em>
+│├Palette_WCS.php <em>(WCSパレット)</em>
+│├Parser_PaintBBS.php
+│├Viewer_Continue.php <em>(Continue機能)</em>
+│├Viewer_Pch.php <em>(pchビュアー)</em>
+│└Viewer_Spch.php <em>(spchビュアー)</em>
+└sharedlibs/
+　└<em>PEAR/共通ライブラリ群</em>
+</pre>
+</p>
+
+<a name="must"></a>
+<h3>最低限やらなければならないこと</h3>
+
+<p><strong>このプラグインにはライセンスの関係上、お絵かきに必要なアプレット類を同梱していません。</strong></p>
+<p>（※アプレットや動的パレットはNucleusと違い、GPLライセンスではありません。ダウンロードの際にはライセンスをよく読んでください。）</p>
+
+
+<p>このため、下記の手順にてセットアップを行う必要があります。</p>
+
+<ol>
+  <li>NP_Paintの圧縮ファイルを展開してNucleusのプラグインディレクトリに配置します。<em>(上記参照)</em></li>
+  <li>下記のリンクよりアプレット,PCHビュアー(アニメーションを再生するときのみ)をダウンロードします<br />
+  　・<a href="http://hp.vector.co.jp/authors/VA016309/paintbbs/pbbs.html">PaintBBS</a><br />
+  　・<a href="http://hp.vector.co.jp/authors/VA016309/spainter/">しぃペインター(複数ファイルバージョン)</a>
+  </li>
+  <li>下記のリンクより動的パレットをダウンロードします<em>(必要な場合のみ。なくても動きます。)</em><br />
+  　・<a href="http://wondercatstudio.com/archive/">WCS 動的パレットコントロールセット(DynPalette)</a><br />
+  　・<a href="http://useyan.x0.com/s/cgi/relm/palette_selfy.html">Palette-Selfy</a>
+  </li>
+  <li>2、3でダウンロードしたファイルを展開し、中身を全て<a href="#appletdir">「お絵かきアプレット配置ディレクトリ」<em>(上記参照)</em></a>に配置します</li>
+  <li>Nucleus管理画面から、NP_Paintのインストールを実行します</li>
+  <li>プラグインオプションの「デフォルトApplet」「デフォルトPalette」のプルダウンに項目が表示されていればインストールは成功です。<br />
+	リストが表示が出ない場合には正常にインストールされていません。プラグインオプションの 「ログを出力を行うか？」をはいにして、管理者操作履歴を参照してみてください。
+	足りないファイルがログに出力されているはずです。
+  </li>
+  <li>スキンのどこかに<code>&lt;%Paint%&gt;</code>を記述します</li>
+  <li>ログインした状態で、上記のスキンを表示するとお絵かき画面に入るためのフォームが出現します</li>
+  <li>「Paint」ボタンを押すとApplet画面が開きます。<br />
+	Appletが表示されない場合には、お絵かきアプレット配置ディレクトリおよび上位ディレクトリ、2、3で配置したファイルのパーミッションを確認してみてください。</li>
+  <li>あとは絵を描くだけ。<em>設定によってはファイルがセーブされない可能性もあるので、一度は試書きをすることをオススメします。</em></li>
+</ol>
+
+<h3>オプション</h3>
+
+<p>プラグインオプション（サイト全体の設定）</p>
+<table>
+<tr>
+	<th>オプション</th>
+	<th>解説</th>
+</tr>
+<tr>
+	<td>デフォルトのキャンバスサイズ(幅)</td>
+	<td>
+		デフォルトのキャンバスサイズ(幅)を指定します。<br />
+		デフォルト: 300
+	</td>
+</tr>
+<tr>
+	<td>デフォルトのキャンバスサイズ(高さ)</td>
+	<td>
+		デフォルトのキャンバスサイズ(高さ)を指定します。<br />
+		デフォルト: 300
+	</td>
+</tr>
+<tr>
+	<td>動画ファイルを保存するか？</td>
+	<td>
+		デフォルトで動画ファイル(pch/spch)を保存するか指定します。<br />
+		デフォルト: はい
+	</td>
+</tr>
+<tr>
+	<td>デフォルトApplet</td>
+	<td>
+		デフォルトで使用するAppletを指定します。
+	</td>
+</tr>
+<tr>
+	<td>デフォルトの画像形式</td>
+	<td>
+		デフォルトで使用する画像形式を指定します。通常、AUTOの場合にデータは一番小さくなります。<br />
+		デフォルト: AUTO 
+	</td>
+</tr>
+<tr>
+	<td>画像形式がAUTOの場合の減色・圧縮率[0-100]</td>
+	<td>
+		PNGの減色率、JPEGの圧縮率を設定します。下記の閾値を越えた場合に使われます。<br />
+		デフォルト: 15 <em>(推奨値)</em> 
+	</td>
+</tr>
+<tr>
+	<td>画像形式がAUTOの場合に減色が有効になる閾値[KB](利用しない場合は0)</td>
+	<td>
+		ファイルがこの容量を超える場合に減色を行います。この機能を利用しない場合には0、必ず減色したい場合には1を設定します。<br />
+		デフォルト: 60 <em>(推奨値)</em> 
+	</td>
+</tr>
+<tr>
+	<td>画像形式がJPGの場合の画像品質[0-100]</td>
+	<td>
+		画像形式でJPGを選択した場合の画像品質<br />
+		デフォルト: 75 
+	</td>
+</tr>
+<tr>
+	<td>本文テンプレート</td>
+	<td>
+		お絵かき後に追加するエントリの本文を指定します。
+		テンプレート内で使えるタグについては別途解説してあります<br />
+		デフォルト: &lt;%paint(&lt;%url%&gt;|&lt;%w%&gt;|&lt;%h%&gt;|pbbsimage)%&gt; 
+	</td>
+</tr>
+<tr>
+	<td>Paintタグテンプレート</td>
+	<td>
+		本文中に記述した&lt;%paint()%&gt;をどのように展開するか指定します。
+		アニメーションファイルが見つからない場合にはこのテンプレートは使用されず、下記の画像部テンプレートのみが出力されます。
+		テンプレート内で使えるタグについては別途解説してあります<br />
+	</td>
+</tr>
+<tr>
+	<td>画像部テンプレート</td>
+	<td>
+		Paintタグテンプレート内の&lt;%img%&gt;をどのように置換するか指定します。
+		テンプレート内で使えるタグについては別途解説してあります<br />
+	</td>
+</tr>
+<tr>
+	<td>ログを出力を行うか？</td>
+	<td>
+		<code>はい</code>にすることにより「管理者操作履歴」ログを記録するようになります。
+		膨大なログが出力されるので動作確認時以外は<code>いいえ</code>にしておくことを推奨します。
+		<code>いいえ</code>の場合であっても重大なエラーについては記録されます。<br />
+		デフォルト: いいえ
+	</td>
+</tr>
+</table>
+
+<h3>テンプレート内で利用可能なタグ</h3>
+
+<p>テンプレート中には以下のタグが利用できます。</p>
+
+<table>
+<tr>
+	<th>タグ</th>
+	<th>解説</th>
+</tr>
+<tr>
+	<td>&lt;%url%&gt;</td>
+	<td>保存された画像のmediaフォルダ以下のurl</td>
+</tr>
+<tr>
+	<td>&lt;%w%&gt;</td>
+	<td>保存された画像の横幅</td>
+</tr>
+<tr>
+	<td>&lt;%h%&gt;</td>
+	<td>保存された画像の縦幅</td>
+</tr>
+<tr>
+	<td>&lt;%alt%&gt;</td>
+	<td>altテキスト</td>
+</tr>
+<tr>
+	<td>&lt;%img%&gt;</td>
+	<td>
+		※Paintタグテンプレートのみ<br />
+		画像部テンプレートの展開位置を指定します。
+	</td>
+</tr>
+<tr>
+	<td>&lt;%viewer%&gt;</td>
+	<td>
+		アニメーションファイルを表示するためのURL
+	</td>
+</tr>
+<tr>
+	<td>&lt;%continue%&gt;</td>
+	<td>
+		Continue機能へのリンク<br />
+		※ログイン時かつ、自分のコレクション内のお絵かきのみ表示されます
+	</td>
+</tr>
+</table>
+
+<h3>サポートとバグレポート</h3>
+
+<p>問題が解決できない場合には<a href="http://japan.nucleuscms.org/bb/">Nucleus(JP)フォーラム</a>を活用しましょう。</p>
+<p>バグレポートについては配布元の<a href="http://blog.cles.jp/np_cles">NP_cles()</a>にて受け付けていますので、該当のバージョンのエントリにコメント又はトラックバックでどうぞ。</p>
+<p>「動作確認しました」というだけでも開発者には重要な情報になります。</p>
+
+<h3>アンインストール</h3>
+
+<p><code>NP_Paint</code>を完全にアンインストールするための手順は以下の通りです</p>
+
+<ol>
+  <li>「プラグイン管理」からNP_Paintをアンインストールする</li>
+  <li>Nucleusをインストールしているサーバの<code>nucleus/plugin/</code>ディレクトリから<code>NP_Paint.php</code>と<code>paint</code>ディレクトリを削除する</li>
+</ol>
+
+<h3>バージョン履歴</h3>
+
+<p>新バージョンは<a href="http://blog.cles.jp/np_cles/">NP_cles()</a>で確認してください。</p>
+
+<ul>
+	<li>Version 1.18: (2010/06/06)</li>
+	<li>　[Fixed] 表示されるHTMLの細部を改良</li>
+	<li>　[Fixed] register_globals,allow_url_fopen,allow_url_includeがonの場合にリモートコードインジェクションが発生する問題に対応しました(Thanks Katsumiさん)</li>
+	<li>Version 1.17: (2008/03/03)</li>
+	<li>　[Changed] 関連ファイルのロード時にエラーが発生した場合の処理を厳格にした</li>
+	<li>　[Changed] ログが詳細に出力されるようにした</li>
+	<li>　[Fixed] GDがインストールされていない場合の不具合を修正</li>
+	<li>Version 1.16: (2007/06/17)</li>
+	<li>　[Fixed] mysql_query()をsql_query()に変更</li>
+	<li>　[Fixed] デバッグ用の記述がそのままになっていた部分をコメント化</li>
+	<li>　[Changed] テンプレートで使うことができる変数の見直し</li>
+	<li>　[Fixed] ビュアー部分のtypoを訂正</li>
+	<li>Version 1.15: (2006/11/26)</li>
+	<li>　[Added] Ticket処理を追加(CSRF対策)</li>
+	<li>Version 1.14: (2006/10/09)</li>
+	<li>　[Changed] 画像投稿時の認証方法を変更</li>
+	<li>　[Added] 投稿エラーを回避するための機能を追加</li>
+	<li>　[Changed] 投稿画像に付くプレフィックスを日付にした</li>
+	<li>Version 1.13: (2006/09/30)</li>
+	<li>　[Changed] セキュリティの向上</li>
+	<li>Version 1.12: (2006/05/13)</li>
+	<li>　[Fixed] blogの管理権限を持たないユーザーの投稿がエラーとなる不具合を修正</li>	
+	<li>　[Fixed] エントリ投稿時にコレクションを省略した場合の不具合を修正した</li>	
+	<li>　[Fixed] Safariでの不具合を修正</li>	
+	<li>　[Added] UTF-8,EUC-JP版を統一した</li>
+	<li>Version 1.11: (2006/03/19)</li>
+	<li>　[Fixed] &lt;%Paint%&gt;で表示される際のフォームを変更した</li>
+	<li>　[Fixed] ライセンスを変更した</li>
+	<li>Version 1.10: (2005/10/30)</li>
+	<li>　[Added] Quality値の設定に対応</li>
+	<li>　[Fixed] Continue時にしぃペインターとしぃペインターProの自動選択の問題を解決</li>
+	<li>Version 1.9: (2005/10/05)</li>
+	<li>　[Fixed] ファイルの保存方法の変更を根本的に変更</li>
+	<li>　[Info ] PHP5環境での動作を確認</li>
+	<li>　[Added] Continue時の読み込み元をアニメファイルと画像から選べるようにした</li>	
+	<li>Version 1.8: (2005/10/04)</li>
+	<li>　[Fixed] ファイルの保存方法の変更とアプレットのパラメータ調整（ファイルが壊れる現象に対応）</li>	
+	<li>　[Added] 管理画面からApplet/Paletteがインストールできる機能を追加</li>	
+	<li>　[Added] 管理画面から動作確認ができる機能を追加</li>
+	<li>Version 1.7: (2005/09/01)</li>
+	<li>　[Added] 画像の保存形式、関連パラメータが設定できるように修正</li>	
+	<li>Version 1.6: (2005/08/20)</li>
+	<li>　[Added] Continue機能を実装</li>
+	<li>　[Info ] MacOS9での動作確認</li>		
+	<li>Version 1.5: (2005/08/04)</li>
+	<li>　[Fixed] Firefox(MacOSX)で動作しないバグを修正</li>	
+	<li>Version 1.4(beta): (2005/07/31)</li>
+	<li>　[Added] &lt;%paint()%&gt;を追加(image,popupと引数互換)</li>	
+	<li>　[Added] pch/spchの再生に対応した(ビュアーのインストールが必要)</li>
+	<li>　[Added] WCSDynPaletteを使用する際、最初に読み込むパレットを選択できるようにした</li>
+	<li>Version 1.3(beta): (2005/07/28)</li>
+	<li>　[Fixed] 投稿エラー時に500 Internal Server Errorを返すようにした</li>
+	<li>　[Fixed] エラーチェックを厳密にした</li>
+	<li>Version 1.2(beta): (2005/07/26)</li>
+	<li>　[Fixed] お絵かき後に&lt;%image%&gt;を生成する部分変更</li>
+	<li>Version 1.1(beta): (2005/07/24)</li>
+	<li>　[Fixed] IEで投稿できないバグに対応した</li>
+	<li>Version 1.0(beta): (2005/07/23)</li>
+	<li>　[New!] ベータ版として新規公開</li>
+</ul>
+
+<h3>開発者について</h3>
+
+<ul>
+  <li><a href="http://blog.cles.jp/member/1">hsur</a> (<a href="http://blog.cles.jp/">cles::blog</a>)</li>
+  <li>配布元： <a href="http://blog.cles.jp/np_cles/category/31/subcatid/5">NP_cles() - NP_Paint</a></li>
+  <li>ドネーションや仕事のご依頼も歓迎します。</li>
+</ul>

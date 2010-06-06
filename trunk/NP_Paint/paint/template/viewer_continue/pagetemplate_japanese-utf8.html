@@ -1,0 +1,64 @@
+<html lang="ja">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset={{charset}}" />
+<title>NP_Paint - {{name}}</title>
+<meta http-equiv="Content-Script-Type" content="text/javascript" />
+<meta http-equiv="Content-Style-Type" content="text/css" />
+
+</head>
+<body>
+
+<div style="float:left;">
+<img src="{{mediaurl}}{{file}}" alt="{{alt}}" width="{{w}}" height="{{h}}" />
+</div>
+
+<form method="get" action="{{actionurl}}">
+
+<fieldset>
+<legend>NP_Paint Continue</legend>
+<dl>
+<dt>applet:</dt>
+<dd>{{appletTag}}</dd>
+
+<dt>palette:</dt>
+<dd>{{paletteTag}}</dd>
+{{paletteExtraTag}}
+
+<dt>mode:</dt>
+<dd>
+<select name="ow">
+<option value="1" checked="checked">差し替え</option>
+<option value="0">新規投稿</option>
+</select>
+</dd>
+
+<dt>animeから続きを描く:</dt>
+<dd><input name="usepch" type="checkbox" value="1" $animation /></dd>
+
+<dt>AnimeInfomation:</dt>
+<dd>{{animeInfo}}</dd>
+
+<dt>Paint?</dt>
+<dd><button type="submit" name="submit" value="1">Continue</button></dd>
+</dl>
+
+<p>
+<input type="hidden" name="w" value="{{w}}" />
+<input type="hidden" name="h" value="{{h}}" />
+<input type="hidden" name="file" value="{{file}}" />
+<input type="hidden" name="quality" value="{{quality}}" />
+
+<input type="hidden" name="action" value="plugin" />
+<input type="hidden" name="name" value="Paint" />
+<input type="hidden" name="type" value="applet" />
+</p>
+</fieldset>
+</form>
+
+<hr color="#222222" noshade style="clear: both;" />
+<div>
+NP_Paint by <a href="http://blog.cles.jp">cles</a>
+</div>
+
+<body>
+</html>
