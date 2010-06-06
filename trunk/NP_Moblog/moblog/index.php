@@ -2,14 +2,14 @@
 // vim: tabstop=2:shiftwidth=2
 
 /**
-  * index.php ($Revision: 1.1 $)
+  * index.php ($Revision: 1.21 $)
   * 
   * by hsur ( http://blog.cles.jp/np_cles )
-  * $Id: index.php,v 1.1 2008-05-04 07:04:50 hsur Exp $
+  * $Id: index.php,v 1.21 2010/06/06 11:44:19 hsur Exp $
 */
 
 /*
-  * Copyright (C) 2004-2006 cles. All rights reserved.
+  * Copyright (C) 2004-2010 cles. All rights reserved.
   *
   * This program is free software; you can redistribute it and/or
   * modify it under the terms of the GNU General Public License

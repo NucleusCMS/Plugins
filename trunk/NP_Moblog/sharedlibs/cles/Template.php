@@ -2,14 +2,14 @@
 // vim: tabstop=2:shiftwidth=2
 
 /**
-  * Template.php ($Revision: 1.1 $)
+  * Template.php ($Revision: 1.11 $)
   * 
   * by hsur ( http://blog.cles.jp/np_cles )
-  * $Id: Template.php,v 1.1 2008-05-04 07:04:50 hsur Exp $
+  * $Id: Template.php,v 1.11 2008/08/15 21:17:02 hsur Exp $
 */
 
 /*
-  * Copyright (C) 2006 CLES. All rights reserved.
+  * Copyright (C) 2006-2008 CLES. All rights reserved.
   *
   * This program is free software; you can redistribute it and/or
   * modify it under the terms of the GNU General Public License
@@ -36,6 +36,12 @@
   * but you are not obligated to do so. If you do not wish to do so, delete
   * this exception statement from your version.
 */
+
+if (!function_exists('getLanguageName')){
+	function getLanguageName(){
+	        return 'japanese-utf8';
+	}
+}
 
 class cles_Template {
 	var $defaultLang = 'japanese-utf8';
@@ -68,9 +74,14 @@ class cles_Template {
 	
 	function fill($template, $values, $default = null) {
 		if( $default )
-			return preg_replace($this->defalutPattern, 'isset($values["$1"]) ? ("$2" ? htmlspecialchars($values["$1"], ENT_QUOTES) : $values["$1"]) : $default', $template);
+			return preg_replace($this->defalutPattern, 'isset($values[\'$1\']) ? (\'$2\' ? htmlspecialchars($values[\'$1\'], ENT_QUOTES) : $values[\'$1\']) : $default', $template);
 		if( $default === null )
-			return preg_replace($this->defalutPattern, '("$2") ? htmlspecialchars($values["$1"], ENT_QUOTES) : $values["$1"]', $template);
-		return preg_replace($this->defalutPattern, 'isset($values["$1"]) ? ("$2" ? htmlspecialchars($values["$1"], ENT_QUOTES) : $values["$1"]) : "{{$1}}" ', $template);
+			return preg_replace($this->defalutPattern, '(\'$2\') ? htmlspecialchars($values[\'$1\'], ENT_QUOTES) : $values[\'$1\']', $template);
+		return preg_replace($this->defalutPattern, 'isset($values[\'$1\']) ? (\'$2\' ? htmlspecialchars($values[\'$1\'], ENT_QUOTES) : $values[\'$1\']) : \'{{$1}}\' ', $template);
+	}
+	
+	function fetchAndFill($name, $values, $dir = null, $suffix = 'html', $default = null){
+		$tpl = $this->fetch($name, $dir, $suffix);
+		return $this->fill($tpl, $values, $default);
 	}
 }

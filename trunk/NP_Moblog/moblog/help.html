@@ -477,6 +477,15 @@
 <p>新バージョンは<a href="http://blog.cles.jp/np_cles/">NP_cles()</a>で確認してください。</p>
 
 <ul>
+	<!--  
+	<li>　//TODO: [Fixed] 日本語のファイル添付に対応 </li>
+	-->
+
+	<li>Version 1.17: (2010/06/06)</li>
+	<li>　[Fixed] エンコーディングが適切に検出されない問題を修正</li>
+	<li>　[Fixed] mysql_query()をsql_query()に変更</li>
+	<li>　[Fixed] eregi()をpreg_match()に変更</li>
+	<li>　[Fixed] register_globals,allow_url_fopen,allow_url_includeがonの場合にリモートコードインジェクションが発生する問題に対応しました (Thanks Katsumiさん)</li>
 	<li>Version 1.16: (2007/03/17)</li>
 	<li>　[Fixed] メールアドレスの大文字小文字を区別しないようにした</li>
 	<li>　[Fixed] 管理者が設定の変更を行った場合、useridディレクトリにきちんと画像が保存されない問題を修正</li>

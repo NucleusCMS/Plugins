@@ -2,9 +2,9 @@
 // vim: tabstop=2:shiftwidth=2
 
 /**
-  * NP_Moblog ($Revision: 1.1 $)
+  * NP_Moblog ($Revision: 1.136 $)
   * by hsur ( http://blog.cles.jp/np_cles )
-  * $Id: NP_Moblog.php,v 1.1 2008-05-04 07:04:50 hsur Exp $
+  * $Id: NP_Moblog.php,v 1.136 2010/06/06 11:44:19 hsur Exp $
   *
   * Based on NP_HeelloWorld v0.8 
   * http://nakahara21.com/?itemid=133
@@ -12,7 +12,7 @@
 
 /*
   * Copyright (C) 2003 nakahara21 All rights reserved.
-  * Copyright (C) 2004-2007 cles All rights reserved.
+  * Copyright (C) 2004-2010 cles All rights reserved.
   *
   * This program is free software; you can redistribute it and/or
   * modify it under the terms of the GNU General Public License
@@ -40,6 +40,7 @@
   * this exception statement from your version.
 */
 
+if (!class_exists('NucleusPlugin')) exit;
 global $DIR_LIBS;
 require_once($DIR_LIBS . 'MEDIA.php');
 
@@ -53,12 +54,6 @@ require_once('Mail/RFC822.php');
 $required = '4.3.0';
 if( ! version_compare(phpversion() , $required , '>=') ){
 	ACTIONLOG :: add(WARNING, 'NP_MoblogはPHP>=4.3.0であることが必要です。');
-}
-
-if (!function_exists('sql_table')) {
-	function sql_table($name) {
-		return 'nucleus_'.$name;
-	}
 }
 
 class NP_Moblog extends NucleusPlugin {
@@ -81,7 +76,7 @@ class NP_Moblog extends NucleusPlugin {
 
 	// version of the plugin
 	function getVersion() {
-		return '1.16';
+		return '1.17.0';
 	}
 	
 	function hasAdminArea() {
@@ -104,7 +99,7 @@ class NP_Moblog extends NucleusPlugin {
 				);
 				
 				$blogs = Array();
-				$res = mysql_query('SELECT bnumber, bname FROM '.sql_table('blog'));
+				$res = sql_query('SELECT bnumber, bname FROM '.sql_table('blog'));
 				while( $o = mysql_fetch_object($res) ){
 					 if( $m->isTeamMember($o->bnumber) ){
 						$blogs[$o->bnumber] = $o->bname;
@@ -113,7 +108,7 @@ class NP_Moblog extends NucleusPlugin {
 				
 				$idandcatTypeInfo = '';
 				foreach($blogs as $blogid => $blogname){
-					$res = mysql_query('SELECT catid, cname FROM '.sql_table('category').' WHERE cblog='.$blogid);
+					$res = sql_query('SELECT catid, cname FROM '.sql_table('category').' WHERE cblog='.$blogid);
 					if( @mysql_num_rows($res) > 0) {
 						while( $o = mysql_fetch_object($res) ){
 							if($idandcatTypeInfo)
@@ -221,7 +216,7 @@ class NP_Moblog extends NucleusPlugin {
 
 	// a description to be shown on the installed plugins listing
 	function getDescription() {
-		return '[$Revision: 1.1 $]<br />メールを拾ってアイテムを追加します。&lt;%Moblog%&gt;の記述のあるスキンを適用するページを開くと実行されます。<br />
+		return '[$Revision: 1.136 $]<br />メールを拾ってアイテムを追加します。&lt;%Moblog%&gt;の記述のあるスキンを適用するページを開くと実行されます。<br />
 				&lt;%Moblog(link)%&gt;と記入することでメールを取得するためのリンクを表示することができます（要ログイン）<br />
 				個人ごとに設定ができるようになりましたので「あなたの設定」か「メンバー管理」から設定を行ってください。';
 	}
@@ -364,7 +359,7 @@ class NP_Moblog extends NucleusPlugin {
 	function _convert($str, $input_encoding = false) {
 		if( ! $input_encoding ){
 			$input_encoding = "ISO-2022-JP,ASCII,JIS,UTF-8,EUC-JP,SJIS,ISO-2022-JP";
-			$encoding = mb_detect_encoding($input_encoding);
+			$encoding = mb_detect_encoding($str, $input_encoding);
 			if( ! $encoding )
 				$input_encoding = "ISO-2022-JP";
 		}
@@ -635,7 +630,7 @@ class NP_Moblog extends NucleusPlugin {
 		}
 		
 		// Subject: 空の場合
-		if( ! $subject = trim(htmlspecialchars($subject)) ){
+		if( ! $subject = trim(htmlspecialchars($subject, ENT_QUOTES)) ){
 			$subject = $this->nosubject;
 		}
 
@@ -767,9 +762,9 @@ class NP_Moblog extends NucleusPlugin {
 		
 		// subtypeチェック
 		$size = strlen($part->body);
-		if( eregi($this->subtype, trim($part->ctype_secondary) )){
+		if( preg_match("/".$this->subtype."/i", trim($part->ctype_secondary) )){
 			// サイズ、拡張子チェック
-			if ($size < $this->maxbyte && !eregi($this->viri, $filename)) {
+			if ($size < $this->maxbyte && preg_match("/".$this->viri.'/i', $filename)) {
 								
 				$fp = fopen($this->tmpdir.$filename, "w");
 				fputs($fp, $part->body);
@@ -809,8 +804,8 @@ class NP_Moblog extends NucleusPlugin {
 			'sizeW' => $size[0],
 			'sizeH' => $size[1],
 			'body' => $body,
-			'thumbUrl' => $this->thumb_collection.'/'.$this->_getThumbFileName($filename),
-			'imageUrl' => $this->collection.'/'.$filename,
+			'thumbUrl' => $this->thumb_collection.'/' . urlencode($this->_getThumbFileName($filename)),
+			'imageUrl' => $this->collection.'/' . urlencode($filename),
 			'mediaUrl' => $CONF['MediaURL'],
 			'fileName' => $filename
 		);

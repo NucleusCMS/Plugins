@@ -20,7 +20,7 @@
  * @author     Greg Beaver <cellog@php.net>
  * @copyright  1997-2006 The PHP Group
  * @license    http://www.php.net/license/3_0.txt  PHP License 3.0
- * @version    CVS: $Id: PEAR.php,v 1.1 2008-05-04 07:04:50 hsur Exp $
+ * @version    CVS: $Id: PEAR.php,v 1.7 2006/09/29 14:44:16 hsur Exp $
  * @link       http://pear.php.net/package/PEAR
  * @since      File available since Release 0.1
  */

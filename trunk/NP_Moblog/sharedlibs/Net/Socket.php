@@ -17,7 +17,7 @@
 // |          Chuck Hagenbuch <chuck@horde.org>                           |
 // +----------------------------------------------------------------------+
 //
-// $Id: Socket.php,v 1.1 2008-05-04 07:04:50 hsur Exp $
+// $Id: Socket.php,v 1.8 2006/11/27 17:14:39 hsur Exp $
 
 require_once 'PEAR.php';
 
