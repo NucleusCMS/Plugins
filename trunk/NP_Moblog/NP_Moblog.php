@@ -2,9 +2,9 @@
 // vim: tabstop=2:shiftwidth=2
 
 /**
-  * NP_Moblog ($Revision: 1.136 $)
+  * NP_Moblog ($Revision: 1.137 $)
   * by hsur ( http://blog.cles.jp/np_cles )
-  * $Id: NP_Moblog.php,v 1.136 2010/06/06 11:44:19 hsur Exp $
+  * $Id: NP_Moblog.php,v 1.137 2010/06/23 14:20:28 hsur Exp $
   *
   * Based on NP_HeelloWorld v0.8 
   * http://nakahara21.com/?itemid=133
@@ -76,7 +76,7 @@ class NP_Moblog extends NucleusPlugin {
 
 	// version of the plugin
 	function getVersion() {
-		return '1.17.0';
+		return '1.17.1';
 	}
 	
 	function hasAdminArea() {
@@ -216,7 +216,7 @@ class NP_Moblog extends NucleusPlugin {
 
 	// a description to be shown on the installed plugins listing
 	function getDescription() {
-		return '[$Revision: 1.136 $]<br />メールを拾ってアイテムを追加します。&lt;%Moblog%&gt;の記述のあるスキンを適用するページを開くと実行されます。<br />
+		return '[$Revision: 1.137 $]<br />メールを拾ってアイテムを追加します。&lt;%Moblog%&gt;の記述のあるスキンを適用するページを開くと実行されます。<br />
 				&lt;%Moblog(link)%&gt;と記入することでメールを取得するためのリンクを表示することができます（要ログイン）<br />
 				個人ごとに設定ができるようになりましたので「あなたの設定」か「メンバー管理」から設定を行ってください。';
 	}
@@ -764,7 +764,7 @@ class NP_Moblog extends NucleusPlugin {
 		$size = strlen($part->body);
 		if( preg_match("/".$this->subtype."/i", trim($part->ctype_secondary) )){
 			// サイズ、拡張子チェック
-			if ($size < $this->maxbyte && preg_match("/".$this->viri.'/i', $filename)) {
+			if ($size < $this->maxbyte && !preg_match("/".$this->viri.'/i', $filename)) {
 								
 				$fp = fopen($this->tmpdir.$filename, "w");
 				fputs($fp, $part->body);
