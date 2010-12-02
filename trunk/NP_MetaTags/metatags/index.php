@@ -5,7 +5,7 @@
   * index.php ($Revision: 1.1 $)
   * 
   * by hsur ( http://blog.cles.jp/np_cles )
-  * $Id: index.php,v 1.1 2007-09-30 13:54:19 hsur Exp $
+  * $Id: index.php,v 1.1 2007/09/23 22:34:33 hsur Exp $
 */
 
 /*

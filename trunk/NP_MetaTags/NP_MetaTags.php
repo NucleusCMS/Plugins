@@ -2,12 +2,12 @@
 // vim: tabstop=2:shiftwidth=2
 
 /**
-  * NP_MetaTags ($Revision: 1.2 $)
+  * NP_MetaTags ($Revision: 1.118 $)
   * by hsur ( http://blog.cles.jp/np_cles )
 */
 
 /*
-  * Copyright (C) 2005-2007 CLES. All rights reserved.
+  * Copyright (C) 2005-2010 CLES. All rights reserved.
   *
   * This program is free software; you can redistribute it and/or
   * modify it under the terms of the GNU General Public License
@@ -49,10 +49,10 @@ class NP_MetaTags extends NucleusPlugin {
 		return 'http://blog.cles.jp/np_cles/category/31/subcatid/4';
 	}
 	function getVersion() {
-		return '1.7';
+		return '1.8';
 	}
 	function getDescription() {
-		return '[$Revision: 1.2 $]<br />This plug-in This plug-in inserts a &lt;META&gt; tag (robots, description, keywords), by using &lt;%MetaTags%&gt;';
+		return '[$Revision: 1.118 $]<br />This plug-in This plug-in inserts a &lt;META&gt; tag (robots, description, keywords), by using &lt;%MetaTags%&gt;';
 	}
 	function getMinNucleusVersion() {
 		return 320;
@@ -156,6 +156,10 @@ class NP_MetaTags extends NucleusPlugin {
 				$affected = $this->_refreshData();
 				break;
 			case 'item':
+				// var_dump($data);
+				// core hack needed.
+				if( $data['item']['draft'] ) break;
+
 				$item = $data['item'];
 				$item['itemid'] = $data['itemid'];
 				$this->_setData($item);
@@ -252,7 +256,7 @@ class NP_MetaTags extends NucleusPlugin {
 		$ahttp = new cles_AsyncHTTP();
 		$ahttp->asyncMode = false;
 		$ahttp->userAgent = "NP_MetaTags/".$this->getVersion();
-		$ahttp->setRequest('http://api.jlp.yahoo.co.jp/MAService/V1/parse', 'POST', '', $postData);
+		$ahttp->setRequest('http://jlp.yahooapis.jp/MAService/V1/parse', 'POST', '', $postData);
 		list($data) = $ahttp->getResponses();
 		if( !$data )
 			ACTIONLOG :: add(WARNING, 'NP_MetaTags: AsyncHTTP Error['.$ahttp->getErrorNo(0).']'.$ahttp->getError(0));
@@ -276,14 +280,19 @@ class NP_MetaTags extends NucleusPlugin {
 				$postData['results'] = '1';
 				$postData['adult_ok'] = '1';
 				$postData['similar_ok'] = '1';	
-
 				$ahttp = new cles_AsyncHTTP();
 				$ahttp->userAgent = "NP_MetaTags/".$this->getVersion();
 				
 				$requests = array();
 				foreach ($words as $word => $count) {
 					$postData['query'] = $word;
-					$id = $ahttp->setRequest('http://api.search.yahoo.co.jp/WebSearchService/V1/webSearch', 'POST', '', $postData);
+					
+					$qs = array();
+					foreach($postData as $k => $v){
+						$qs[] = $k."=".urlencode($v);	
+					}
+					$u = 'http://search.yahooapis.jp/WebSearchService/V2/webSearch?'.implode("&", $qs);
+					$id = $ahttp->setRequest($u, 'GET');
 					
 					$requests[$id] = $word;
 				}
@@ -302,7 +311,7 @@ class NP_MetaTags extends NucleusPlugin {
 						$p = null;
 						
 						if( $totalResultsAvailable ){
-							$tfidf[$word] = $words[$word] * log10(25000000000/$totalResultsAvailable);
+							$tfidf[$word] = $words[$word] * log10(30000000000/$totalResultsAvailable);
 						}
 					} else {
 						ACTIONLOG :: add(WARNING, $this->getName().': AsyncHTTP Error['.$ahttp->getErrorNo($id).']'.$ahttp->getError($id));
@@ -337,7 +346,7 @@ class NP_MetaTags extends NucleusPlugin {
 
 class NP_MetaTags_Base_XMLParser {
 	function init(){
-		$this->parser = xml_parser_create();
+		$this->parser = xml_parser_create('UTF-8');
 		xml_set_object($this->parser, $this);
 		xml_set_element_handler($this->parser, "_open", "_close");
 		xml_set_character_data_handler($this->parser, "_cdata");
