@@ -2,12 +2,12 @@
 // vim: tabstop=2:shiftwidth=2
 
 /**
-  * NP_DragAndDropUploader ($Revision: 1.11 $)
+  * NP_DragAndDropUploader ($Revision: 1.12 $)
   * by hsur ( http://blog.cles.jp/np_cles )
   * 
   * Based on upload.php (http://www.plupload.com)
   * 
-  * $Id: NP_DragAndDropUploader.php,v 1.11 2010/05/08 23:26:28 hsur Exp $
+  * $Id: NP_DragAndDropUploader.php,v 1.12 2011/10/09 08:49:31 hsur Exp $
 */
 
 /*
@@ -76,7 +76,7 @@ class NP_DragAndDropUploader extends NucleusPlugin {
 
 	// version of the plugin
 	function getVersion() {
-		return '1.1';
+		return '1.2';
 	}
 	
 	function hasAdminArea() {
@@ -153,7 +153,7 @@ class NP_DragAndDropUploader extends NucleusPlugin {
 
 	// a description to be shown on the installed plugins listing
 	function getDescription() {
-		return '[$Revision: 1.11 $]<br />' . NP_DRAGANDDROPUPLOADER_DESCRIPTION;
+		return '[$Revision: 1.12 $]<br />' . NP_DRAGANDDROPUPLOADER_DESCRIPTION;
 	}
 
 	function supportsFeature($what) {
