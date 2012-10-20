@@ -1,0 +1,163 @@
+/**
+ * ImprovedMedia plugin for Nucleus CMS
+ * Version 3.0.1
+ * Written By Mocchi, Feb.28, 2010
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ */
+* {
+ margin: 0px;
+ padding: 0px;
+}
+
+body {
+ margin: 10px;
+ font-family: verdana, arial;
+ font-size: small;
+ background-color: #ffffff;
+ color: #3F3F3F;
+}
+
+img {
+ border: none;
+}
+
+a:link,a:visited {
+ color: #1D3565;
+ font-weight: bold;
+ text-decoration: none;
+ border-bottom: dotted 1px #808080;
+}
+
+a:hover {
+ border-bottom: dotted 1px #808080;
+}
+
+p {
+ margin: 4px 0px 4px 20px;
+}
+
+p.line {
+ margin-left: 100px;
+}
+
+h1 {
+ font-size: large;
+ color: #596D9D;
+ margin-bottom: 3px;
+}
+
+span.header {
+ color: gray;
+ font-size: small;
+}
+
+h2 {
+ font-size: medium;
+ color: #596D9D;
+ margin: 0.5em 0em 0.5em 0em;
+}
+
+h3 {
+ color: #596D9D;
+ font-size: small;
+ margin: 10px 10px 5px 10px;
+}
+
+table {
+ border: none;
+}
+
+table caption {
+ padding: 3px;
+ text-align: left;
+ font-weight: bold;
+}
+
+thead {
+ background-color: linen;
+}
+
+tbody {
+ background-color: #DDDDDD;
+}
+
+tfoot {
+ background-color: #FFFFFF;
+}
+
+th, td {
+ vertical-align: middle;
+ font-size: small;
+ font-weight: normal;
+}
+
+th {
+ margin: 0px;
+}
+
+td {
+ padding: 3px;
+ margin: 0px;
+}
+
+th p, td p {
+ margin:0px;
+ padding: 0px;
+}
+
+td.right {
+ text-align: right;
+}
+
+label {
+ cursor: pointer;
+}
+
+input.formbutton {
+ font-size: x-small;
+ padding: 1px;
+ background-color: #BFBFBF;
+}
+
+dt {
+ font-weight: bold;
+}
+
+dd {
+ margin: 0px 0px 5px 10px;
+}
+
+div.filedetail {
+ margin: 5px;
+ border: 1px solid #333333;
+ padding: 5px 10px 5px 10px;
+}
+
+form {
+ display: inline;
+}
+
+form p.left {
+ display: inline;
+ width: 8em;
+ float: left;
+}
+
+form p.right {
+ margin: 0px;
+ padding: 5px 0px 0px 0px;
+}
+
+p.notice {
+ font-weight: bold;
+ font-size: large;
+ color: #FF5A00;
+}
+
+option {
+ width: 120px;
+}

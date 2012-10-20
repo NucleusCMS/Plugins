@@ -1,0 +1,465 @@
+<!--
+/**
+ * ImprovedMedia plugin for Nucleus CMS
+ * Version 3.0.1
+ * Written By Mocchi, Feb.28, 2010
+ * 
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 3
+ * of the License, or (at your option) any later version.
+ */
+-->
+<h3>目次</h3>
+<ul>
+<li><a href="#chapter1">プラグインの概要</a></li>
+<li><a href="#chapter2">サポートとバグ報告</a></li>
+<li><a href="#chapter3">インストール</a></li>
+<li><a href="#chapter4">アンインストール</a></li>
+<li><a href="#chapter5">他のプラグインとの競合</a></li>
+<li><a href="#chapter6">使用上の注意</a></li>
+<li><a href="#chapter7">スキン変数の実装</a></li>
+<li><a href="#chapter8">オプションの解説</a></li>
+<li><a href="#chapter9">グローバル設定の日付の付加による動作の違い</a></li>
+<li><a href="#chapter10">それぞれのウェブログがある個別ディレクトリでのファイル管理について</a></li>
+<li><a href="#chapter11">イベントの発生</a></li>
+<li><a href="#chapter12">バージョン履歴</a></li>
+<li><a href="#chapter13">動作の仕組み</a></li>
+</ul>
+
+<h3 id="chapter1">プラグインの概要</h3>
+<p>このプラグインは、Nucleusのmedia.phpという、ファイルの記事への挿入やアップロードを行うプログラムを改良し、プラグインとして利用しやすくしたものです。
+<a href="http://orangoo.com/" title="外部リンク: Orangoo projects">Orangoo projects</a>の<a href="http://orangoo.com/labs/GreyBox/" title="外部リンク: GreyBox">GreyBox</a> (ver.5.54) を、<a href="http://www.gnu.org/licenses/lgpl-2.1.html" title="外部リンク: GNU LESSER GENERAL PUBLIC LICENSE Version 2.1">LGPL ver.2.1</a>のもと、同梱しています。</p>
+<p>機能は以下です</p>
+<ol>
+<li>アップロード、記事への挿入、ファイル名の変更そして削除、サブディレクトリの作成・削除・名前変更を行う事ができます。</li>
+<li>media.phpのNucleus Mediaウィンドウから、インターフェースを改良してあります。</li>
+<li>ファイルの挿入時は、代替テキストの入力を必須としました。これはアクセシビリティの観点に拠ります。</li>
+<li>プライベート・コレクション・ディレクトリ機能をオン・オフして、共有ディレクトリのみによる運用ができます。</li>
+<li>オプションで指定することにより、<a href="http://japan.nucleuscms.org/wiki/plugins:eachblogdir" title="Nucleus CMS WIKI - NP_EachBlogDir">NP_EachBlogDir</a>で提供していた機能を利用することができます。</li>
+</ol>
+
+<h3 id="chapter2">サポートとバグ報告</h3>
+<p><a href="http://japan.nucleuscms.org/bb/viewtopic.php?p=17374" title="NP_ImprovedMedia &lt; プラグイン全般 &lt; Nucleus(JP)フォーラム Forum Index">サポートフォーラム</a>において行います。
+このヘルプの最新は、<a href="http://japan.nucleuscms.org/wiki/plugins:improvedmedia" title="NP_ImprovedMedia">NP_ImprovedMedia - Nucleus CMS WIKI</a>で参照することができます。</p>
+
+<h3 id="chapter3">インストール</h3>
+<ol>
+<li>圧縮フォルダを展開し、内容物をPLUGINフォルダにコピー。</li>
+<li>Nucleusにログインし、「管理ホーム」から、「プラグイン管理」の画面に移動。</li>
+<li>画面下部の「新しいプラグインをインストール」で、「ImprovedMedia」を選択し、「プラグインのインストール」ボタンをクリック。</li>
+<li>「プラグインの管理」画面の「インストール済み」のリストに表示されているのを確認します。</li>
+<li>リスト右の「編集」で、オプションを変更することができます。</li>
+<li>通常どおり、アイテムの編集画面で外部ファイルを呼び出すボタンをクリックすると、ファイルのアップロード画面が開きます。ファイルのアップロードが成功すると、記事への埋め込みを行う画面となります。</li>
+</ol>
+
+<h3 id="chapter4">アンインストール</h3>
+<p>オプションデータを持ちますが、そのままプラグイン管理で削除すれば、きれいになくなります。</p>
+
+<h3 id="chapter5">他のプラグインとの競合</h3>
+<p>NP_ImageManager、NP_EachBlogDir、NP_Mediatocuと同時に使う事はできません。その他のプラグインは、おそらく大丈夫だと思います。</p>
+
+<h3 id="chapter6">使用上の注意</h3>
+<ul>
+<li>ユーザがログアウト状態である時は、ログイン画面を表示します。再度ログインすることで、機能を利用できます。</li>
+<li>Media Controlウィンドウは呼び出されたウェブログ情報を保持しているので、もしもユーザがウェブログ・チームに所属しておらず、最高管理権限も持っていない場合は、エラー画面を表示します。</li>
+<li>代替テキストは40文字に制限されています。英数字でも記号でも日本語でも構いません。</li>
+<li>ファイル名変更時に、拡張子を変更する事はできません。</li>
+<li>変更後のファイル名は30文字に制限されています。使用できる文字種は、英数字と3種類の記号（ハイフンマイナス、アンダースコア、プラス）です。</li>
+<li>ファイルを削除するときは、ほんとうに削除していいのか、少し考える時間を設けるとよいでしょう。</li>
+<li>サブ・ディレクトリの名前は20文字に制限されています。使用できる文字種は、英数字と3種類の記号（ハイフンマイナス、アンダースコア、プラス）です。</li>
+<li>サブ・ディレクトリを削除すると、その中に保存されているファイルも削除されます。ほんとうに削除していいのか、少し考える時間を設けるとよいでしょう。</li>
+<li>プライベート・コレクション・ディレクトリ、共有コレクション・ディレクトリをとわず、コレクション・ディレクトリは削除できません。</li>
+</ul>
+
+<h3 id="chapter7">スキン変数の実装</h3>
+<p>スキンに変数を記述することで、スキンから機能を呼び出すことができます。以下の2つの記述を、スキンに追加してください。
+なお、テンプレートからの呼び出しはサポートしていません。</p>
+
+<h4>&lt;head&gt;&lt;/head&gt;要素内</h4>
+<pre>
+&lt;%if(hasplugin,ImprovedMedia)%&gt;
+&lt;%ImprovedMedia(head)%&gt;
+&lt;%endif%&gt;</pre>
+
+<h4>&lt;body&gt;&lt;/body&gt;要素内</h4>
+<pre>&lt;%if(hasplugin,ImprovedMedia)%&gt;
+&lt;%ImprovedMedia(anchor)%&gt;
+&lt;%endif%&gt;</pre>
+
+<p>すると、&lt;%ImprovedMedia(anchor)%&gt;を追加したところにアンカー「ファイル管理」が出現します。
+このアンカーをクリックすることで、機能の呼び出しをすることができます。
+なお、こうして呼び出されたMedia Controlは、ファイルの一覧画面をデフォルトで表示します。またボタン「文書に挿入」を持たず、ファイルのアップロード・削除・ファイル名の変更とサブディレクトリ管理のみ利用できます。</p>
+
+<h3 id="chapter8">オプションの解説</h3>
+<p>以下の4つのオプションを持ちます。</p>
+<h4>プライベート・コレクションのオン・オフ。</h4>
+<p>デフォルトでは、Nucleusインストール時と同様に、プライベート・コレクション・ディレクトリ機能がオンとなっています。
+オフにすることで、メンバー間の共有ディレクトリの使用を徹底することができます。<br />
+なお、メディア・ディレクトリに子ディレクトリ（このプラグインでは、コレクション・ディレクトリと呼んでいます）が作成されていない状態でこの機能をオフにすると、エラーとなります。
+その場合は、FTPソフトかサーバ提供環境でディレクトリを作成してください。</p>
+
+<h4>Media Controlページに表示するファイル数</h4>
+<p>表示ファイル数を5件から50件の間で指定できます。</p>
+
+<h4>GreyBoxユーティリティの利用</h4>
+<p>GreyBoxの提供する効果によってMedia Controlを開くオプションを追加しています。
+このオプションを利用しない方は、このプラグインの構成ファイルのうち、ディレクトリ「greybox」を削除するとよいでしょう。</p>
+
+<h4>それぞれのウェブログがある個別ディレクトリでのファイル管理</h4>
+<p><a href="http://japan.nucleuscms.org/wiki/plugins:eachblogdir" title="Nucleus CMS WIKI - NP_EachBlogDir">NP_EachBlogDir</a>で提供していた、それぞれのウェブログがある個別ディレクトリでのファイル管理機能を利用することができます。
+このオプションは、アップロードしてブログで利用するファイルが、そのブログに属している状態を作り出します。詳しくはこのヘルプの<a href="#chapter9" title="それぞれのウェブログがある個別ディレクトリでのファイル管理について">それぞれのウェブログがある個別ディレクトリでのファイル管理について</a>を参照してください。</p>
+
+<h3 id="chapter9">グローバル設定の日付の付加による動作の違い</h3>
+<p>Nucleusのグローバル設定にある「アップロードするファイル名の頭に日付を付加する」オプションにより
+一覧画面での日付とファイル名の表示およびファイル名変更時の動作が異なります。</p>
+<p>「はい」のとき</p>
+<ul>
+<li>一覧画面での日付の表示は、「登録日」となり、ファイルの先頭に追加されている日付が入ります。</li>
+<li>一覧画面でのファイル名の表示は、先頭の日付を取り去ったものとなります。</li>
+<li>ファイル名変更時に、ファイル名の先頭に日付（数字8桁）+ハイフンがついていないファイルは、そのファイルの最終更新日を先頭に追加します。</li>
+<li>一覧画面でのファイルの並びは、先頭に付加されている日付を含めたファイル名の降順です。</li>
+</ul>
+<p>「いいえ」のとき</p>
+<ul>
+<li>一覧画面での日付の表示は、「更新日」となります。</li>
+<li>一覧画面でのファイル名の表示は、ファイル名そのままとなります。</li>
+<li>ファイル名変更時に、ファイル名の先頭に日付を付加する事はありません。</li>
+<li>一覧画面でのファイルの並びは、ファイルの最終更新日の降順です。</li>
+</ul>
+
+<h3 id="chapter10">それぞれのウェブログがある個別ディレクトリでのファイル管理について</h3>
+
+<p>複数ウェブログを以下のようなディレクトリ構成で運用する事で、アップロードしたファイルがウェブログに属し、ウェブログ管理チームに所属しているユーザのみ、そのファイルを利用することができるようにします。</p>
+
+<pre>
+Nucleus CMS
+Nucleus Admin : /(Document Root)/nucleus/
+
+Blog1(ShortName1, Default)
+Weblog Path: /(Document Root)/index.php
+Media  DIR : /(Document Root)/media/
+
+Blog2(ShortName2)
+Weblog Path: /(Document Root)/(shortname2)/index.php
+Media  DIR : /(Document Root)/(shortname2)/media/
+
+Blog3(ShortName3)
+Weblog Path: /(Document Root)/(shortname3)/index.php
+Media  DIR : /(Document Root)/(shortname3)/media/
+
+Blog4(ShortName4)
+...
+</pre>
+
+<p>なお、メディア・ディレクトリの名前は任意ですが、どのウェブログのディレクトリでも共通の名前にしてください。PHPスクリプト・ファイルの名前は、index.phpでなくとも構いません。</p>
+
+<p>具体的に言うと、管理領域(Nucleusディレクトリ)と同じ階層に、各ウェブログの短縮名のディレクトリを作成し、その中にPHPファイルとメディアディレクトリを配置。
+このようにしたときに、プラグイン内の改造を加えたmedia.phpが、それぞれのウェブログにおかれたメディアディレクトリを参照します。
+また、ウェブログが表示されたときに、アイテムに埋め込まれたファイルへのパスが通るようにします。</p>
+
+<p>新規のウェブログの設置方法</p>
+<ol>
+<li>新規に作成するウェブログの短縮名を決めます。</li>
+<li>Nucleusがインストールされているディレクトリと同じ階層に、その短縮名のディレクトリを作成。</li>
+<li>短縮名のディレクトリの中に、メディアディレクトリを作成します。ディレクトリの名前は、あなたがconfig.phpに記述したメディアディレクトリと同一の名前にしてください。</li>
+<li>Nucleusにログインし、「新規Blog作成」をクリック。</li>
+<li>各種項目を入力しますが、「Blogの短縮名」は、先ほど決めたものにします。</li>
+<li>ボタン「Blogを作成」をクリック。</li>
+<li>次の画面に表示される「方法1」のスクリプトをコピーし、テキストエディタを開いて貼り付け。</li>
+<li>テキストファイルの書き換えを行います。include('../config.php')</li>
+<li>テキストファイルはphpファイルとして、先ほど作成したディレクトリに保存。</li>
+<li>「URL」を変更します。「(Document Root)/短縮名のディレクトリ/テキストファイルのファイル名」</li>
+<li>「作成!」をクリック。新規ウェブログを作成します。</li>
+<li>これまでの設定に不備があっても、「管理ホーム」のウェブログそれぞれの「設定」から修正することができます。</li>
+<li>通常通り、「アイテムの追加」「アイテムの編集/削除」、スキンから誘導される「アイテムの編集」で使うことができます。</li>
+</ol>
+
+<p>アンインストールの際、プラグインはそっくりなくなるのですが、このプラグインを利用して作成したアイテムにおいて、MEDIAファイルへのアンカー切れが発生します。
+その時は、それぞれのMEDIAディレクトリの内容をコレクション・ディレクトリごとコピーし、config.phpに書いた$DIR_MEDIAへ移動してください。アンカーが回復します。</p>
+
+<p>メディアディレクトリの名前は、すべて統一されたものにしてください。
+たとえば、あなたがconfig.phpに記述したメディアディレクトリの名前が「media」なら、
+それぞれのウェブログのフォルダにあるメディアディレクトリも、同じように「media」ディレクトリとしてください。</p>
+
+<h3 id="chapter11">イベントの発生</h3>
+<p>すでにアップロードされているメディア・ファイルの名前を変更する前後、削除する前後にイベントを発生します。それぞれ、「PreMediaRename」、「PostMediaRename」、「PreMediaErase」、「PostMediaErase」です。
+また、コレクション・ディレクトリにサブ・ディレクトリを作成する前後、サブ・ディレクトリの名前を変更する前後、サブ・ディレクトリを削除する前後にもイベントを発生します。
+それぞれ、「PreSubdirCreate」、「PostSubdirCreate」、「PreSubdirRename」、「PostSubdirRename」、「PreSubdirRemove」、「PostSubdirRemove」です。
+Nucleus CMSのバージョン3.3以降では、メディア・ファイルをアップロードする前後のイベント「PreMediaUpload」と「PostMediaUpload」を、コアが提供しています。</p>
+<p>なお、<a href="http://japan.nucleuscms.org/wiki/plugins:actionlogplus" title="NP_ActionLogPlus - Nucleus CMS WIKI">NP_ActionLogPlus</a>をこのプラグインと一緒に利用している場合、外部ファイルに関する履歴に「ファイル削除」と「ファイル名変更」、「サブ・ディレクトリの作成」、「サブ・ディレクトリの名前変更」、「サブ・ディレクトリの削除」が加わります。このプラグインが発生するイベント「PostRenameMedia」と「PostDeleteMedia」、「PostSubdirCreate」、「PostSubdirRename」、「PostSubdirRemove」をキャッチするからです。このプラグインは「PostMediaUpload」もキャッチします。</p>
+
+
+<table frame="box" rules="all" summary="プラグインNP_ImprovedMediaが発生するイベント">
+<thead>
+<tr>
+<th>名前</th>
+<th>いつ</th>
+<th>パラメータ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PreMediaUpload</td>
+<td>（Nucleus CMSのバージョン3.3以降）選択したメディア・ファイルがアップロードされる前</td>
+<td><dl>
+<dt class="ro">collection</dt>
+<dd>（参照渡し）アップロードするメディア・ファイルが保存されるコレクション・ディレクトリ</dd>
+<dt class="ref">uploadfile</dt>
+<dd>（値渡し）アップロードするメディア・ファイルがサーバ上で一時的に保存されているファイルの名前</dd>
+<dt class="ro">filename</dt>
+<dd>（参照渡し）アップロードした後のファイル名</dd>
+</dl></td>
+</tr>
+<tr>
+<td>PostMediaUpload</td>
+<td>（Nucleus CMSのバージョン3.3以降）選択したメディア・ファイルがアップロードされた後</td>
+<td><dl>
+<dt class="ref">collection</dt>
+<dd>（値渡し）選択したメディア・ファイルが保存されたコレクション・ディレクトリ</dd>
+<dt class="ref">mediadir</dt>
+<dd>（値渡し）アップロードしたメディア・ファイルが保存されたコレクション・ディレクトリのサーバにおけるパス</dd>
+<dt class="ref">filename</dt>
+<dd>（値渡し）アップロードした後のファイル名</dd>
+</dl></td>
+</tr>
+<tr>
+<td>PreRenameMedia</td>
+<td>選択したメディア・ファイルのファイル名が変更される前</td>
+<td><dl>
+<dt class="ref">collection</dt>
+<dd>（値渡し）選択したメディア・ファイルが保存されているコレクション・ディレクトリ</dd>
+<dt class="ref">oldfilename</dt>
+<dd>（値渡し）選択したメディア・ファイルの以前のファイル名</dd>
+<dt class="ref">newfilename</dt>
+<dd>（値渡し）選択したメディア・ファイルの現在のファイル名</dd>
+</dl></td>
+</tr>
+<tr>
+<td>PostRenameMedia</td>
+<td>選択したメディア・ファイルのファイル名が変更された後</td>
+<td><dl>
+<dt class="ref">collection</dt>
+<dd>（値渡し）選択したメディア・ファイルが保存されているコレクション・ディレクトリ</dd>
+<dt class="ref">oldfilename</dt>
+<dd>（値渡し）選択したメディア・ファイルの以前のファイル名</dd>
+<dt class="ref">newfilename</dt>
+<dd>（値渡し）選択したメディア・ファイルの現在のファイル名</dd>
+</dl></td>
+</tr>
+<tr>
+<td>PreDeleteMedia</td>
+<td>選択したメディア・ファイルが削除される前</td>
+<td><dl>
+<dt class="ref">collection</dt>
+<dd>（値渡し）削除したメディア・ファイルが保存されていたコレクション・ディレクトリ</dd>
+<dt class="ref">filename</dt>
+<dd>（値渡し）削除したメディア・ファイルのファイル名</dd>
+</dl></td>
+</tr>
+<tr>
+<td>PostDeleteMedia</td>
+<td>選択したメディア・ファイルが削除された後</td>
+<td><dl>
+<dt class="ref">collection</dt>
+<dd>（値渡し）削除したメディア・ファイルが保存されていたコレクション・ディレクトリ</dd>
+<dt class="ref">filename</dt>
+<dd>（値渡し）削除したメディア・ファイルのファイル名</dd>
+</dl></td>
+</tr>
+<tr>
+<td>PreSubdirCreate</td>
+<td>コレクション・ディレクトリにサブ・ディレクトリが作成される前</td>
+<td><dl>
+<dt class="ref">collection</dt>
+<dd>（値渡し）コレクション・ディレクトリの名前</dd>
+<dt class="ref">subdir</dt>
+<dd>（値渡し）サブ・ディレクトリの名前</dd>
+</dl></td>
+</tr>
+<tr>
+<td>PostSubdirCreate</td>
+<td>コレクション・ディレクトリにサブ・ディレクトリが作成された後</td>
+<td><dl>
+<dt class="ref">collection</dt>
+<dd>（値渡し）コレクション・ディレクトリの名前</dd>
+<dt class="ref">subdir</dt>
+<dd>（値渡し）サブ・ディレクトリの名前</dd>
+</dl></td>
+</tr>
+<tr>
+<td>PreSubdirRename</td>
+<td>コレクション・ディレクトリのサブ・ディレクトリの名前が変更される前</td>
+<td><dl>
+<dt class="ref">collection</dt>
+<dd>（値渡し）コレクション・ディレクトリの名前</dd>
+<dt class="ref">olddirname</dt>
+<dd>（値渡し）変更前のサブ・ディレクトリの名前</dd>
+<dt class="ref">newdirname</dt>
+<dd>（値渡し）変更後のサブ・ディレクトリの名前</dd>
+</dl></td>
+</tr>
+<tr>
+<td>PostSubdirRename</td>
+<td>コレクション・ディレクトリのサブ・ディレクトリの名前が変更された後</td>
+<td><dl>
+<dt class="ref">collection</dt>
+<dd>（値渡し）コレクション・ディレクトリの名前</dd>
+<dt class="ref">olddirname</dt>
+<dd>（値渡し）変更前のサブ・ディレクトリの名前</dd>
+<dt class="ref">newsubdirname</dt>
+<dd>（値渡し）変更後のサブ・ディレクトリの名前</dd>
+</dl></td>
+</tr>
+<tr>
+<td>PreSubdirRemove</td>
+<td>コレクション・ディレクトリのサブ・ディレクトリが削除される前</td>
+<td><dl>
+<dt class="ref">collection</dt>
+<dd>（値渡し）コレクション・ディレクトリの名前</dd>
+<dt class="ref">subdir</dt>
+<dd>（値渡し）サブ・ディレクトリの名前</dd>
+</dl></td>
+</tr>
+<tr>
+<td>PostSubdirRemove</td>
+<td>コレクション・ディレクトリのサブ・ディレクトリが削除された後</td>
+<td><dl>
+<dt class="ref">collection</dt>
+<dd>（値渡し）コレクション・ディレクトリの名前</dd>
+<dt class="ref">subdir</dt>
+<dd>（値渡し）サブ・ディレクトリの名前</dd>
+</dl></td>
+</tr>
+</tbody>
+</table>
+
+<h3 id="chapter12">バージョン履歴</h3>
+<dl>
+<dt>2010.02.28 Ver.3.0.1</dt>
+<dd><ul>
+<li>アイテムの編集画面から呼び出して画像ファイルをアップロードした際、<%media%>でしか埋め込まれない不具合を修正。</li>
+<li>同梱しているGreyBoxを最新のバージョン(var.5.54)にした。</li>
+</ul></dd>
+<dt>2009.02.09 Ver.3.0.0</dt>
+<dd><ul>
+<li>サブ・ディレクトリ管理機能を追加。以降、Ver.2.x.xとVer.3.x.x（サブ・ディレクトリ管理機能つき）の2系統とします。</li>
+</ul></dd>
+<dt>2009.02.09 Ver.2.2.0</dt>
+<dd><ul>
+<li>クラスとその要素（プロパティ）、関数（メソッド）を設定。PHP5を意識してPHP4にも対応するよう再設計した。</li>
+<li>NP_EachBlogDirをNP_ImprovedMediaに統合した。</li>
+<li>グローバル設定「アップロードするファイル名の頭に日付を付加する」に応じて、ファイルの並び順を変更するようにした。</li>
+<li>アイテム編集画面からの呼び出しと、スキンからの呼び出して、アイテムへの埋め込みまでのルーチンが変わるように変更した。</li>
+<li>ヘルプファイルを更新</li>
+</ul></dd>
+<dt>2009.01.20 Ver.2.1.1</dt>
+<dd><ul>
+<li>Super Admin権限を持つユーザのみ利用できるようにしていたが、ウェブログの編集権限をひとつでも持つユーザにまで利用範囲を広げた。</li>
+<li>インターフェースの改善</li>
+</ul></dd>
+<dt>2009.01.11 Ver.2.1.0</dt>
+<dd><ul>
+<li>URL内の任意の文字列を渡すことによってディレクトリ操作が可能になる脆弱性を防ぐため、ファイル名とディレクトリに関する処理を修正。</li>
+<li>インターフェースを改善。</li>
+<li>グローバル設定のAllowUploadにを反映するように修正。</li>
+<li>プラグインの利用をウェブログ・グループに所属しているユーザに限定。</li>
+<li>Ver 2.0でマージしたファイル・アップロードに関するコードを削除。アップロードに関しても、コアの機能を最大限に利用します。</li>
+<li>ヘルプファイルを更新。</li>
+</ul></dd>
+<dt>2009.01.06 Ver.2.0.2公開中止</dt>
+<dd><ul>
+<li>2008.12.17の<a href="http://japan.nucleuscms.org/bb/viewtopic.php?p=24067#24067" title="メディアマネージャにおける脆弱性について">メディアマネージャにおける脆弱性について</a>で報告された脆弱性を考慮し、公開を中止。修正に着手。</li>
+</ul></dd>
+<dt>2008.02.08 Ver.2.0.2</dt>
+<dd><ul>
+<li>アイテムへの埋め込み確認の際、埋め込まれるコードを表示をし、コードの再編集への注意を促すように修正。</li>
+<li>メディア・ファイルを文書に挿入するへのボタンをクリックした際の動作に関して、バグの修正。</li>
+</ul>
+</dd>
+<dt>2008.01.31 Ver.2.0.1</dt>
+<dd><ul>
+<li>GreyBox機能がオフの際のコード埋め込み不具合を修正。</li>
+<li>ヘルプファイルを更新</li>
+</ul>
+</dd>
+<dt>2008.01.15 Ver.2.0</dt>
+<dd><ul>
+<li>コードの見直しに伴い、バージョンをあげた。</li>
+<li>ファイル・アップロード、ファイル名変更、ファイル削除の各プラグイン・イベントを設定。</li>
+<li>プラグイン・イベントに関するNucleus CMSのバージョン間での違いを吸収するために、ファイル・アップロードに関するコードをマージ。</li>
+<li>Internet Explorerでファイルを開く際に、ポップアップしないJavaScriptのバグを修正。</li>
+<li>ヘルプの更新。</li>
+<li>プラグイン関連のディレクトリ構造の変更。</li>
+</ul></dd>
+<dt>2007.11.20 Ver.1.3</dt>
+<dd><ul>
+<li>スキン変数を実装。スキンからの呼び出しを可能とした。</li>
+<li>スキンから呼び出された際は、ボタン「文書へ挿入」を非表示にした。</li>
+<li>GreyBoxを含むパッケージにした。</li>
+</ul></dd>
+<dt>2007.11.06 Ver.1.2(Bundling GreyBox)</dt>
+<dd><ul>
+<li>GreyBoxユーティリティによるウィンドウオープンを実装。</li>
+</ul></dd>
+<dt>2007.11.01 Ver.1.2</dt>
+<dd><ul>
+<li>ヘッダ追加情報の上書き状態を修正。</li>
+<li>オプションの追加。</li>
+<li>パースエラーの修正。</li>
+<li>Nucleus3.3のコードを合体。</li>
+<li>ヘルプの更新。</li>
+<li>プラグイン関連のディレクトリ構造の変更。</li>
+</ul></dd>
+<dt>2007.06.21 Ver.1.1</dt>
+<dd><ul>
+<li>プライベート・コレクションのオン・オフを追加。</li>
+<li>パースエラーの修正。</li>
+<li>ヘルプの更新。</li>
+</ul></dd>
+<dt>2007.02.17 Ver.1.0.2 (RC3)</dt>
+<dd><ul>
+<li>リリースキャンディデート3</li>
+</ul></dd>
+<dt>2006.12.31 Ver.1.0.1 (RC2)</dt>
+<dd><ul>
+<li>リリースキャンディデート2</li>
+</ul></dd>
+<dt>2006.12.29 Ver.1.0 (RC1)</dt>
+<dd><ul>
+<li>リリースキャンディデート</li>
+</ul></dd>
+<dt>2006.12.22 Beta</dt>
+<dd><ul>
+<li>ベータバージョン</li>
+</ul></dd>
+<dt>2006.12.20 Alpha</dt>
+<dd><ul>
+<li>アルファバージョン</li>
+</ul></dd>
+</dl>
+
+<h3 id="chapter13">動作の仕組み</h3>
+
+<p>備忘録として残しておきます。</p>
+
+<h4>アイテムの追加/編集の時</h4>
+
+<ol>
+<li>変数「action」によりイベント「AdminPrePageHead」、「BookmarkletExtraHead」が発生した際、XHTML要素「head」にJavaScript関数を挿入。 action.php経由でプラグインの出力するMedia Controlをポップアップ表示するJavaScript関数「AddMedia()」を埋め込む。</li>
+<li>また同時に、JavaScript関数「includeImage()」と「includeOtherMedia()」もヘッダに追加。</li>
+<li>追加したJavaScript関数はXHTMLファイルに直接埋め込まれているため、コアのJavaScript関数「AddMedia()」よりも呼び出し優先される。</li>
+<li>JavaScript関数「AddMedia()」はMedia Controlにユーザを誘導し、JavaScript関数「includeImage()」と「includeOtherMedia()」は代替テキスト入力を代行する。</li>
+<li>追加したJavaScript関数「AddMedia()」は、blogidもしくはitemidをget変数としてMedia Controlに渡す。</li>
+<li>blogid（ない場合はitemid）を用いてグローバル変数の$DIR_MEDIAと$CONF[’MediaURL’]を置き換える。</li>
+<li>Media Controlが自分を呼び出す際は、必ずblogidをget変数として渡す。</li>
+<li>あとはコアの機能を利用して、ポップアップや埋め込みのコードが生成される。</li>
+</ol>
+
+<h4>表示される時</h4>
+<ol>
+<li>action変数により、イベント「InitSkinParse」が発生したとき、つまりスキンの初期化の直前に、プラグイン内のあるメソッドが実行される。</li>
+<li>メソッドは、blogオブジェクトからshortnameを参照し、それを用いてグローバル変数の$DIR_MEDIAと$CONF[’MediaURL]を置き換える。</li>
+<li>画像へのアンカーが、スキン変数&lt;%popup%&gt;、&lt;%image%&gt;において、置き換えられる。</li>
+<li>イベント発生をPreItemにしなかったのは、ポップアップで呼び出されるウィンドウにも変更を適用したかったから。</li>
+</ol>
