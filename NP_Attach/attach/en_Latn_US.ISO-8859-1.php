@@ -1,8 +1,8 @@
 <?php
 /**
  * Attach plugin for Nucleus CMS
- * Version 0.9.6 (1.0 RC2) for PHP5
- * Written By Mocchi, Apr. 04, 2011
+ * Version 1.0.0 for PHP5
+ * Written By Mocchi, Oct. 20, 2012
  * Original code was written by NKJG and yamamoto, May 02, 2009
  * This plugin depends on NP_Thumbnail and NP_MediaUtils
  * 
