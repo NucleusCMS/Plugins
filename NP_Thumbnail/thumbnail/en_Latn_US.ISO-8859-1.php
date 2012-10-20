@@ -1,8 +1,8 @@
 <?php
 /**
  * Thumbnail plugin for Nucleus CMS
- * Version 3.9.6 (4.0 RC2) for PHP5
- * Written By Mocchi, Apr. 04, 2011
+ * Version 4.0.0 for PHP5
+ * Written By Mocchi, Apr. 06, 2011
  * Original code was written by jirochou, May 23, 2004 and maintained by nakahara21
  * This plugin depends on NP_MediaUtils
  * 
@@ -29,7 +29,8 @@ define ('_NP_THUMBNAIL_14', 'This function is not allowed.');
 define ('_NP_THUMBNAIL_15', 'Thumbnails is generated in <%0%> on Media directory.');
 define ('_NP_THUMBNAIL_16', 'One session generates <%0%> thumbnails.');
 define ('_NP_THUMBNAIL_17', 'There is a possibility to fail to generate thumbnail if original image is too large.');
-define ('_NP_THUMBNAIL_18', '<%0%> files is in this media directory.');
-define ('_NP_THUMBNAIL_19', '<%0%> files can generate its own thumbnail.');
-define ('_NP_THUMBNAIL_20', '<%0%> thumbnails already generated');
-define ('_NP_THUMBNAIL_21', 'Logs');
+define ('_NP_THUMBNAIL_18', 'The target weblog to generate thumbnails');
+define ('_NP_THUMBNAIL_19', '<%0%> files is in this media directory.');
+define ('_NP_THUMBNAIL_20', '<%0%> files can generate its own thumbnail.');
+define ('_NP_THUMBNAIL_21', '<%0%> thumbnails already generated');
+define ('_NP_THUMBNAIL_22', 'Logs');

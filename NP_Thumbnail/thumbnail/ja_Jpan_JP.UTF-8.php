@@ -1,8 +1,8 @@
 <?php
 /**
  * Thumbnail plugin for Nucleus CMS
- * Version 3.9.6 (4.0 RC2) for PHP5
- * Written By Mocchi, Apr. 04, 2011
+ * Version 4.0.0 for PHP5
+ * Written By Mocchi, Apr. 06, 2011
  * Original code was written by jirochou, May 23, 2004 and maintained by nakahara21
  * This plugin depends on NP_MediaUtils
  * 
@@ -29,7 +29,8 @@ define ('_NP_THUMBNAIL_14', '現在はサムネイルファイルをサーバに
 define ('_NP_THUMBNAIL_15', 'サムネイルはメディア用ディレクトリの<%0%>に作成されます');
 define ('_NP_THUMBNAIL_16', '現在は1回あたり<%0%>枚のサムネイルを作成するように設定されています');
 define ('_NP_THUMBNAIL_17', 'あまりに縦横サイズの大きな画像はサムネイルが作成できない場合があります');
-define ('_NP_THUMBNAIL_18', '現在<%0%>のメディアが登録されています');
-define ('_NP_THUMBNAIL_19', 'そのうち、<%0%>の画像のサムネイルが作成可能です');
-define ('_NP_THUMBNAIL_20', 'そのうち、<%0%>の画像のサムネイルがすでに作成されています。');
-define ('_NP_THUMBNAIL_21', 'ログ');
+define ('_NP_THUMBNAIL_18', 'サムネイル作成対象のウェブログ');
+define ('_NP_THUMBNAIL_19', '現在<%0%>のメディアが登録されています');
+define ('_NP_THUMBNAIL_20', 'そのうち、<%0%>の画像のサムネイルが作成可能です');
+define ('_NP_THUMBNAIL_21', 'そのうち、<%0%>の画像のサムネイルがすでに作成されています。');
+define ('_NP_THUMBNAIL_22', 'ログ');

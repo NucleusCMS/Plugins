@@ -1,8 +1,8 @@
 <?php
 /**
  * Thumbnail plugin for Nucleus CMS
- * Version 3.9.6 (4.0 RC2) for PHP5
- * Written By Mocchi, Apr. 04, 2011
+ * Version 4.0.0 for PHP5
+ * Written By Mocchi, Apr. 06, 2011
  * Original code was written by jirochou, May 23, 2004 and maintained by nakahara21
  * This plugin depends on NP_MediaUtils
  * 
@@ -29,7 +29,8 @@ define ('_NP_THUMBNAIL_14', '╕╜║▀д╧е╡ере═едеые╒ебедеыдЄе╡б╝е╨д╦╩▌┬╕д╖д╩дд└▀─ъд╚д
 define ('_NP_THUMBNAIL_15', 'е╡ере═едеыд╧есе╟егев═╤е╟егеьепе╚еъд╬<%0%>д╦║ю└од╡дьд▐д╣');
 define ('_NP_THUMBNAIL_16', '╕╜║▀д╧1▓єдвд┐дъ<%0%>╦чд╬е╡ере═едеыдЄ║ю└од╣дыдшджд╦└▀─ъд╡дьд╞ддд▐д╣');
 define ('_NP_THUMBNAIL_17', 'двд▐дъд╦╜─▓ге╡еде║д╬┬чднд╩▓ш┴№д╧е╡ере═едеыдм║ю└од╟днд╩дд╛ь╣чдмдвдъд▐д╣');
-define ('_NP_THUMBNAIL_18', '╕╜║▀<%0%>д╬есе╟егевдм┼╨╧┐д╡дьд╞ддд▐д╣');
-define ('_NP_THUMBNAIL_19', 'д╜д╬джд┴бв<%0%>д╬▓ш┴№д╬е╡ере═едеыдм║ю└о▓─╟╜д╟д╣');
-define ('_NP_THUMBNAIL_20', 'д╜д╬джд┴бв<%0%>д╬▓ш┴№д╬е╡ере═едеыдмд╣д╟д╦║ю└од╡дьд╞ддд▐д╣бг');
-define ('_NP_THUMBNAIL_21', 'еэе░');
+define ('_NP_THUMBNAIL_18', 'е╡ере═едеы║ю└о┬╨╛▌д╬ежезе╓еэе░');
+define ('_NP_THUMBNAIL_19', '╕╜║▀<%0%>д╬есе╟егевдм┼╨╧┐д╡дьд╞ддд▐д╣');
+define ('_NP_THUMBNAIL_20', 'д╜д╬джд┴бв<%0%>д╬▓ш┴№д╬е╡ере═едеыдм║ю└о▓─╟╜д╟д╣');
+define ('_NP_THUMBNAIL_21', 'д╜д╬джд┴бв<%0%>д╬▓ш┴№д╬е╡ере═едеыдмд╣д╟д╦║ю└од╡дьд╞ддд▐д╣бг');
+define ('_NP_THUMBNAIL_22', 'еэе░');
