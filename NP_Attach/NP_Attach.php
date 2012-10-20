@@ -269,9 +269,20 @@ class NP_Attach extends NucleusPlugin
 		return;
 	}
 	
-	public function doTemplateVar($item, $mediumid)
+	public function doTemplateVar(&$item)
 	{
 		global $DIR_MEDIA, $blogid;
+		
+		/* receive an argument, with prevention of E_STRICT*/
+		$args = func_get_args();
+		if ( !array_key_exists(0, $args) )
+		{
+			return;
+		}
+		else
+		{
+			$mediumid = $args[0];
+		}
 		
 		if ( !self::$itemid || !self::$blogid )
 		{
@@ -313,7 +324,7 @@ class NP_Attach extends NucleusPlugin
 	
 	private function generateParsedTag($maxwidth, $maxheight)
 	{
-		global $manager;
+		global $manager, $DIR_MEDIA;
 		
 		/* check medium has path */
 		$data = &self::$data;
